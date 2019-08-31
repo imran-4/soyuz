@@ -50,8 +50,6 @@ under the License.
 			<version>${project.version}</version>
 		</dependency>
 
-
-
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-metrics-core</artifactId>
@@ -85,11 +83,11 @@ under the License.
 				<groupId>org.antlr</groupId>
 				<artifactId>antlr4-maven-plugin</artifactId>
 				<version>${antlr.version}</version>
-<!--				<configuration>-->
-<!--					<sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>-->
-<!--					<visitor>true</visitor>-->
-<!--					<listener>true</listener>-->
-<!--				</configuration>-->
+				<configuration>
+					<sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>
+					<visitor>true</visitor>
+					<listener>true</listener>
+				</configuration>
 				<executions>
 					<execution>
 						<id>antlr</id>
