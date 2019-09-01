@@ -79,6 +79,7 @@ under the License.
 				</configuration>
 			</plugin>
 
+			<!-- The generated parser code will go to target/generated-sources/ -->
 			<plugin>
 				<groupId>org.antlr</groupId>
 				<artifactId>antlr4-maven-plugin</artifactId>

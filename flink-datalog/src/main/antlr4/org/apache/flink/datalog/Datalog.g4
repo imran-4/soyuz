@@ -19,16 +19,16 @@
 grammar Datalog;
 
 datalog_text
-        :  'Schemes' ':' scheme (scheme | EMPTY )*   'Facts' ':' (fact | EMPTY)*   'Rules' ':' (rule | EMPTY)*   'Queries' ':' query (query | EMPTY)*
+        :  'Schemes' ':' (scheme)+   'Facts' ':' (fact)*   'Rules' ':' (rule)*   'Queries' ':' (query)+
         ;
 scheme
-        : ID '(' ID ( ',' ID | EMPTY)* ')'
+        : ID '(' ID ( ',' ID)* ')'
         ;
 fact
-        : ID '(' STRING (',' STRING | EMPTY)* ')' '.'
+        : ID '(' STRING (',' STRING)* ')' '.'
         ;
 predicate
-        : ID '(' parameter ( ','  parameter | EMPTY)* ')'
+        : ID '(' parameter ( ','  parameter)* ')'
         ;
 parameter
         : ID | STRING | expression
@@ -37,10 +37,10 @@ expression
         : '(' parameter operator parameter ')'
         ;
 rule
-        : head_predicate ':-' predicate ( ',' predicate| EMPTY )*  '.'
+        : head_predicate ':-' predicate ( ',' predicate )*  '.'
         ;
 head_predicate
-        : ID '(' ID ( ',' ID | EMPTY )* ')'
+        : ID '(' ID ( ',' ID )* ')'
         ;
 operator
         : '+' | '*'
@@ -49,19 +49,13 @@ query
         : predicate '?'
         ;
 ID
-        : ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'0'..'9')*
+        : [a-zA-Z][a-zA-Z0-9]*
         ;
 STRING
         : '\'' ( ESC_SEQ | ~('\\'|'\'') )* '\''
         ;
-fragment EMPTY
-        : [ \t\r\n]*
-        ;
 fragment HEX_DIGIT
-        : ('0'..'9'
-        |'a'..'f'
-        |'A'..'F'
-        )
+        : [a-fA-F0-9]
         ;
 fragment ESC_SEQ
         : '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\')
@@ -78,7 +72,7 @@ fragment UNICODE_ESC
         ;
 COMMENT
         : ( '#' ~('\n'|'\r')* '\r'? '\n'
-        | '#|' (.)* '|#' ) -> skip
+        | '#|' ()* '|#' ) -> skip
         ;
 
 WHITESPACE
