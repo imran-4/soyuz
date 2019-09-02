@@ -45,9 +45,9 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Shim for Hive version 2.x.
+ * Shim for Hive version 2.3.0.
  */
-public class HiveShimV2 implements HiveShim {
+public class HiveShimV230 extends HiveShimV211 {
 
 	@Override
 	public IMetaStoreClient getHiveMetastoreClient(HiveConf hiveConf) {
@@ -109,4 +109,5 @@ public class HiveShimV2 implements HiveShim {
 			throw new CatalogException("Failed to create SimpleGenericUDAFParameterInfo", e);
 		}
 	}
+
 }
