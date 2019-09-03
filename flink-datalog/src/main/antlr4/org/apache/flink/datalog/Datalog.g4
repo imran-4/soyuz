@@ -21,6 +21,10 @@ grammar Datalog;
 // This grammar is written for Datalog version 2.6
 // datalog official: http://datalog.sourceforge.net/datalog.html
 
+/*
+ * Parser Rules
+ */
+
 compileUnit
         : ( fact
         | rule
@@ -84,9 +88,6 @@ atom
         | SYMBOL_TOKEN
         | STRING
         ;
-VARIABLE
-        : CAPITAL_LETTER ALPHANUMERIC*
-        ;
 integer
         : DECIMAL+
         | OCTAL
@@ -103,30 +104,10 @@ unary_operator //TODO: add more unary operators
         | '*' | '/'
         | '&' | '$'
         ;
-LETTER
-        : SMALL_LETTER ALPHANUMERIC*
-        ;
-STRING
-        : SINGLE_QUOTED_STRING
-        | DOUBLE_QUOTED_STRING
-        | INVERTED_QUOTE_STRING
-        ;
-SYMBOL_TOKEN
-        : ( SYMBOL | '\\' )+
-        ;
-DECIMAL
-        : DIGIT+
-        ;
-OCTAL
-        :'0o' [0-7]+
-        ;
-BINARY
-        : '0b' [01]+
-        ;
-HEX
-        : '0x' HEX_DIGIT+
-        ;
 
+/*
+ * Lexer Rules
+ */
 fragment SINGLE_QUOTED_STRING
         : '\'' ( ESC_SEQ | ~( '\\'|'\'' ) )* '\''
         ;
@@ -169,6 +150,32 @@ fragment SMALL_LETTER
         ;
 fragment DIGIT
         : [0-9]
+        ;
+VARIABLE
+        : CAPITAL_LETTER ALPHANUMERIC*
+        ;
+LETTER
+        : ALPHANUMERIC+
+        ;
+STRING
+        : SINGLE_QUOTED_STRING
+        | DOUBLE_QUOTED_STRING
+        | INVERTED_QUOTE_STRING
+        ;
+SYMBOL_TOKEN
+        : ( SYMBOL | '\\' )+
+        ;
+DECIMAL
+        : DIGIT+
+        ;
+OCTAL
+        : '0o' [0-7]+
+        ;
+BINARY
+        : '0b' [01]+
+        ;
+HEX
+        : '0x' HEX_DIGIT+
         ;
 COMMENT
         : '%' ~[\n\r]* ( [\n\r] | EOF) -> channel(HIDDEN)
