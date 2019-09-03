@@ -29,13 +29,13 @@ compileUnit
         : ( fact
         | rule
         | query
-        | primitive_predicate_query
+        | primitivePredicateQuery
         | retraction
-        | primitive_predicate_fact
+        | primitivePredicateFact
         )* EOF
         ;
 rule
-        : predicate ':-' predicate_list '.'
+        : predicate ':-' predicateList '.'
         ;
 fact
         : predicate '.'
@@ -46,37 +46,37 @@ query
 retraction
         : predicate '~'
         ;
-primitive_predicate_query
-        : primitive_predicate '?'
+primitivePredicateQuery
+        : primitivePredicate '?'
         ;
-primitive_predicate_fact
-        : primitive_predicate '.'
+primitivePredicateFact
+        : primitivePredicate '.'
         ;
-predicate_list
+predicateList
         : predicate ( ',' predicate )*
         ;
-primitive_predicate
+primitivePredicate
         : term '=' term
         ;
 predicate
-        : ( LETTER | STRING )  ( '(' termlist ')' )? // A predicate symbol is either an identifier or a string. A term is either a variable or a constant. As with predicate symbols, a constant is either an identifier or a string
+        : ( LETTER | STRING )  ( '(' termList ')' )? // A predicate symbol is either an identifier or a string. A term is either a variable or a constant. As with predicate symbols, a constant is either an identifier or a string
         ;
-termlist
+termList
         : term ( ',' term )*
         ;
 term
         : VARIABLE
         | '-'? ( integer )+
-        | unary_operator term
-        | '{' termlist '}'
-        | '[' termlist ( '|' term )? ']'
+        | unaryOperator term
+        | '{' termList '}'
+        | '[' termList ( '|' term )? ']'
         | atom
 //        | <assoc=right> term operator term   // this rule works in ANTLR tool and creates correct parse tree. but generates parser code with type cast error. TODO: fix this
         | <assoc=right> ( VARIABLE
         | '-'? ( integer )+
-        | unary_operator term
-        | '{' termlist '}'
-        | '[' termlist ( '|' term )? ']'
+        | unaryOperator term
+        | '{' termList '}'
+        | '[' termList ( '|' term )? ']'
         | atom ) operator term
         ;
 atom
@@ -99,7 +99,7 @@ operator //TODO: add more binary operators
         | '>' | '>'
         | '>>' | '<<'
         ;
-unary_operator //TODO: add more unary operators
+unaryOperator //TODO: add more unary operators
         : '-' | '+'
         | '*' | '/'
         | '&' | '$'
