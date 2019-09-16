@@ -26,163 +26,164 @@ grammar Datalog;
  */
 
 compileUnit
-        : ( fact
-        | rule
-        | query
-        | primitivePredicateQuery
-        | retraction
-        | primitivePredicateFact
-        )* EOF
-        ;
-rule
-        : predicate ':-' predicateList '.'
-        ;
+    : schema ( fact
+    | ruleClause
+    | query
+    | retraction
+    )+ EOF
+    ;
+schema
+    : DATABASE_KEYWORD '(' '{' CONSTANT   '(' (CONSTANT | VARIABLE) ':' DATATYPES columnsList ')' '}' ')' '.'
+    ;
+columnsList
+    : ( ','  (CONSTANT | VARIABLE) ':' DATATYPES )*
+    ;
+ruleClause
+    : predicate ':-' predicateList '.'
+    ;
 fact
-        : predicate '.'
-        ;
+    :  ( CONSTANT | STRING )  '(' constantList ')' '.'
+    ;
+constantList
+    : CONSTANT ( ',' CONSTANT )*
+    ;
 query
-        : predicate '?'
-        ;
+    : predicate '?'
+    ;
 retraction
-        : predicate '~'
-        ;
-primitivePredicateQuery
-        : primitivePredicate '?'
-        ;
-primitivePredicateFact
-        : primitivePredicate '.'
-        ;
+    : predicate '~'
+    ;
 predicateList
-        : predicate ( ',' predicate )*
-        ;
-primitivePredicate
-        : term '=' term
-        ;
+    : ( predicate | notPredicate | primitivePredicate ) ( ',' ( predicate | notPredicate | primitivePredicate ) )*
+    ;
+notPredicate   // only use in predicateList
+    : 'not' predicate
+    ;
+primitivePredicate // only use in predicateList
+    : ( CONSTANT | VARIABLE | DECIMAL ) ('!')? '=' ( CONSTANT | VARIABLE | DECIMAL )
+    ;
 predicate
-        : ( LETTER | STRING )  ( '(' termList ')' )? // A predicate symbol is either an identifier or a string. A term is either a variable or a constant. As with predicate symbols, a constant is either an identifier or a string
-        ;
+    : ( CONSTANT | STRING )  '(' termList  ')'
+    ;
 termList
-        : term ( ',' term )*
-        ;
+    : term ( ',' term )*
+    ;
 term
-        : VARIABLE
-        | '-'? ( integer )+
-        | unaryOperator term
-        | '{' termList '}'
-        | '[' termList ( '|' term )? ']'
-        | atom
-//        | <assoc=right> term operator term   // this rule works in ANTLR tool and creates correct parse tree. but generates parser code with type cast error. TODO: fix this
-        | <assoc=right> ( VARIABLE
-        | '-'? ( integer )+
-        | unaryOperator term
-        | '{' termList '}'
-        | '[' termList ( '|' term )? ']'
-        | atom ) operator term
-        ;
+    : VARIABLE
+    | CONSTANT
+    | '-'? ( integer )+
+    | '{' termList '}'
+    | '[' termList ( '|' term )? ']'
+    | <assoc=right> term OPERATOR term
+    | atom
+    ;
 atom
-        : '{' '}'
-        | '[' ']'
-        | ';'
-        | '!'
-        | LETTER
-        | SYMBOL_TOKEN
-        | STRING
-        ;
+    : '{' '}'
+    | '[' ']'
+    | ';'
+    | '!'
+    | SYMBOL_TOKEN
+    | STRING
+    ;
 integer
-        : DECIMAL+
-        | OCTAL
-        | BINARY
-        | HEX
-        ;
-operator //TODO: add more binary operators
-        : '+' | '*'
-        | '>' | '>'
-        | '>>' | '<<'
-        ;
-unaryOperator //TODO: add more unary operators
-        : '-' | '+'
-        | '*' | '/'
-        | '&' | '$'
-        ;
-
+    : DECIMAL+
+    | OCTAL
+    | BINARY
+    | HEX
+    ;
 /*
  * Lexer Rules
  */
+
+DATABASE_KEYWORD
+    : 'database'
+    ;
+DATATYPES
+    : 'Integer' | 'Float' | 'String' | 'Char' | 'Boolean'
+    ;
+OPERATOR //TODO: add more binary operators
+    : '+' | '*' | '-' | '/'
+    | '>' | '<'
+    | '>>' | '<<'
+    ;
+UNARY_OPERATOR //TODO: add more unary operators
+    : '-' | '+'
+    ;
 fragment SINGLE_QUOTED_STRING
-        : '\'' ( ESC_SEQ | ~( '\\'|'\'' ) )* '\''
-        ;
+    : '\'' ( ESC_SEQ | ~( '\\'|'\'' ) )* '\''
+    ;
 fragment DOUBLE_QUOTED_STRING
-        : '"' ( ESC_SEQ | ~('\\'|'"') )* '"'
-        ;
+    : '"' ( ESC_SEQ | ~('\\'|'"') )* '"'
+    ;
 fragment INVERTED_QUOTE_STRING
-        : '`' ( ESC_SEQ | ~( '\\'|'`' ) )* '`'
-        ;
+    : '`' ( ESC_SEQ | ~( '\\'|'`' ) )* '`'
+    ;
 fragment SYMBOL
-        : [<>#&$*+/@^] | '-'
-        ;
+    : [<>#&$*+/@^] | '-'
+    ;
 fragment HEX_DIGIT
-        : [a-fA-F0-9]
-        ;
+    : [a-fA-F0-9]
+    ;
 fragment ESC_SEQ
-        : '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\')
-        | UNICODE_ESC
-        | OCTAL_ESC
-        ;
+    : '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\')
+    | UNICODE_ESC
+    | OCTAL_ESC
+    ;
 fragment OCTAL_ESC
-        : '\\' ('0'..'3') ('0'..'7') ('0'..'7')
-        | '\\' ('0'..'7') ('0'..'7')
-        | '\\' ('0'..'7')
-        ;
+    : '\\' ('0'..'3') ('0'..'7') ('0'..'7')
+    | '\\' ('0'..'7') ('0'..'7')
+    | '\\' ('0'..'7')
+    ;
 fragment UNICODE_ESC
-        : '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
-        ;
+    : '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    ;
 fragment CAPITAL_LETTER
-        : [A-Z]
-        ;
+    : [A-Z]
+    ;
 fragment ALPHANUMERIC
-        : ALPHA | DIGIT
-        ;
+    : ALPHA | DIGIT
+    ;
 fragment ALPHA
-        :  SMALL_LETTER | CAPITAL_LETTER | '_'
-        ;
+    :  SMALL_LETTER | CAPITAL_LETTER | '_'
+    ;
 fragment SMALL_LETTER
-        : [a-z_]
-        ;
+    : [a-z_]
+    ;
 fragment DIGIT
-        : [0-9]
-        ;
+    : [0-9]
+    ;
+CONSTANT
+    : SMALL_LETTER ALPHANUMERIC*
+    ;
 VARIABLE
-        : CAPITAL_LETTER ALPHANUMERIC*
-        ;
-LETTER
-        : ALPHANUMERIC+
-        ;
+    : CAPITAL_LETTER ALPHANUMERIC*
+    ;
 STRING
-        : SINGLE_QUOTED_STRING
-        | DOUBLE_QUOTED_STRING
-        | INVERTED_QUOTE_STRING
-        ;
+    : SINGLE_QUOTED_STRING
+    | DOUBLE_QUOTED_STRING
+    | INVERTED_QUOTE_STRING
+    ;
 SYMBOL_TOKEN
-        : ( SYMBOL | '\\' )+
-        ;
+    : ( SYMBOL | '\\' )+
+    ;
 DECIMAL
-        : DIGIT+
-        ;
+    : DIGIT+
+    ;
 OCTAL
-        : '0o' [0-7]+
-        ;
+    : '0o' [0-7]+
+    ;
 BINARY
-        : '0b' [01]+
-        ;
+    : '0b' [01]+
+    ;
 HEX
-        : '0x' HEX_DIGIT+
-        ;
+    : '0x' HEX_DIGIT+
+    ;
 COMMENT
-        : '%' ~[\n\r]* ( [\n\r] | EOF) -> channel(HIDDEN)
-        ;
+    : '%' ~[\n\r]* ( [\n\r] | EOF) -> channel(HIDDEN)
+    ;
 MULTILINE_COMMENT
-        : '/*' ( MULTILINE_COMMENT | . )*? ( '*/' | EOF ) -> channel(HIDDEN)
-        ;
+    : '/*' ( MULTILINE_COMMENT | . )*? ( '*/' | EOF ) -> channel(HIDDEN)
+    ;
 WHITESPACE
-        : [ \t\r\n]+ -> skip
-        ;
+    : [ \t\r\n]+ -> skip
+    ;
