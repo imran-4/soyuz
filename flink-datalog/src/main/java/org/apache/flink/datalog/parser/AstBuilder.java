@@ -2,86 +2,95 @@ package org.apache.flink.datalog.parser;
 
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.datalog.tree.TreeNode;
+import org.apache.flink.datalog.tree.VariableNode;
 
-public class AstBuilder extends DatalogBaseVisitor<Object> {
+
+public class AstBuilder extends DatalogBaseVisitor<TreeNode> {
 
 	@Override
-	public Object visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
+	public TreeNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
+		visit(ctx.fact(0));
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitSchema(DatalogParser.SchemaContext ctx) {
+	public TreeNode visitColumnsList(DatalogParser.ColumnsListContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitColumnsList(DatalogParser.ColumnsListContext ctx) {
+	public TreeNode visitRuleClause(DatalogParser.RuleClauseContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitRuleClause(DatalogParser.RuleClauseContext ctx) {
+	public TreeNode visitFact(DatalogParser.FactContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitFact(DatalogParser.FactContext ctx) {
+	public TreeNode visitConstantList(DatalogParser.ConstantListContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitConstantList(DatalogParser.ConstantListContext ctx) {
+	public TreeNode visitRetraction(DatalogParser.RetractionContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitQuery(DatalogParser.QueryContext ctx) {
+	public TreeNode visitPredicateList(DatalogParser.PredicateListContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitRetraction(DatalogParser.RetractionContext ctx) {
+	public TreeNode visitNotPredicate(DatalogParser.NotPredicateContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitPredicateList(DatalogParser.PredicateListContext ctx) {
+	public TreeNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitNotPredicate(DatalogParser.NotPredicateContext ctx) {
+	public TreeNode visitPredicate(DatalogParser.PredicateContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
+	public TreeNode visitTermList(DatalogParser.TermListContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitPredicate(DatalogParser.PredicateContext ctx) {
+	public TreeNode visitTerm(DatalogParser.TermContext ctx) {
+
+		TreeNode node = new VariableNode();
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitTermList(DatalogParser.TermListContext ctx) {
+	public TreeNode visitAtom(DatalogParser.AtomContext ctx) {
+
 		return visitChildren(ctx);
 	}
 
 	@Override
-	public Object visitTerm(DatalogParser.TermContext ctx) {
-		return visitChildren(ctx);
-	}
+	public TreeNode visitInteger(DatalogParser.IntegerContext ctx) {
 
-	@Override
-	public Object visitAtom(DatalogParser.AtomContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public Object visitInteger(DatalogParser.IntegerContext ctx) {
 		return visitChildren(ctx);
 	}
 }

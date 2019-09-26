@@ -60,7 +60,7 @@ notPredicate   // only use in predicateList
     : 'not' predicate
     ;
 primitivePredicate // only use in predicateList
-    : ( CONSTANT | VARIABLE | DECIMAL ) ('!')? '=' ( CONSTANT | VARIABLE | DECIMAL )
+    : ( CONSTANT | VARIABLE | DECIMAL ) COMPARISON_OPERATOR ( CONSTANT | VARIABLE | DECIMAL )
     ;
 predicate
     : ( CONSTANT | STRING )  '(' termList  ')'
@@ -71,7 +71,7 @@ termList
 term
     : VARIABLE
     | CONSTANT
-    | '-'? ( integer )+
+    | (UNARY_OPERATOR)? ( integer )+
     | '{' termList '}'
     | '[' termList ( '|' term )? ']'
     | <assoc=right> term OPERATOR term
@@ -103,8 +103,11 @@ DATATYPES
     ;
 OPERATOR //TODO: add more binary operators
     : '+' | '*' | '-' | '/'
-    | '>' | '<'
+    | COMPARISON_OPERATOR
     | '>>' | '<<'
+    ;
+COMPARISON_OPERATOR
+    : '<' | '>' | '=' | '!=' | '>=' | '<='
     ;
 UNARY_OPERATOR //TODO: add more unary operators
     : '-' | '+'
