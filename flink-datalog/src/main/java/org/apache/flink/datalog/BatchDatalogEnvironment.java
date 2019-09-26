@@ -20,15 +20,6 @@ public class BatchDatalogEnvironment extends DatalogEnvironment {
 		return null;
 	}
 
-	@Override
-	public void registerCatalog(String catalogName, Catalog catalog) {
-
-	}
-
-	@Override
-	public Optional<Catalog> getCatalog(String catalogName) {
-		return Optional.empty();
-	}
 
 	@Override
 	public void registerFunction(String name, ScalarFunction function) {
