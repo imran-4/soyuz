@@ -10,7 +10,7 @@ import org.apache.flink.datalog.DatalogEnvironment;
 public class TransitiveClosureTest {
 	public static void main(String[] args) {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		DatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
 
 		DataSet<String> ds = env.readTextFile("");    ///or alternatively define another data source to read data from. or use Table API
 

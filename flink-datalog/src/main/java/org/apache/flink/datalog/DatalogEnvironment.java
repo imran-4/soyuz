@@ -14,9 +14,9 @@ import java.util.Optional;
 public interface DatalogEnvironment extends TableEnvironment {
 
 
-	Object compile(String text);
-
-	Object query(String queryText); // this should return dataset or datastream
+//	Object compile(String text);
+//
+//	Object query(String queryText); // this should return dataset or datastream
 
 
 
