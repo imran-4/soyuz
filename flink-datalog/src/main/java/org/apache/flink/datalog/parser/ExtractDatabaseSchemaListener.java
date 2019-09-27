@@ -20,13 +20,11 @@ public class ExtractDatabaseSchemaListener extends DatalogBaseListener {
 
 	@Override
 	public void enterSchema(DatalogParser.SchemaContext ctx) {
-		this.tableName = ctx.tableName().getChild(0).toString(); //ctx.tableName().CONSTANT().toString()
+		this.tableName = ctx.tableName().CONSTANT().getText();
 		int variableListSize = ctx.columnsList().columnName().size();
 		for (int i = 0; i < variableListSize; i++) {
-			this.schema.put(ctx.columnsList().columnName(i).toString(), ctx.columnsList().columnDataType(i).toString());
+			this.schema.put(ctx.columnsList().columnName(i).getText(), ctx.columnsList().columnDataType(0).getText());
 		}
-		// use flink-table-common catalog (CatalogBaseTable).
-		System.out.println(ctx.getText());
 	}
 
 	public String getTableName() {

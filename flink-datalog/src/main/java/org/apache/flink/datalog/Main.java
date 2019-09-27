@@ -7,20 +7,17 @@ import org.apache.flink.datalog.parser.AstBuilder;
 import org.apache.flink.datalog.parser.ExtractDatabaseSchemaListener;
 import org.apache.flink.datalog.parser.ExtractQueryListener;
 
-import org.apache.flink.table.api.AggregatedTable;
-
 public class Main {
 	//for testing only
 	public static void main(String[] args) {
 
-		String schema = "database({abcTable(x: Integer, y:Integer)}).";
+		String schema = "database({abc_Table(x: Integer, y:Integer)}).";
 		String inputProgram =
 			"abc(X,Y) :- abcTable(X, Y).\n" +
 			"abc(X,Y) :- abc(A,X),xyz(Y,B)."
 			;
 
-
-		CharStream input = CharStreams.fromString(inputProgram);
+		CharStream input = CharStreams.fromString(schema);
 		DatalogLexer lexer = new DatalogLexer(input);
 		TokenStream tokens = new CommonTokenStream(lexer);
 		DatalogParser parser = new DatalogParser(tokens);

@@ -18,70 +18,80 @@
 
 grammar Datalog;
 
-// This grammar is written for Datalog version 2.6
-// datalog official: http://datalog.sourceforge.net/datalog.html
-
 /*
  * Parser Rules
  */
 
+
 compileUnit
     : schema ( fact
     | ruleClause
-    | query
+//    | query  //query should be a separate compilation unit
     | retraction
-    )+ EOF
+    )+   EOF
     ;
 schema
-    : DATABASE_KEYWORD '(' '{' CONSTANT   '(' (CONSTANT | VARIABLE) ':' DATATYPES columnsList ')' '}' ')' '.'
+    : DATABASE_KEYWORD LEFT_PARANTHESES LEFT_BRACE tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES RIGHT_BRACE RIGH_PARANTHESES DOT
+    ;
+tableName
+    : CONSTANT
     ;
 columnsList
-    : ( ','  (CONSTANT | VARIABLE) ':' DATATYPES )*
+    : columnName COLON columnDataType ( COMMA  columnName COLON columnDataType )*
+    ;
+columnName
+    : (CONSTANT | VARIABLE)
+    ;
+columnDataType
+    : DATATYPE
     ;
 ruleClause
-    : predicate ':-' predicateList '.'
+    : predicate COLON_HYPGHEN predicateList DOT
     ;
 fact
-    :  ( CONSTANT | STRING )  '(' constantList ')' '.'
+    :  ( CONSTANT | STRING )  LEFT_PARANTHESES constantList RIGH_PARANTHESES DOT
     ;
 constantList
-    : CONSTANT ( ',' CONSTANT )*
+    : CONSTANT ( COMMA CONSTANT )*
     ;
 query
-    : predicate '?'
+    : predicate QUESTION_MARK
     ;
 retraction
-    : predicate '~'
+    : predicate TILDE
     ;
 predicateList
-    : ( predicate | notPredicate | primitivePredicate ) ( ',' ( predicate | notPredicate | primitivePredicate ) )*
+    : ( predicate | notPredicate | primitivePredicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
     ;
 notPredicate   // only use in predicateList
-    : 'not' predicate
+    : NOT predicate
     ;
 primitivePredicate // only use in predicateList
     : ( CONSTANT | VARIABLE | DECIMAL ) COMPARISON_OPERATOR ( CONSTANT | VARIABLE | DECIMAL )
     ;
 predicate
-    : ( CONSTANT | STRING )  '(' termList  ')'
+    : predicateName  LEFT_PARANTHESES termList RIGH_PARANTHESES
+    ;
+predicateName
+    : ( CONSTANT | STRING )
     ;
 termList
-    : term ( ',' term )*
+    : term ( COMMA term )*
     ;
 term
     : VARIABLE
     | CONSTANT
     | (UNARY_OPERATOR)? ( integer )+
-    | '{' termList '}'
-    | '[' termList ( '|' term )? ']'
+    | LEFT_BRACE termList RIGHT_BRACE
+    | LEFT_BRACKET termList ( OR term )? RIGHT_BRACKET
     | <assoc=right> term OPERATOR term
     | atom
     ;
 atom
-    : '{' '}'
-    | '[' ']'
-    | ';'
-    | '!'
+    : LEFT_BRACE RIGHT_BRACE
+    | LEFT_BRACKET RIGHT_BRACKET
+    | SEMICOLON
+    | EXCLAMATION
     | SYMBOL_TOKEN
     | STRING
     ;
@@ -98,7 +108,7 @@ integer
 DATABASE_KEYWORD
     : 'database'
     ;
-DATATYPES
+DATATYPE
     : 'Integer' | 'Float' | 'String' | 'Char' | 'Boolean'
     ;
 OPERATOR //TODO: add more binary operators
@@ -181,6 +191,22 @@ BINARY
 HEX
     : '0x' HEX_DIGIT+
     ;
+LEFT_PARANTHESES: '(' ;
+RIGH_PARANTHESES: ')' ;
+LEFT_BRACE: '{' ;
+RIGHT_BRACE : '}' ;
+LEFT_BRACKET : '[' ;
+RIGHT_BRACKET : ']' ;
+DOT : '.' ;
+COMMA : ',' ;
+NOT : 'not' ;
+COLON: ':' ;
+SEMICOLON: ';' ;
+EXCLAMATION: '!' ;
+OR: '|' ;
+QUESTION_MARK : '?' ;
+TILDE : '~' ;
+COLON_HYPGHEN: ':-' ;
 COMMENT
     : '%' ~[\n\r]* ( [\n\r] | EOF) -> channel(HIDDEN)
     ;

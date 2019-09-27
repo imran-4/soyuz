@@ -20,11 +20,11 @@ public class ExtractPredicateListener extends DatalogBaseListener {
 		}
 	}
 
-	public String getTabĺeName() {
+	String getTabĺeName() {
 		return tabĺeName;
 	}
 
-	public Map<String, String> getColumnNameTypeMapping() {
+	Map<String, String> getColumnNameTypeMapping() {
 		return columnNameTypeMapping;
 	}
 }

@@ -16,7 +16,6 @@ public class ExtractQueryListener extends DatalogBaseListener {
 
 		this.tabĺeName = predicateListener.getTabĺeName() ;
 		this.columnNameTypeMapping = predicateListener.getColumnNameTypeMapping();
-
 	}
 
 	public String getTabĺeName() {
