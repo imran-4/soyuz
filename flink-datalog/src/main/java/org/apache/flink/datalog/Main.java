@@ -3,7 +3,6 @@ package org.apache.flink.datalog;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.apache.flink.datalog.parser.AstBuilder;
 import org.apache.flink.datalog.parser.ExtractDatabaseSchemaListener;
 import org.apache.flink.datalog.parser.ExtractQueryListener;
 

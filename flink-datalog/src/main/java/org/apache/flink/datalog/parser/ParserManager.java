@@ -1,6 +1,7 @@
 package org.apache.flink.datalog.parser;
 
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
@@ -14,10 +15,12 @@ public class ParserManager {
 		TokenStream tokens = new CommonTokenStream(lexer);
 		DatalogParser parser = new DatalogParser(tokens);
 
-		if (parser.getErrorListeners().size() == 0) {
-			parser.addErrorListener(new DatalogErrorListener());
-			parser.setErrorHandler(new DefaultErrorStrategy());
-		}
+		parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION); //make the parser report all ambiguities
+
+		parser.removeErrorListeners(); //remove ConsoleErrorListener
+		parser.addErrorListener(new DatalogErrorListener());
+		parser.setErrorHandler(new DefaultErrorStrategy());
+
 
 		ParseTree tree = null;
 		switch (type) {
@@ -52,6 +55,8 @@ public class ParserManager {
 			}
 		} else {
 			//create AST here may be. or return the parse tree to the caller and the caller will decide what to do with it.
+
+
 		}
 	}
 }
