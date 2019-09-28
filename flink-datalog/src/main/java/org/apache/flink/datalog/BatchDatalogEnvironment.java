@@ -5,6 +5,8 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.table.api.TableConfig;
 
 public interface BatchDatalogEnvironment<T> extends DatalogEnvironment {
+	ExecutionEnvironment env = null;
+
 	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
 		return create(executionEnvironment, new TableConfig());
 	}

@@ -4,6 +4,7 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.datalog.parser.ParserManager;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.catalog.Catalog;
@@ -23,6 +24,20 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 
 	private CatalogManager catalogManager;
+	private ExecutionEnvironment executionEnvironment;
+	private TableConfig config;
+
+	public BatchDatalogEnvironmentImpl() {
+
+	}
+
+	public BatchDatalogEnvironmentImpl(ExecutionEnvironment executionEnvironment) {
+
+	}
+
+	public BatchDatalogEnvironmentImpl(ExecutionEnvironment executionEnvironment, TableConfig tableConfig) {
+
+	}
 
 	@Override
 	public void registerCatalog(String catalogName, Catalog catalog) {
@@ -166,11 +181,12 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public String getCurrentDatabase() {
-		return null;
+		return this.catalogManager.getCurrentDatabase();
 	}
 
 	@Override
 	public void useDatabase(String databaseName) {
+		this.catalogManager.setCurrentDatabase(databaseName);
 
 	}
 
@@ -181,11 +197,15 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public JobExecutionResult execute(String jobName) throws Exception {
-		return null;
+		return executionEnvironment.execute(jobName);
 	}
 
 	@Override
 	public DataSet<T> compile(String text) {
+		ParserManager parserManager = new ParserManager();
+		parserManager.parseCompileUnit(text);
+
+		//todo: create AST and logical plans..
 		return null;
 	}
 
@@ -193,4 +213,6 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 	public DataSet<T> query(String queryText) {
 		return null;
 	}
+
+
 }
