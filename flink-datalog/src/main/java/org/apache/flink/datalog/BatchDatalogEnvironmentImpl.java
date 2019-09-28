@@ -2,6 +2,7 @@ package org.apache.flink.datalog;
 
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
+public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 
 	private CatalogManager catalogManager;
@@ -184,12 +185,12 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	}
 
 	@Override
-	public Object compile(String text) {
+	public DataSet<T> compile(String text) {
 		return null;
 	}
 
 	@Override
-	public Object query(String queryText) {
+	public DataSet<T> query(String queryText) {
 		return null;
 	}
 }

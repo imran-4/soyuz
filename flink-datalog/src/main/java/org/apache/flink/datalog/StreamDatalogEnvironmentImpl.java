@@ -2,6 +2,7 @@ package org.apache.flink.datalog;
 
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.catalog.Catalog;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
+public class StreamDatalogEnvironmentImpl<T> implements StreamDatalogEnvironment {
 
 	private CatalogManager catalogManager;
 
@@ -182,12 +183,12 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public Object compile(String text) {
+	public DataStream<T> compile(String text) {
 		return null;
 	}
 
 	@Override
-	public Object query(String queryText) {
+	public DataStream<T> query(String queryText) {
 		return null;
 	}
 }

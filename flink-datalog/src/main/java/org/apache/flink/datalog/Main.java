@@ -11,18 +11,22 @@ public class Main {
 	//for testing only
 	public static void main(String[] args) {
 
-		String schema = "database({abc_Table(x: Integer, y:Integer)}).";
+		String database = "database({" +
+			"employee(EmployeeId:integer, DepartmentId:integer, FirstName:string, LastName:string)," +
+			"department(DepartmentId:integer, DepartmentName:string)" +
+			"}).";
+
 		String inputProgram =
 			"abc(X,Y) :- abcTable(X, Y).\n" +
 			"abc(X,Y) :- abc(A,X),xyz(Y,B)."
 			;
 
-		CharStream input = CharStreams.fromString(schema);
+		CharStream input = CharStreams.fromString(database);
 		DatalogLexer lexer = new DatalogLexer(input);
 		TokenStream tokens = new CommonTokenStream(lexer);
 		DatalogParser parser = new DatalogParser(tokens);
 
-		ParseTree tree = parser.compileUnit(); // parse the content and get the tree
+		ParseTree tree = parser.database(); // parse the content and get the tree
 
 		ParseTreeWalker walker = new ParseTreeWalker();
 		ExtractDatabaseSchemaListener listener = new ExtractDatabaseSchemaListener();

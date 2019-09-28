@@ -24,14 +24,17 @@ grammar Datalog;
 
 
 compileUnit
-    : schema ( fact
+    : ( fact
     | ruleClause
 //    | query  //query should be a separate compilation unit
     | retraction
     )+   EOF
     ;
+database // this is a sepearate compilation unit
+    : DATABASE_KEYWORD LEFT_PARANTHESES LEFT_BRACE schema RIGHT_BRACE RIGH_PARANTHESES DOT
+    ;
 schema
-    : DATABASE_KEYWORD LEFT_PARANTHESES LEFT_BRACE tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES RIGHT_BRACE RIGH_PARANTHESES DOT
+    : tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES (COMMA tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES)*
     ;
 tableName
     : CONSTANT
