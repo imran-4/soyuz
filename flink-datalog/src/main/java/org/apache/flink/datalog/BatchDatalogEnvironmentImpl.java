@@ -1,8 +1,8 @@
 package org.apache.flink.datalog;
 
-import jdk.jshell.spi.ExecutionControl;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.datalog.parser.ParserManager;
@@ -14,6 +14,7 @@ import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.TableImpl;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
+import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.descriptors.ConnectTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
@@ -27,10 +28,7 @@ import org.apache.flink.table.sources.InputFormatTableSource;
 import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.sources.TableSourceValidation;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -38,16 +36,15 @@ import java.util.stream.Collectors;
 public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	private CatalogManager catalogManager;
-	private ExecutionEnvironment executionEnvironment;
+	private Executor executor;
 	private TableConfig tableConfig;
 	private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
 	private Planner planner;
-//	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
+	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
 
-
-	public BatchDatalogEnvironmentImpl(ExecutionEnvironment executionEnvironment, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog, Planner planner) {
-		this.executionEnvironment = executionEnvironment;
+	public BatchDatalogEnvironmentImpl(Executor executor, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog, Planner planner) {
+		this.executor = executor;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
@@ -247,7 +244,33 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public void insertInto(Table table, String sinkPath, String... sinkPathContinued) {
+		List<String> fullPath = new ArrayList<>(Arrays.asList(sinkPathContinued));
+		fullPath.add(0, sinkPath);
 
+		List<ModifyOperation> modifyOperations = Collections.singletonList(
+			new CatalogSinkModifyOperation(
+				fullPath,
+				table.getQueryOperation()));
+
+		if (isEagerOperationTranslation()) {
+			translate(modifyOperations);
+		} else {
+			buffer(modifyOperations);
+		}
+
+	}
+
+	private boolean isEagerOperationTranslation() {
+		return false;
+	}
+
+	private void translate(List<ModifyOperation> modifyOperations) {
+		List<Transformation<?>> transformations = planner.translate(modifyOperations);
+		executor.apply(transformations);
+	}
+
+	private void buffer(List<ModifyOperation> modifyOperations) {
+		bufferedModifyOperations.addAll(modifyOperations);
 	}
 
 	@Override
@@ -277,10 +300,9 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public String explain(boolean extended) {
-//		List<Operation> operations = bufferedModifyOperations.stream()
-//			.map(o -> (Operation) o).collect(Collectors.toList());
-//		return planner.explain(operations, extended);
-		return null;
+		List<Operation> operations = bufferedModifyOperations.stream()
+			.map(o -> (Operation) o).collect(Collectors.toList());
+		return planner.explain(operations, extended);
 	}
 
 	@Override
@@ -325,7 +347,7 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public JobExecutionResult execute(String jobName) throws Exception {
-		return executionEnvironment.execute(jobName);
+		return executor.execute(jobName);
 	}
 
 	@Override
@@ -366,7 +388,7 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 	@Override
 	public void clearState() {
 		this.catalogManager = null;
-		this.executionEnvironment = null;
+		this.executor = null;
 		this.tableConfig = null;
 	}
 
