@@ -13,10 +13,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-//for now, it is almost similar to GenericInMemoryCatalog.  Later we might need some modifications..
+//for now, it is almost similar to GenericInMemoryCatalog.  Later we might need to make some modifications..
 public class DatalogCatalog extends AbstractCatalog {
 
-	public static final String DEFAULT_DB = "default";
+	private static final String DEFAULT_DB = "default";
 	private final Map<String, CatalogDatabase> databases;
 	private final Map<ObjectPath, CatalogBaseTable> tables;
 	private final Map<ObjectPath, CatalogFunction> functions;
