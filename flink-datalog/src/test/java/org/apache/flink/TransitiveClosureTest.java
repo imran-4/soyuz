@@ -7,7 +7,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 
 
-//anticipated program structure for BATCH data api
+//anticipated program structure for BATCH data api.. subject to lots of changes.
 
 public class TransitiveClosureTest {
 	public static void main(String[] args) {
@@ -30,7 +30,8 @@ public class TransitiveClosureTest {
 
 		datalogEnv.compile(datalogProgram); //this should only convert program to flink operator(s), so that they can be executed lazily upon calling a sink operator
 
-		DataSet<Tuple2<Long, Long>> tc = (DataSet<Tuple2<Long, Long>>) datalogEnv.query("abc(X,Y)?");
+		DataSet<Tuple2<Long, Long>> tc = null;
+			datalogEnv.datalogQuery("abc(X,Y)?");
 		try {
 			tc.collect();
 		} catch (Exception e) {

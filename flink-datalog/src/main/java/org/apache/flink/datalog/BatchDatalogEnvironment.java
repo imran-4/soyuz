@@ -17,5 +17,4 @@ public interface BatchDatalogEnvironment<T> extends DatalogEnvironment {
 
 	DataSet<T> compile(String program);
 
-	DataSet<T> query(String queryText);
 }

@@ -1,6 +1,6 @@
 package org.apache.flink.datalog.parser;
 
-enum ParsableTypes {
+public enum ParsableTypes {
 	COMPILEUNIT,
 	DATABASE,
 	RULE,

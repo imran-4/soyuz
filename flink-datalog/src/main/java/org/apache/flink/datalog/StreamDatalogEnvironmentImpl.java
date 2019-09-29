@@ -188,7 +188,17 @@ public class StreamDatalogEnvironmentImpl<T> implements StreamDatalogEnvironment
 	}
 
 	@Override
-	public DataStream<T> query(String queryText) {
-		return null;
+	public void loadDatabase(String text) {
+
+	}
+
+	@Override
+	public void datalogQuery(String text) {
+
+	}
+
+	@Override
+	public void clearState() {
+
 	}
 }

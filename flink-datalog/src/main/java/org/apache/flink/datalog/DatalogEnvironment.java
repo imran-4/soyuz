@@ -13,12 +13,10 @@ import java.util.Optional;
 
 public interface DatalogEnvironment extends TableEnvironment {
 
+	void loadDatabase(String text);
 
-//	Object compile(String text);
-//
-//	Object query(String queryText); // this should return dataset or datastream
+	void datalogQuery(String query);
 
-
-
+	void clearState();
 
 }

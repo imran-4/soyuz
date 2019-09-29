@@ -15,5 +15,4 @@ public interface StreamDatalogEnvironment<T> extends DatalogEnvironment {
 
 	DataStream<T> compile(String text);
 
-	DataStream<T> query(String queryText);
 }
