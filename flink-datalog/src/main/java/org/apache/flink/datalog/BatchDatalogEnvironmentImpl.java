@@ -16,8 +16,10 @@ import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.Planner;
+import org.apache.flink.table.descriptors.BatchTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
+import org.apache.flink.table.descriptors.StreamTableDescriptor;
 import org.apache.flink.table.expressions.TableReferenceExpression;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.operations.*;
@@ -275,7 +277,7 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public ConnectTableDescriptor connect(ConnectorDescriptor connectorDescriptor) {
-		return null;
+		return new BatchTableDescriptor(this, connectorDescriptor);
 	}
 
 	@Override

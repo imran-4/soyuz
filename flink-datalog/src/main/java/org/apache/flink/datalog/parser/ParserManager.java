@@ -10,31 +10,31 @@ import java.util.List;
 
 public class ParserManager {
 
-	public void parseCompileUnit(String program) {
-		parse(program, ParsableTypes.COMPILEUNIT);
+	public ParserResult parseCompileUnit(String program) {
+		return parse(program, ParsableTypes.COMPILEUNIT);
 	}
 
-	public void parseFact(String fact) {
-		parse(fact, ParsableTypes.FACT);
+	public ParserResult parseFact(String fact) {
+		return parse(fact, ParsableTypes.FACT);
 	}
 
-	public void parseRuleClause(String rule) {
-		parse(rule, ParsableTypes.RULE);
+	public ParserResult parseRuleClause(String rule) {
+		return parse(rule, ParsableTypes.RULE);
 	}
 
-	public void parsePredicate(String predicate) {
-		parse(predicate, ParsableTypes.PREDICATE);
+	public ParserResult parsePredicate(String predicate) {
+		return parse(predicate, ParsableTypes.PREDICATE);
 	}
 
-	public void parseQuery(String query) {
-		parse(query, ParsableTypes.QUERY);
+	public ParserResult parseQuery(String query) {
+		return parse(query, ParsableTypes.QUERY);
 	}
 
-	public void parseDatabase(String databaseInfo) {
-		parse(databaseInfo, ParsableTypes.DATABASE);
+	public ParserResult parseDatabase(String databaseInfo) {
+		return parse(databaseInfo, ParsableTypes.DATABASE);
 	}
 
-	private ParseTree parse(String program, ParsableTypes type) {
+	private ParserResult parse(String program, ParsableTypes type) {
 		CharStream input = CharStreams.fromString(program);
 		DatalogLexer lexer = new DatalogLexer(input);
 		TokenStream tokens = new CommonTokenStream(lexer);
@@ -85,9 +85,7 @@ public class ParserManager {
 		} else {
 			//create AST here may be. or return the parse tree to the caller and the caller will decide what to do with it.
 
-
-			return tree;
-
+			return new ParserResult();
 		}
 	}
 }
