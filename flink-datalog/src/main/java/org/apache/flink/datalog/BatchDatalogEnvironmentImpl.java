@@ -1,5 +1,6 @@
 package org.apache.flink.datalog;
 
+import jdk.jshell.spi.ExecutionControl;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
@@ -13,13 +14,12 @@ import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.TableImpl;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
+import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.descriptors.ConnectTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
 import org.apache.flink.table.expressions.TableReferenceExpression;
 import org.apache.flink.table.functions.ScalarFunction;
-import org.apache.flink.table.operations.CatalogQueryOperation;
-import org.apache.flink.table.operations.QueryOperation;
-import org.apache.flink.table.operations.TableSourceQueryOperation;
+import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
@@ -28,8 +28,10 @@ import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.sources.TableSourceValidation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 //some implementations are similar to TAbleEnvironmenttImpl
@@ -39,14 +41,17 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 	private ExecutionEnvironment executionEnvironment;
 	private TableConfig tableConfig;
 	private final OperationTreeBuilder operationTreeBuilder;
-	final FunctionCatalog functionCatalog;
+	private final FunctionCatalog functionCatalog;
+	private Planner planner;
+//	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
 
-	public BatchDatalogEnvironmentImpl(ExecutionEnvironment executionEnvironment, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog) {
+
+	public BatchDatalogEnvironmentImpl(ExecutionEnvironment executionEnvironment, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog, Planner planner) {
 		this.executionEnvironment = executionEnvironment;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
-
+		this.planner = planner; //this should be an instance of FlinkDatalogPlanner
 		this.operationTreeBuilder = OperationTreeBuilder.create(
 			functionCatalog,
 			path -> {
@@ -262,22 +267,25 @@ public class BatchDatalogEnvironmentImpl<T> implements BatchDatalogEnvironment {
 
 	@Override
 	public String explain(Table table) {
-		return null;
+		return explain(table, false);
 	}
 
 	@Override
 	public String explain(Table table, boolean extended) {
-		return null;
+		return planner.explain(Collections.singletonList(table.getQueryOperation()), extended);
 	}
 
 	@Override
 	public String explain(boolean extended) {
+//		List<Operation> operations = bufferedModifyOperations.stream()
+//			.map(o -> (Operation) o).collect(Collectors.toList());
+//		return planner.explain(operations, extended);
 		return null;
 	}
 
 	@Override
 	public String[] getCompletionHints(String statement, int position) {
-		return new String[0];
+		return planner.getCompletionHints(statement, position);
 	}
 
 	@Override
