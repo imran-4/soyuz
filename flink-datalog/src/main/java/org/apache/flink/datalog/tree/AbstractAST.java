@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Stack;
 
 abstract class AbstractAST implements AST {
-	List<AST> children = new ArrayList<>();
+	private List<AST> children = new ArrayList<>();
 
 	@Override
 	public void addChild(AST node) {
@@ -24,8 +24,11 @@ abstract class AbstractAST implements AST {
 	public boolean equals(AST t) {
 		if (t == null)
 			return false;
-
-		return t.getText().equalsIgnoreCase(this.getText()) && t.getType().equals(this.getType());
+		if (t.getText() != null && this.getText() !=null) {
+			return t.getType() == this.getType();
+		} else {
+			return false;
+		}
 	}
 
 	@Override
@@ -52,31 +55,6 @@ abstract class AbstractAST implements AST {
 	public void removeNthChild(int n) {
 		this.children.remove(n);
 	}
-
-//	@Override
-//	public void initialize(int t, String txt) {
-//
-//	}
-//
-//	@Override
-//	public void initialize(AST t) {
-//
-//	}
-//
-//	@Override
-//	public void initialize(Token t) {
-//
-//	}
-//
-//	@Override
-//	public NodeType getType() {
-//		return null; //to be implemented by concrete implementations
-//	}
-//
-//	@Override
-//	public void setType(NodeType typ) {
-//		// //to be implemented by concrete implementations
-//	}
 
 	@Override
 	public int getNumberOfChildren() {

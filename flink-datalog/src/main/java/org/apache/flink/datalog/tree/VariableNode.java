@@ -1,43 +1,32 @@
 package org.apache.flink.datalog.tree;
 
-import org.antlr.v4.runtime.Token;
-
-import java.util.List;
-
 public class VariableNode extends AbstractAST {
+	private String text;
+	private NodeType typ;
 
 	@Override
-	public void initialize(int t, String txt) {
-
-	}
-
-	@Override
-	public void initialize(AST t) {
-
-	}
-
-	@Override
-	public void initialize(Token t) {
-
+	public void initialize(NodeType t, String txt) {
+		setText(txt);
+		setType(t);
 	}
 
 	@Override
 	public String getText() {
-		return null;
+		return this.text;
 	}
 
 	@Override
 	public void setText(String text) {
-
+		this.text = text;
 	}
 
 	@Override
 	public NodeType getType() {
-		return null;
+		return this.typ;
 	}
 
 	@Override
 	public void setType(NodeType typ) {
-
+		this.typ = typ;
 	}
 }

@@ -3,7 +3,7 @@ package org.apache.flink.datalog.tree;
 import org.antlr.v4.runtime.Token;
 
 import java.util.List;
-import java.util.Stack;
+
 
 public interface AST {
 
@@ -21,11 +21,7 @@ public interface AST {
 
 	void removeNthChild(int n);
 
-	void initialize(int t, String txt);
-
-	void initialize(AST t);
-
-	void initialize(Token t);
+	void initialize(NodeType t, String txt);
 
 	String getText();
 
