@@ -7,26 +7,6 @@ import java.util.List;
 public class ConstantNode extends AbstractAST {
 
 	@Override
-	public void addChild(AST c) {
-
-	}
-
-	@Override
-	public boolean equals(AST t) {
-		return false;
-	}
-
-	@Override
-	public List<AST> findAll(AST tree) {
-		return null;
-	}
-
-	@Override
-	public AST getFirstChild() {
-		return null;
-	}
-
-	@Override
 	public void initialize(int t, String txt) {
 
 	}
@@ -38,21 +18,6 @@ public class ConstantNode extends AbstractAST {
 
 	@Override
 	public void initialize(Token t) {
-
-	}
-
-	@Override
-	public void setFirstChild(AST c) {
-
-	}
-
-	@Override
-	public AST getNextSibling() {
-		return null;
-	}
-
-	@Override
-	public void setNextSibling(AST n) {
 
 	}
 
@@ -74,10 +39,5 @@ public class ConstantNode extends AbstractAST {
 	@Override
 	public void setType(NodeType typ) {
 
-	}
-
-	@Override
-	public int getNumberOfChildren() {
-		return 0;
 	}
 }
