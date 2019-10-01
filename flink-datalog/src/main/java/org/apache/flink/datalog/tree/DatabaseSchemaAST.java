@@ -1,32 +1,28 @@
 package org.apache.flink.datalog.tree;
 
-public class ConstantNode extends AbstractAST {
-	private String text;
-	private NodeType typ;
-
+public class DatabaseSchemaAST extends AbstractAST {
 	@Override
 	public void initialize(NodeType t, String txt) {
-		setText(txt);
-		setType(t);
+
 	}
 
 	@Override
 	public String getText() {
-		return this.text;
+		return null;
 	}
 
 	@Override
 	public void setText(String text) {
-		this.text = text;
+
 	}
 
 	@Override
 	public NodeType getType() {
-		return this.typ;
+		return null;
 	}
 
 	@Override
 	public void setType(NodeType typ) {
-		this.typ = typ;
+
 	}
 }

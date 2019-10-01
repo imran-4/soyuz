@@ -1,6 +1,6 @@
 package org.apache.flink.datalog.tree;
 
-public class VariableNode extends AbstractAST {
+public class ConstantAST extends AbstractAST {
 	private String text;
 	private NodeType typ;
 

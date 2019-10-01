@@ -1,10 +1,6 @@
 package org.apache.flink.datalog.tree;
 
-import org.antlr.v4.runtime.Token;
-
-import java.util.List;
-
-public class PredicateNode extends AbstractAST {
+public class VariableAST extends AbstractAST {
 	private String text;
 	private NodeType typ;
 
