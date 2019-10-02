@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.flink.sql.parser.type;
+package org.apache.flink.runtime.client;
 
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlWriter;
-import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.flink.api.common.JobID;
 
 /**
- * Parse type "BYTES" which is a synonym of VARBINARY(INT_MAX).
+ * Exception which is returned upon job submission if the submitted job
+ * is currently being executed.
  */
-public class SqlBytesType extends SqlIdentifier implements ExtendedSqlType {
+public class DuplicateJobSubmissionException extends JobSubmissionException {
 
-	public SqlBytesType(SqlParserPos pos) {
-		super("BYTES", pos);
-	}
-
-	@Override
-	public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-		writer.keyword("BYTES");
+	public DuplicateJobSubmissionException(JobID jobID) {
+		super(jobID, "Job has already been submitted.");
 	}
 }
