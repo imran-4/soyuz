@@ -1,8 +1,6 @@
 package org.apache.flink.datalog.tree;
 
-public class FactAST extends AbstractAST {
-	TermAST terms;
-
+public class ProgramAST extends AbstractAST {
 	@Override
 	public void initialize(NodeType t, String txt) {
 

@@ -7,87 +7,54 @@ public class AstBuilder extends DatalogBaseVisitor<AST> {
 
 	@Override
 	public AST visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitDatabase(DatalogParser.DatabaseContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitSchema(DatalogParser.SchemaContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitTableName(DatalogParser.TableNameContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitColumnsList(DatalogParser.ColumnsListContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitColumnName(DatalogParser.ColumnNameContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitColumnDataType(DatalogParser.ColumnDataTypeContext ctx) {
+		System.out.println("Inside visitCompileUnit" + ctx.getText());
+//		AST ast = new ProgramAST();
+//		ast.addChild(visitChildren(ctx));
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitRuleClause(DatalogParser.RuleClauseContext ctx) {
-		AST ast =  new RuleAST();
+		System.out.println("Inside visitRuleClause" + ctx.getText());
+		AST ast = new RuleAST();
 		ast.addChild(visitChildren(ctx));
 		return ast;
-	}
-
-	@Override
-	public AST visitFact(DatalogParser.FactContext ctx) {
-		AST ast = new FactAST();
-		ast.addChild(visitChildren(ctx));
-
-		return ast;
-	}
-
-	@Override
-	public AST visitConstantList(DatalogParser.ConstantListContext ctx) {
-		return visitChildren(ctx);
-	}
-
-	@Override
-	public AST visitQuery(DatalogParser.QueryContext ctx) {
-
-		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitRetraction(DatalogParser.RetractionContext ctx) {
+		System.out.println("Inside visitRetraction" + ctx.getText());
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitPredicateList(DatalogParser.PredicateListContext ctx) {
-		return visitChildren(ctx);
+		System.out.println("Inside visitPredicateList" + ctx.getText());
+		/*
+		predicateList
+    		: ( predicate | notPredicate | primitivePredicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
+    		;
+		*/
+		AST ast = new PredicateListAST();
+		ast.addChild(visitChildren(ctx));
+		return ast;
 	}
 
 	@Override
 	public AST visitNotPredicate(DatalogParser.NotPredicateContext ctx) {
+		System.out.println("Inside visitNotPredicate" + ctx.getText());
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
+		System.out.println("Inside visitPrimitivePredicate" + ctx.getText());
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitPredicate(DatalogParser.PredicateContext ctx) {
+		System.out.println("Inside visitPredicate" + ctx.getText());
 		AST ast = new PredicateAST();
 		ast.addChild(visitChildren(ctx));
 		return ast;
@@ -95,16 +62,22 @@ public class AstBuilder extends DatalogBaseVisitor<AST> {
 
 	@Override
 	public AST visitPredicateName(DatalogParser.PredicateNameContext ctx) {
+		System.out.println("Inside visitPredicateName" + ctx.getText());
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitTermList(DatalogParser.TermListContext ctx) {
-		return visitChildren(ctx);
+		System.out.println("Inside visitTermList" + ctx.getText());
+
+		AST ast = new TermListAST();
+		ast.addChild(visitChildren(ctx));
+		return ast;
 	}
 
 	@Override
 	public AST visitTerm(DatalogParser.TermContext ctx) {
+		System.out.println("Inside visitTerm" + ctx.getText());
 		AST ast = new TermAST();
 		ast.addChild(visitChildren(ctx));
 		return ast;
@@ -112,11 +85,13 @@ public class AstBuilder extends DatalogBaseVisitor<AST> {
 
 	@Override
 	public AST visitAtom(DatalogParser.AtomContext ctx) {
+		System.out.println("Inside visitAtom" + ctx.getText());
 		return visitChildren(ctx);
 	}
 
 	@Override
 	public AST visitInteger(DatalogParser.IntegerContext ctx) {
+		System.out.println("Inside visitInteger" + ctx.getText());
 		return visitChildren(ctx);
 	}
 }

@@ -24,11 +24,7 @@ grammar Datalog;
 
 
 compileUnit
-    : ( fact
-    | ruleClause
-//    | query  //query should be a separate compilation unit
-    | retraction
-    )+   EOF
+    : ruleClause+ EOF
     ;
 database // this is a sepearate compilation unit
     : DATABASE_KEYWORD LEFT_PARANTHESES LEFT_BRACE schema RIGHT_BRACE RIGH_PARANTHESES DOT
@@ -51,8 +47,11 @@ columnDataType
 ruleClause
     : predicate COLON_HYPGHEN predicateList DOT
     ;
-fact
-    :  ( CONSTANT | STRING )  LEFT_PARANTHESES constantList RIGH_PARANTHESES DOT
+fact // facts should be a separate compilation unit. it is similar to defining dataset using list or sequence..
+    :  factName LEFT_PARANTHESES constantList RIGH_PARANTHESES DOT
+    ;
+factName
+    : ( CONSTANT | STRING )
     ;
 constantList
     : CONSTANT ( COMMA CONSTANT )*
@@ -60,7 +59,7 @@ constantList
 query
     : predicate QUESTION_MARK
     ;
-retraction
+retraction //this should also be a separate compilation unit
     : predicate TILDE
     ;
 predicateList
