@@ -5,8 +5,10 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.calcite.rel.RelNode;
 import org.apache.flink.datalog.tree.AST;
 import org.apache.flink.datalog.tree.AstBuilder;
+import org.apache.flink.datalog.tree.RelTreeBuilder;
 
 public class Main {
 	//for testing only
@@ -57,8 +59,8 @@ public class Main {
 
 		ParseTree tree = parser.compileUnit(); // parse the content and get the tree
 
-		AstBuilder builder = new AstBuilder();
-		AST ast = builder.visit(tree);
+		RelTreeBuilder builder = new RelTreeBuilder();
+		RelNode ast = builder.visit(tree);
 		System.out.println(ast.toString());
 
 	}
