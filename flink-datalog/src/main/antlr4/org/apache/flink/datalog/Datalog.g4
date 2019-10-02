@@ -45,7 +45,10 @@ columnDataType
     : DATATYPE
     ;
 ruleClause
-    : predicate COLON_HYPGHEN predicateList DOT
+    : headPredicate COLON_HYPGHEN predicateList DOT
+    ;
+headPredicate
+    : predicate
     ;
 fact // facts should be a separate compilation unit. it is similar to defining dataset using list or sequence..
     :  factName LEFT_PARANTHESES constantList RIGH_PARANTHESES DOT
