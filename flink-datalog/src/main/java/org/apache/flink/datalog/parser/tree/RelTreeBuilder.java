@@ -1,13 +1,22 @@
 package org.apache.flink.datalog.tree;
 
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Table;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.schema.*;
+import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.DelegatingSchema;
 import org.apache.calcite.schema.impl.ListTransientTable;
+import org.apache.calcite.schema.impl.ViewTable;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
@@ -23,8 +32,15 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 
 	public RelTreeBuilder() {
 		SchemaPlus schema = Frameworks.createRootSchema(true);
-		config = Frameworks.newConfigBuilder().defaultSchema(schema).build();
+		//------------------------------------------
+		
 
+		//------------------------------------------
+		List<RelTraitDef> traitDefs = new ArrayList<RelTraitDef>();
+		traitDefs.add(ConventionTraitDef.INSTANCE);
+		traitDefs.add(RelCollationTraitDef.INSTANCE);
+
+		config = Frameworks.newConfigBuilder().defaultSchema(schema).traitDefs(traitDefs).build();
 		builder = RelBuilder.create(config);
 	}
 
@@ -36,7 +52,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 			visit(ruleClauseContext);
 		}
 		System.out.println(RelOptUtil.toString(builder.build()));
-
 		return null;
 	}
 
@@ -87,7 +102,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		System.out.println(RelOptUtil.toString(builder.build()));
 		return builder.build();
 	}
-
 
 	@Override
 	public RelNode visitTerm(DatalogParser.TermContext ctx) {

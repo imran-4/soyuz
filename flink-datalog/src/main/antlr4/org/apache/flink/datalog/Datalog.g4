@@ -26,24 +26,6 @@ grammar Datalog;
 compileUnit
     : ruleClause+ EOF
     ;
-database // this is a sepearate compilation unit
-    : DATABASE_KEYWORD LEFT_PARANTHESES LEFT_BRACE schema RIGHT_BRACE RIGH_PARANTHESES DOT
-    ;
-schema
-    : tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES (COMMA tableName LEFT_PARANTHESES columnsList RIGH_PARANTHESES)*
-    ;
-tableName
-    : CONSTANT
-    ;
-columnsList
-    : columnName COLON columnDataType ( COMMA  columnName COLON columnDataType )*
-    ;
-columnName
-    : (CONSTANT | VARIABLE)
-    ;
-columnDataType
-    : DATATYPE
-    ;
 ruleClause
     : headPredicate COLON_HYPGHEN predicateList DOT
     ;

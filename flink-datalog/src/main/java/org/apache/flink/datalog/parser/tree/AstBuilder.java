@@ -10,6 +10,7 @@ public class AstBuilder extends DatalogBaseVisitor<AST> {
 		System.out.println("Inside visitCompileUnit" + ctx.getText());
 //		AST ast = new ProgramAST();
 //		ast.addChild(visitChildren(ctx));
+
 		return visitChildren(ctx);
 	}
 
@@ -19,12 +20,6 @@ public class AstBuilder extends DatalogBaseVisitor<AST> {
 		AST ast = new RuleAST();
 		ast.addChild(visitChildren(ctx));
 		return ast;
-	}
-
-	@Override
-	public AST visitRetraction(DatalogParser.RetractionContext ctx) {
-		System.out.println("Inside visitRetraction" + ctx.getText());
-		return visitChildren(ctx);
 	}
 
 	@Override
