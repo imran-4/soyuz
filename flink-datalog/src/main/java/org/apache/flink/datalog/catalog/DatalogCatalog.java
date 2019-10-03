@@ -1,4 +1,4 @@
-package org.apache.flink.datalog;
+package org.apache.flink.datalog.catalog;
 
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.*;
@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 
 //for now, it is almost similar to GenericInMemoryCatalog.  Later we might need to make some modifications..
+
+//TODO: we also need to check for the table entries whether tables are EDB or IDB.
 public class DatalogCatalog extends AbstractCatalog {
 
 	private static final String DEFAULT_DB = "default";
@@ -27,7 +29,7 @@ public class DatalogCatalog extends AbstractCatalog {
 	private final Map<ObjectPath, Map<CatalogPartitionSpec, CatalogTableStatistics>> partitionStats;
 	private final Map<ObjectPath, Map<CatalogPartitionSpec, CatalogColumnStatistics>> partitionColumnStats;
 
-	DatalogCatalog(String name) {
+	public DatalogCatalog(String name) {
 		this(name, DEFAULT_DB);
 	}
 

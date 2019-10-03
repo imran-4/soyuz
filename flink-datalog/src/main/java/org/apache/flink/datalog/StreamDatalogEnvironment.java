@@ -3,8 +3,12 @@ package org.apache.flink.datalog;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.api.java.StreamTableEnvironment;
 
-public interface StreamDatalogEnvironment<T> extends DatalogEnvironment {
+public interface StreamDatalogEnvironment extends DatalogEnvironment, StreamTableEnvironment {
+
+
+
 	static StreamDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
 		return create(executionEnvironment, new TableConfig());
 	}
@@ -13,6 +17,6 @@ public interface StreamDatalogEnvironment<T> extends DatalogEnvironment {
 		return null;
 	}
 
-	DataStream<T> compile(String text);
+	DataStream compile(String text);
 
 }
