@@ -56,20 +56,16 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public DataStream datalogRules(String text) {
+	public void datalogRules(String text) {
+
+	}
+
+	@Override
+	public <T> DataStream<T> datalogQuery(String query) {
 		return null;
 	}
 
-	@Override
-	public void datalogQuery(String query) {
-
-	}
-
-	@Override
-	public void clearState() {
-
-	}
-
+	
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
 		throw new UnsupportedOperationException("Not supported");

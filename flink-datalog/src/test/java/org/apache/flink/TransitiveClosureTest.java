@@ -3,6 +3,7 @@ package org.apache.flink;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 
@@ -13,27 +14,16 @@ public class TransitiveClosureTest {
 	public static void main(String[] args) {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
+		DataSource<Tuple2<String, String>> dataSet = env.fromElements( new Tuple2<String, String>("a", "b"),new Tuple2<String, String>("b", "c"),new Tuple2<String, String>("c", "c"),new Tuple2<String, String>("c", "d"));
+		datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
+		String inputProgram =
+			"abc(X,Y) :- graph(X, Y).\n" +
+				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
-		DataSet<String> ds = env.readTextFile("");    ///or alternatively define another data source to read data from. or use the Flink's Table API
-
-		DataSet<Tuple2<Integer, Integer>> edges = ds.map(new MapFunction<String, Tuple2<Integer, Integer>>() {
-			@Override
-			public Tuple2<Integer, Integer> map(String value) throws Exception {
-				String[] elements = value.split(",");
-				return new Tuple2<Integer, Integer>(Integer.parseInt(elements[0]), Integer.parseInt(elements[1]));
-			}
-		});
-
-		String database = "database({graph(x: Integer, y:Integer)})."; //may be register database in a catalog
-		String datalogProgram = "abc(X,Y) :- graph(X, Y).\n" +
-			"abc(X,Y) :- abc(X,Y), graph(Y,Z).\n";
-
-		datalogEnv.compile(datalogProgram); //this should only convert program to flink operator(s), so that they can be executed lazily upon calling a sink operator
-
-		DataSet<Tuple2<Long, Long>> tc = null;
-			datalogEnv.datalogQuery("abc(X,Y)?");
+		datalogEnv.datalogRules(inputProgram);
+		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?");
 		try {
-			tc.collect();
+			queryResult.collect();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

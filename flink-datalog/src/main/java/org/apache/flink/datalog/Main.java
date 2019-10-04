@@ -1,14 +1,9 @@
 package org.apache.flink.datalog;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.calcite.rel.RelNode;
-import org.apache.flink.datalog.tree.AST;
-import org.apache.flink.datalog.tree.AstBuilder;
-import org.apache.flink.datalog.tree.RelTreeBuilder;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.tuple.Tuple2;
 
 public class Main {
 	//for testing only
@@ -46,22 +41,37 @@ public class Main {
 //		ExtractQueryListener queryListener = new ExtractQueryListener();
 //		queryWalker.walk(queryListener, queryTree);
 
+//
+//		String inputProgram =
+//				"abc(X,Y) :- abcTable(X, Y).\n" +
+//				"abc(X,Y) :- abc(A,X),xyz(Y,B)."
+//			;
+//
+//		CharStream input = CharStreams.fromString(inputProgram);
+//		DatalogLexer lexer = new DatalogLexer(input);
+//		TokenStream tokens = new CommonTokenStream(lexer);
+//		DatalogParser parser = new DatalogParser(tokens);
+//
+//		ParseTree tree = parser.compileUnit(); // parse the content and get the tree
+//
+//		RelTreeBuilder builder = new RelTreeBuilder();
+//		RelNode ast = builder.visit(tree);
+//		System.out.println(ast.toString());
 
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
+		DataSource<Tuple2<String, String>>  dataSet = env.fromElements( new Tuple2<String, String>("a", "b"),new Tuple2<String, String>("b", "c"),new Tuple2<String, String>("c", "c"),new Tuple2<String, String>("c", "d"));
+		datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
 		String inputProgram =
-				"abc(X,Y) :- abcTable(X, Y).\n" +
-				"abc(X,Y) :- abc(A,X),xyz(Y,B)."
-			;
+			"abc(X,Y) :- graph(X, Y).\n" +
+				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
-		CharStream input = CharStreams.fromString(inputProgram);
-		DatalogLexer lexer = new DatalogLexer(input);
-		TokenStream tokens = new CommonTokenStream(lexer);
-		DatalogParser parser = new DatalogParser(tokens);
-
-		ParseTree tree = parser.compileUnit(); // parse the content and get the tree
-
-		RelTreeBuilder builder = new RelTreeBuilder();
-		RelNode ast = builder.visit(tree);
-		System.out.println(ast.toString());
-
+		datalogEnv.datalogRules(inputProgram);
+		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?");
+		try {
+			queryResult.collect();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

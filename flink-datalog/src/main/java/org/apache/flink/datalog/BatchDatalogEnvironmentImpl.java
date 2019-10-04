@@ -57,15 +57,14 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	}
 
 	@Override
-	public DataSet datalogRules(String program) {
+	public void datalogRules(String program) {
 		FlinkDatalogPlanner planner = getFlinkDatalogPlanner();
 		List<Operation> operations = planner.parse(program); //in this method, either do implementation using visitor or listener
 
-		return null;
 	}
 
 	@Override
-	public void datalogQuery(String query) {
+	public <T> DataSet<T> datalogQuery(String query) {
 		FlinkDatalogPlanner planner = getFlinkDatalogPlanner();
 		List<Operation> operations = planner.parse(query); //in this method, either do implementation using visitor or listener
 
@@ -78,10 +77,6 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		//		return createTable((QueryOperation) operation);
 	}
 
-	@Override
-	public void clearState() {
-
-	}
 
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {

@@ -1,5 +1,6 @@
 package org.apache.flink.datalog;
 
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.TableConfig;
@@ -17,6 +18,7 @@ public interface StreamDatalogEnvironment extends DatalogEnvironment, StreamTabl
 		return null;
 	}
 
-	DataStream datalogRules(String text);
+	void datalogRules(String text);
 
+	<T> DataStream<T> datalogQuery(String query);
 }

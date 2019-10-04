@@ -39,6 +39,8 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
 		}
 	}
 
-	DataSet datalogRules(String program);
+	void datalogRules(String program);
+
+	<T>DataSet<T> datalogQuery(String query);
 
 }

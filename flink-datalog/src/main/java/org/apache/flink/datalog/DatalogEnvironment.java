@@ -13,8 +13,4 @@ import java.util.Optional;
 
 public interface DatalogEnvironment {
 
-	void datalogQuery(String query);
-
-	void clearState();
-
 }
