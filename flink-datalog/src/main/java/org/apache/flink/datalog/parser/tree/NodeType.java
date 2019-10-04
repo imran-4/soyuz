@@ -1,4 +1,4 @@
-package org.apache.flink.datalog.tree;
+package org.apache.flink.datalog.parser.tree;
 
 public enum NodeType {
 	LITERAL,

@@ -1,10 +1,7 @@
-package org.apache.flink.datalog.tree;
-
-import org.antlr.v4.runtime.Token;
+package org.apache.flink.datalog.parser.tree;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 abstract class AbstractAST implements AST {
 	private List<AST> children = new ArrayList<>();

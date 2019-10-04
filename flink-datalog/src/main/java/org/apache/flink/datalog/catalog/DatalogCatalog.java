@@ -33,7 +33,7 @@ public class DatalogCatalog extends AbstractCatalog {
 		this(name, DEFAULT_DB);
 	}
 
-	DatalogCatalog(String name, String defaultDatabase) {
+	public DatalogCatalog(String name, String defaultDatabase) {
 		super(name, defaultDatabase);
 
 		this.databases = new LinkedHashMap<>();

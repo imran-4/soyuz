@@ -1,7 +1,4 @@
-package org.apache.flink.datalog.tree;
-
-import java.util.ArrayList;
-import java.util.List;
+package org.apache.flink.datalog.parser.tree;
 
 public class TermListAST extends AbstractAST {
 //	List<TermAST> terms =  new ArrayList<>();

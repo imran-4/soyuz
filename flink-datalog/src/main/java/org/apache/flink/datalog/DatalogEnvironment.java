@@ -13,8 +13,6 @@ import java.util.Optional;
 
 public interface DatalogEnvironment {
 
-	void loadDatabase(String text);
-
 	void datalogQuery(String query);
 
 	void clearState();

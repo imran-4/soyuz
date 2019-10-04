@@ -1,22 +1,11 @@
-package org.apache.flink.datalog.tree;
+package org.apache.flink.datalog.parser.tree;
 
-import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.*;
-import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.calcite.schema.impl.DelegatingSchema;
-import org.apache.calcite.schema.impl.ListTransientTable;
-import org.apache.calcite.schema.impl.ViewTable;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
@@ -33,7 +22,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	public RelTreeBuilder() {
 		SchemaPlus schema = Frameworks.createRootSchema(true);
 		//------------------------------------------
-		
 
 		//------------------------------------------
 		List<RelTraitDef> traitDefs = new ArrayList<RelTraitDef>();
@@ -47,7 +35,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	@Override
 	public RelNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
 		System.out.println("Inside visitCompileUnit" + ctx.getText());
-
 		for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 			visit(ruleClauseContext);
 		}

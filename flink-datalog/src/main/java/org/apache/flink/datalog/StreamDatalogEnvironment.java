@@ -17,6 +17,6 @@ public interface StreamDatalogEnvironment extends DatalogEnvironment, StreamTabl
 		return null;
 	}
 
-	DataStream compile(String text);
+	DataStream datalogRules(String text);
 
 }

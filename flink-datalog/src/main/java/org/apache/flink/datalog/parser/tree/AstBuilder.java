@@ -1,4 +1,4 @@
-package org.apache.flink.datalog.tree;
+package org.apache.flink.datalog.parser.tree;
 
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;

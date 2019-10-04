@@ -1,6 +1,4 @@
-package org.apache.flink.datalog.tree;
-
-import org.antlr.v4.runtime.Token;
+package org.apache.flink.datalog.parser.tree;
 
 import java.util.List;
 

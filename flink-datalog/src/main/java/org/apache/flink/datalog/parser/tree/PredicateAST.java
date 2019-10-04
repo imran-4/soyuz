@@ -1,8 +1,4 @@
-package org.apache.flink.datalog.tree;
-
-import org.antlr.v4.runtime.Token;
-
-import java.util.List;
+package org.apache.flink.datalog.parser.tree;
 
 public class PredicateAST extends AbstractAST {
 	private String text;

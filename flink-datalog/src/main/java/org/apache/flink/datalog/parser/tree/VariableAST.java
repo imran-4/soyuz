@@ -1,4 +1,4 @@
-package org.apache.flink.datalog.tree;
+package org.apache.flink.datalog.parser.tree;
 
 public class VariableAST extends AbstractAST {
 	private String text;
