@@ -4,6 +4,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.table.api.EnvironmentSettings;
 
 public class Main {
 	//for testing only
@@ -55,11 +56,12 @@ public class Main {
 //		ParseTree tree = parser.compileUnit(); // parse the content and get the tree
 //
 //		RelTreeBuilder builder = new RelTreeBuilder();
-//		RelNode ast = builder.visit(tree);
+//		RelNode ast = ll
 //		System.out.println(ast.toString());
 
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
+		EnvironmentSettings settings = EnvironmentSettings.newInstance().useDatalogPlanner().inBatchMode().build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
 		DataSource<Tuple2<String, String>> dataSet = env.fromElements(new Tuple2<String, String>("a", "b"), new Tuple2<String, String>("b", "c"), new Tuple2<String, String>("c", "c"), new Tuple2<String, String>("c", "d"));
 		datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
 		String inputProgram =

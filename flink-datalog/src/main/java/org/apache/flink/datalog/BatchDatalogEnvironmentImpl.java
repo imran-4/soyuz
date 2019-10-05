@@ -73,7 +73,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			.create(executorProperties);
 		Map<String, String> plannerProperties = settings.toPlannerProperties();
 		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
-			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);
+			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);   //this should create FlinkDatalogPlanner
 		return new BatchDatalogEnvironmentImpl(
 			catalogManager,
 			tableConfig,
@@ -87,6 +87,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	@Override
 	public void evaluateDatalogRules(String program) {
 		List<Operation> operations = planner.parse(program); //in this method, either do implementation using visitor or listener
+
 	}
 
 	@Override
