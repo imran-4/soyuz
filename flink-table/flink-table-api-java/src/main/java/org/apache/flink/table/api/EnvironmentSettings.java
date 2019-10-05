@@ -189,7 +189,7 @@ public class EnvironmentSettings {
 		}
 
 		/**
-		 * Sets the Blink planner as the required module. By default, {@link #useOldPlanner()} is
+		 * Sets the Datalog planner as the required module. By default, {@link #useOldPlanner()} is
 		 * enabled.
 		 */
 		public Builder useDatalogPlanner() {
