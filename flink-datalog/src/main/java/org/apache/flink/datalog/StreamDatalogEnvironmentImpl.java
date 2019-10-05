@@ -56,7 +56,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public void datalogRules(String text) {
+	public void evaluateDatalogRules(String text) {
 
 	}
 
@@ -65,7 +65,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 		return null;
 	}
 
-	
+
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
 		throw new UnsupportedOperationException("Not supported");

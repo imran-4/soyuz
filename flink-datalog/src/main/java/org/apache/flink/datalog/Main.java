@@ -60,14 +60,14 @@ public class Main {
 
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
-		DataSource<Tuple2<String, String>>  dataSet = env.fromElements( new Tuple2<String, String>("a", "b"),new Tuple2<String, String>("b", "c"),new Tuple2<String, String>("c", "c"),new Tuple2<String, String>("c", "d"));
+		DataSource<Tuple2<String, String>> dataSet = env.fromElements(new Tuple2<String, String>("a", "b"), new Tuple2<String, String>("b", "c"), new Tuple2<String, String>("c", "c"), new Tuple2<String, String>("c", "d"));
 		datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
 		String inputProgram =
 			"abc(X,Y) :- graph(X, Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
-		datalogEnv.datalogRules(inputProgram);
-		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?");
+		datalogEnv.evaluateDatalogRules(inputProgram);
+		DataSet<Tuple2<String, String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?");
 		try {
 			queryResult.collect();
 		} catch (Exception e) {

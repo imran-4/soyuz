@@ -4,18 +4,23 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.datalog.planner.FlinkDatalogPlanner;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.datalog.catalog.DatalogCatalog;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
+import org.apache.flink.table.delegation.ExecutorFactory;
 import org.apache.flink.table.delegation.Planner;
+import org.apache.flink.table.delegation.PlannerFactory;
 import org.apache.flink.table.descriptors.BatchTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.expressions.ExpressionParser;
 import org.apache.flink.table.expressions.TableReferenceExpression;
+import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
@@ -39,8 +44,10 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private Executor executor;
 	private TableConfig tableConfig;
 	private Planner planner;
+	private ExecutionEnvironment executionEnvironment;
 
-	public BatchDatalogEnvironmentImpl(Executor executor, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog, Planner planner) {
+	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, Planner planner, ExecutionEnvironment executionEnvironment) {
+		this.executionEnvironment = executionEnvironment;
 		this.executor = executor;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
@@ -56,16 +63,34 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		);
 	}
 
-	@Override
-	public void datalogRules(String program) {
-		FlinkDatalogPlanner planner = getFlinkDatalogPlanner();
-		List<Operation> operations = planner.parse(program); //in this method, either do implementation using visitor or listener
+	public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
+		CatalogManager catalogManager = new CatalogManager(
+			settings.getBuiltInCatalogName(),
+			new DatalogCatalog(settings.getBuiltInCatalogName(), settings.getBuiltInDatabaseName()));
+		FunctionCatalog functionCatalog = new FunctionCatalog(catalogManager);
+		Map<String, String> executorProperties = settings.toExecutorProperties();
+		Executor executor = ComponentFactoryService.find(ExecutorFactory.class, executorProperties)
+			.create(executorProperties);
+		Map<String, String> plannerProperties = settings.toPlannerProperties();
+		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
+			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);
+		return new BatchDatalogEnvironmentImpl(
+			catalogManager,
+			tableConfig,
+			executor,
+			functionCatalog,
+			planner,
+			executionEnvironment
+		);
+	}
 
+	@Override
+	public void evaluateDatalogRules(String program) {
+		List<Operation> operations = planner.parse(program); //in this method, either do implementation using visitor or listener
 	}
 
 	@Override
 	public <T> DataSet<T> datalogQuery(String query) {
-		FlinkDatalogPlanner planner = getFlinkDatalogPlanner();
 		List<Operation> operations = planner.parse(query); //in this method, either do implementation using visitor or listener
 
 		if (operations.size() != 1) {
@@ -75,8 +100,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		Operation operation = operations.get(0);
 		System.out.println(operation.asSummaryString());
 		//		return createTable((QueryOperation) operation);
+		return null;
 	}
-
 
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
@@ -97,7 +122,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	public <T> Table fromDataSet(DataSet<T> dataSet, String fields) {
 		List<Expression> exprs = ExpressionParser
 			.parseExpressionList(fields);
-//			.toArray();
+
 		return createTable(asQueryOperation(dataSet, Optional.of(exprs)));
 	}
 
@@ -118,12 +143,12 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, TypeInformation<T> typeInfo) {
-		return null;
+		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
 	}
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, Class<T> clazz, BatchQueryConfig queryConfig) {
-		return null;
+		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
 	}
 
 	@Override
@@ -138,19 +163,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public void insertInto(Table table, BatchQueryConfig queryConfig, String sinkPath, String... sinkPathContinued) {
-		List<String> fullPath = new ArrayList<>(Arrays.asList(sinkPathContinued));
-		fullPath.add(0, sinkPath);
-
-		List<ModifyOperation> modifyOperations = Collections.singletonList(
-			new CatalogSinkModifyOperation(
-				fullPath,
-				table.getQueryOperation()));
-
-		if (isEagerOperationTranslation()) {
-			translate(modifyOperations);
-		} else {
-			buffer(modifyOperations);
-		}
+		throw new UnsupportedOperationException("Not implemented yet. Will implement later.");
 	}
 
 	@Override
@@ -248,7 +261,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public void insertInto(Table table, String sinkPath, String... sinkPathContinued) {
-		throw new UnsupportedOperationException("");
+		throw new UnsupportedOperationException("Not supported yet. It may be implemented later.");
 	}
 
 	@Override
@@ -292,12 +305,12 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public String[] listUserDefinedFunctions() {
-		throw new UnsupportedOperationException("Not supported.");
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
 	public String[] listFunctions() {
-		throw new UnsupportedOperationException("Not supported.");
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
@@ -359,6 +372,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public JobExecutionResult execute(String jobName) throws Exception {
+		//translate(bufferedModifyOperations);
+		bufferedModifyOperations.clear();
 		return this.executor.execute(jobName);
 	}
 
@@ -411,14 +426,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			functionCatalog);
 	}
 
-	private Optional<CatalogQueryOperation> scanInternal(String... tablePath) {
-		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(tablePath);
-		return catalogManager.getTable(objectIdentifier)
-			.map(t -> new CatalogQueryOperation(objectIdentifier, t.getSchema()));
-	}
-
-	private boolean isEagerOperationTranslation() {
-		return false;
+	protected void validateTableSource(TableSource<?> tableSource) {
+		TableSourceValidation.validateTableSource(tableSource);
 	}
 
 	private void translate(List<ModifyOperation> modifyOperations) {
@@ -430,8 +439,10 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		bufferedModifyOperations.addAll(modifyOperations);
 	}
 
-	private FlinkDatalogPlanner getFlinkDatalogPlanner() {
-		return null;
+	private Optional<CatalogQueryOperation> scanInternal(String... tablePath) {
+		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(tablePath);
+		return catalogManager.getTable(objectIdentifier)
+			.map(t -> new CatalogQueryOperation(objectIdentifier, t.getSchema()));
 	}
 
 	private <T> DataSetQueryOperation<T> asQueryOperation(DataSet<T> dataSet, Optional<List<Expression>> fields) {

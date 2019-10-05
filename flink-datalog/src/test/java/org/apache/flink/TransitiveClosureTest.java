@@ -20,8 +20,8 @@ public class TransitiveClosureTest {
 			"abc(X,Y) :- graph(X, Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
-		datalogEnv.datalogRules(inputProgram);
-		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?");
+		datalogEnv.evaluateDatalogRules(inputProgram);
+		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
 		try {
 			queryResult.collect();
 		} catch (Exception e) {
