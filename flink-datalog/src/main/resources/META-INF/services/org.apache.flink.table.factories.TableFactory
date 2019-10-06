@@ -13,5 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 org.apache.flink.datalog.planner.DatalogPlannerFactory
-org.apache.flink.datalog.planner.DatalogExecutorFactory
+org.apache.flink.datalog.executor.DatalogExecutorFactory

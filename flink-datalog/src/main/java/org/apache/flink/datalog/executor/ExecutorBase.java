@@ -1,4 +1,4 @@
-package org.apache.flink.datalog.planner.delegation;
+package org.apache.flink.datalog.executor;
 
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;

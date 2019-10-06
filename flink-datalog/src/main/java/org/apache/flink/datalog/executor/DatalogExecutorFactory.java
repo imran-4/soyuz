@@ -1,6 +1,5 @@
-package org.apache.flink.datalog.planner;
+package org.apache.flink.datalog.executor;
 
-import org.apache.flink.datalog.planner.delegation.DatalogBatchExecutor;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.delegation.Executor;
@@ -16,7 +15,7 @@ public class DatalogExecutorFactory implements ExecutorFactory {
 
 	public Executor create(Map<String, String> properties, StreamExecutionEnvironment executionEnvironment) {
 		if (Boolean.valueOf(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
-			return null; //wil implement it later..
+			return null;
 		} else {
 			return new DatalogBatchExecutor(executionEnvironment);
 		}

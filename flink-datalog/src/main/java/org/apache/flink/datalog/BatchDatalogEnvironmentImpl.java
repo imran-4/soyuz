@@ -86,7 +86,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public void evaluateDatalogRules(String program) {
-		List<Operation> operations = planner.parse(program); //in this method, either do implementation using visitor or listener
+		List<Operation> operations = planner.parse(program);
 
 	}
 

@@ -159,7 +159,7 @@ public class EnvironmentSettings {
 		private static final String BLINK_PLANNER_FACTORY = "org.apache.flink.table.planner.delegation.BlinkPlannerFactory";
 		private static final String BLINK_EXECUTOR_FACTORY = "org.apache.flink.table.planner.delegation.BlinkExecutorFactory";
 		private static final String DATALOG_PLANNER_FACTORY = "org.apache.flink.datalog.planner.DatalogPlannerFactory";
-		private static final String DATALOG_EXECUTOR_FACTORY = "org.apache.flink.datalog.planner.DatalogExecutorFactory";
+		private static final String DATALOG_EXECUTOR_FACTORY = "org.apache.flink.datalog.executor.DatalogExecutorFactory";
 
 		private String plannerClass = OLD_PLANNER_FACTORY;
 		private String executorClass = OLD_EXECUTOR_FACTORY;
