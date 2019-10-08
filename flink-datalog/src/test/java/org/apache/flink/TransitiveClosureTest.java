@@ -6,6 +6,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
+import org.apache.flink.table.api.Table;
 
 
 //anticipated program structure for BATCH data api.. subject to lots of changes.
@@ -21,9 +22,9 @@ public class TransitiveClosureTest {
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
 		datalogEnv.evaluateDatalogRules(inputProgram);
-		DataSet<Tuple2<String,String>> queryResult = datalogEnv.datalogQuery("abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
+		Table queryResult = datalogEnv.datalogQuery("abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
 		try {
-			queryResult.collect();
+			datalogEnv.toDataSet(queryResult,Tuple2.class).collect();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

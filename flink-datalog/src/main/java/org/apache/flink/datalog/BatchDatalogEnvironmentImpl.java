@@ -7,6 +7,9 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.datalog.catalog.DatalogCatalog;
+import org.apache.flink.datalog.parser.ExtractQueryListener;
+import org.apache.flink.datalog.parser.ParsableTypes;
+import org.apache.flink.datalog.planner.FlinkBatchDatalogPlanner;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
 import org.apache.flink.table.catalog.*;
@@ -88,20 +91,41 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	public void evaluateDatalogRules(String program) {
 		List<Operation> operations = planner.parse(program);
 
+		/*
+		 val planner = getFlinkPlanner
+    // parse the sql query
+    val parsed = planner.parse(query)
+    if (null != parsed && parsed.getKind.belongsTo(SqlKind.QUERY)) {
+      // validate the sql query
+      val validated = planner.validate(parsed)
+      // transform to a relational tree
+      val relational = planner.rel(validated)
+      createTable(new PlannerQueryOperation(relational.rel))
+    } else {
+      throw new TableException(
+        "Unsupported SQL query! sqlQuery() only accepts SQL queries of type " +
+          "SELECT, UNION, INTERSECT, EXCEPT, VALUES, and ORDER_BY.")
+    }
+
+		*/
 	}
 
 	@Override
-	public <T> DataSet<T> datalogQuery(String query) {
-		List<Operation> operations = planner.parse(query); //in this method, either do implementation using visitor or listener
+	public Table datalogQuery(String query) {
+		((FlinkBatchDatalogPlanner)planner).setProgramType(ParsableTypes.QUERY);
+		List<Operation> operations = planner.parse(query);
 
 		if (operations.size() != 1) {
 			throw new ValidationException(
 				"Unsupported Datalog query! datalogQuery() only accepts a single Datalog query.");
 		}
 		Operation operation = operations.get(0);
-		System.out.println(operation.asSummaryString());
-		//		return createTable((QueryOperation) operation);
-		return null;
+		if (operation instanceof QueryOperation) { //not sure yet if we have to implement the QueryOperation separately for Datalog as well or it is enough to use the existing QueryOperation.
+			return createTable((QueryOperation) operation);
+		} else {
+			throw new ValidationException(
+				"Unsupported Datalog query.");
+		}
 	}
 
 	@Override

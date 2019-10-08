@@ -1,16 +1,24 @@
 package org.apache.flink.datalog.parser.tree;
 
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.*;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.table.planner.codegen.ExpressionReducer;
+import org.apache.flink.table.planner.plan.cost.FlinkCostFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +27,53 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	FrameworkConfig config;
 	RelBuilder builder;
 
-	public RelTreeBuilder() {
-		SchemaPlus schema = Frameworks.createRootSchema(true);
-		//------------------------------------------
-
-		//------------------------------------------
-		List<RelTraitDef> traitDefs = new ArrayList<RelTraitDef>();
-		traitDefs.add(ConventionTraitDef.INSTANCE);
-		traitDefs.add(RelCollationTraitDef.INSTANCE);
-
-		config = Frameworks.newConfigBuilder().defaultSchema(schema).traitDefs(traitDefs).build();
+	public RelTreeBuilder(FrameworkConfig config, SchemaPlus plus) {
+		SchemaPlus schema = plus; //
+		this.config = config; //Frameworks.newConfigBuilder().defaultSchema(schema).build();
 		builder = RelBuilder.create(config);
+
+
+//		SchemaPlus defaultSchema = Frameworks.createRootSchema(true);
+//		this.config = Frameworks.newConfigBuilder().defaultSchema(defaultSchema).build();
+//		Planner planner = Frameworks.getPlanner(this.config);
+//
+//		defaultSchema.add("abc", new StreamableTable() {
+//			@Override
+//			public Table stream() {
+//				return null;
+//			}
+//
+//			@Override
+//			public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+//				RelDataTypeFactory.FieldInfoBuilder b = typeFactory.builder();
+//				b.add("v1", typeFactory.createJavaType(String.class));
+//				b.add("v2", typeFactory.createJavaType(String.class));
+//				return b.build();
+//			}
+//
+//			@Override
+//			public Statistic getStatistic() {
+//				return null;
+//			}
+//
+//			@Override
+//			public Schema.TableType getJdbcTableType() {
+//				return null;
+//			}
+//
+//			@Override
+//			public boolean isRolledUp(String s) {
+//				return false;
+//			}
+//
+//			@Override
+//			public boolean rolledUpColumnValidInsideAgg(String s, SqlCall sqlCall, SqlNode sqlNode, CalciteConnectionConfig calciteConnectionConfig) {
+//				return false;
+//			}
+//		});
+//
+//		this.builder = RelBuilder.create(this.config);
+
 	}
 
 	@Override

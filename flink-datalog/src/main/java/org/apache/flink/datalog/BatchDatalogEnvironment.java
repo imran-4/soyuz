@@ -3,6 +3,7 @@ package org.apache.flink.datalog;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.java.BatchTableEnvironment;
 
@@ -19,7 +20,6 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
 
 	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings, TableConfig tableConfig) {
 		return BatchDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
-
 	}
 
 	/*
@@ -27,5 +27,5 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
 	* */
 	void evaluateDatalogRules(String program);
 
-	<T>DataSet<T> datalogQuery(String query);
+	Table datalogQuery(String query);
 }

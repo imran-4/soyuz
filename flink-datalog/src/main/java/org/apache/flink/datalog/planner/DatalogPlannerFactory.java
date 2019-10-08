@@ -18,9 +18,9 @@ public class DatalogPlannerFactory implements PlannerFactory {
 	public Planner create(Map<String, String> properties, Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager) {
 
 		if (Boolean.valueOf(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
-			return new FlinkDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, true); //later may be we can separate the planner for stream and batch.
+			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, true); //later may be we can separate the planner for stream and batch.
 		} else {
-			return new FlinkDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, false);
+			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, false);
 		}
 	}
 

@@ -4,7 +4,6 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.datalog.planner.FlinkDatalogPlanner;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
@@ -61,7 +60,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public <T> DataStream<T> datalogQuery(String query) {
+	public Table datalogQuery(String query) {
 		return null;
 	}
 
@@ -438,9 +437,5 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 
 	private void buffer(List<ModifyOperation> modifyOperations) {
 		bufferedModifyOperations.addAll(modifyOperations);
-	}
-
-	private FlinkDatalogPlanner getFlinkDatalogPlanner() {
-		return null;
 	}
 }
