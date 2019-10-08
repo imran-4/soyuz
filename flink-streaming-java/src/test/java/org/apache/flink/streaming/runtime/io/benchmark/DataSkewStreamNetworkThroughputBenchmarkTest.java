@@ -16,29 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.operators.async.queue;
-
-import org.apache.flink.annotation.Internal;
-
-import java.util.Collection;
+package org.apache.flink.streaming.runtime.io.benchmark;
 
 /**
- * {@link AsyncResult} sub class for asynchronous result collections.
- *
- * @param <T> Type of the collection elements.
+ * Tests for various network benchmarks based on {@link DataSkewStreamNetworkThroughputBenchmark}.
  */
-@Internal
-public interface AsyncCollectionResult<T> extends AsyncResult {
-
-	boolean hasTimestamp();
-
-	long getTimestamp();
-
-	/**
-	 * Return the asynchronous result collection.
-	 *
-	 * @return the asynchronous result collection
-	 * @throws Exception if the asynchronous result collection could not be completed
-	 */
-	Collection<T> get() throws Exception;
+public class DataSkewStreamNetworkThroughputBenchmarkTest extends StreamNetworkThroughputBenchmarkTest {
+	@Override
+	protected StreamNetworkThroughputBenchmark createBenchmark() {
+		return new DataSkewStreamNetworkThroughputBenchmark();
+	}
 }
