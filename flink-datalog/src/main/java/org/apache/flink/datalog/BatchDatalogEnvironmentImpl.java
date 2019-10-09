@@ -91,6 +91,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	public void evaluateDatalogRules(String program) {
 		List<Operation> operations = planner.parse(program);
 
+
+
 		/*
 		 val planner = getFlinkPlanner
     // parse the sql query
@@ -114,7 +116,6 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	public Table datalogQuery(String query) {
 		((FlinkBatchDatalogPlanner)planner).setProgramType(ParsableTypes.QUERY);
 		List<Operation> operations = planner.parse(query);
-
 		if (operations.size() != 1) {
 			throw new ValidationException(
 				"Unsupported Datalog query! datalogQuery() only accepts a single Datalog query.");

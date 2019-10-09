@@ -3,7 +3,6 @@ package org.apache.flink.datalog.parser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.DatalogLexer;
@@ -13,11 +12,9 @@ import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
 import java.util.List;
 
 public class ParserManager {
-	private CalciteSchema internalSchema;
 	private FrameworkConfig config;
 
-	public ParserManager(FrameworkConfig config, CalciteSchema internalSchema) {
-		this.internalSchema = internalSchema;
+	public ParserManager(FrameworkConfig config) {
 		this.config = config;
 	}
 
@@ -62,7 +59,7 @@ public class ParserManager {
 			return null; //will take care of it later
 		} else {
 			//create AST or RelNode (of Calcite) here.....
-			RelTreeBuilder builder = new RelTreeBuilder(config, this.internalSchema.plus());
+			RelTreeBuilder builder = new RelTreeBuilder(config);
 			RelNode ast = builder.visit(tree);
 			System.out.println(ast.toString());
 			return ast;
