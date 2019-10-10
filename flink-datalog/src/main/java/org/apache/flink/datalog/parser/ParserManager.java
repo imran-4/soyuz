@@ -18,7 +18,7 @@ public class ParserManager {
 		this.config = config;
 	}
 
-	public RelNode parse(String program, ParsableTypes type) {
+	public RelNode parse(String program) {
 		CharStream input = CharStreams.fromString(program);
 		DatalogLexer lexer = new DatalogLexer(input);
 		TokenStream tokens = new CommonTokenStream(lexer);
@@ -30,21 +30,7 @@ public class ParserManager {
 		parser.addErrorListener(new DatalogErrorListener());
 		parser.setErrorHandler(new DefaultErrorStrategy());
 
-		ParseTree tree = null;
-		switch (type) {
-			case COMPILEUNIT:
-				tree = parser.compileUnit();
-				break;
-			case RULE:
-				tree = parser.ruleClause();
-				break;
-			case PREDICATE:
-				tree = parser.predicate();
-				break;
-			default:
-				System.out.println("Unrecognized parser rule."); // will take care of it later..
-				break;
-		}
+		ParseTree tree = parser.compileUnit();
 		if (tree == null) return null;
 		int numberOfErrors = parser.getNumberOfSyntaxErrors();
 		if (numberOfErrors > 0) {

@@ -1,12 +1,8 @@
 package org.apache.flink.datalog.parser.tree;
 
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
@@ -22,22 +18,35 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		this.config = config;
 		builder = RelBuilder.create(this.config);
 	}
-
+  // DO WE NEED TO IMPLEMENT SEMI NAIVE EVALUATION HERE..
 	@Override
 	public RelNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
 		System.out.println("Inside visitCompileUnit" + ctx.getText());
-		for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
-			visit(ruleClauseContext);
+		if (ctx.query() != null) {
+			return visit(ctx.query());
+		} else if (ctx.ruleClause().size() > 0) {
+			//todo:...
+
+			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
+				visit(ruleClauseContext);
+			}
+			return null;
 		}
 		System.out.println(RelOptUtil.toString(builder.build()));
 		return null;
 	}
 
 	@Override
+	public RelNode visitQuery(DatalogParser.QueryContext ctx) {
+		return visit(ctx.predicate());
+	}
+
+	@Override
 	public RelNode visitRuleClause(DatalogParser.RuleClauseContext ctx) {
 		System.out.println("Inside visitRuleClause" + ctx.getText());
-		builder.push(visit(ctx.headPredicate()));
+
 		builder.push(visit(ctx.predicateList()));
+		builder.push(visit(ctx.headPredicate()));
 		System.out.println(RelOptUtil.toString(builder.build()));
 
 		return builder.build();
@@ -58,7 +67,8 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 
 	@Override
 	public RelNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-		return visit(ctx.predicate());
+		// do not scan headPredicate.. .it is only an exit rule.
+		return null;
 	}
 
 	@Override
