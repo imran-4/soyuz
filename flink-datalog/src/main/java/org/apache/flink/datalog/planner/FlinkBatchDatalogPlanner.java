@@ -12,7 +12,9 @@ import org.apache.flink.datalog.planner.delegation.DatalogPlannerContext;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.catalog.CatalogManager;
+import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.ObjectIdentifier;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.expressions.ExpressionBridge;
@@ -21,7 +23,6 @@ import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.expressions.PlannerTypeInferenceUtilImpl;
 import org.apache.flink.table.operations.ModifyOperation;
 import org.apache.flink.table.operations.Operation;
-import org.apache.flink.table.planner.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.planner.catalog.DatabaseCalciteSchema;
 import org.apache.flink.table.planner.operations.SqlToOperationConverter;
 
@@ -34,7 +35,6 @@ import java.util.stream.Collectors;
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
 public class FlinkBatchDatalogPlanner implements Planner {
-//	private ParsableTypes programType = ParsableTypes.RULE;
 	private Executor executor;
 	private TableConfig tableConfig;
 	private FunctionCatalog functionCatalog;
@@ -43,6 +43,7 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 	private CalciteSchema internalSchema;
 	private DatalogPlannerContext plannerContext;
+	private ObjectIdentifier objectIdentifier;
 
 //	public FlinkBatchDatalogPlanner() {
 //		//change it later
@@ -55,7 +56,9 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
 		functionCatalog.setPlannerTypeInferenceUtil(PlannerTypeInferenceUtilImpl.INSTANCE);
-		internalSchema = asRootSchema(new DatabaseCalciteSchema(catalogManager.getCurrentDatabase(), catalogManager.getCurrentCatalog(), catalogManager.getCatalog(catalogManager.getCurrentCatalog()).orElse(null), false));
+		internalSchema = asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false));
+//
+//		internalSchema = asRootSchema(new DatabaseCalciteSchema(catalogManager.getCurrentDatabase(), catalogManager.getCurrentCatalog(), catalogManager.getCatalog(catalogManager.getCurrentCatalog()).orElse(null), false));
 		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(functionCatalog, PlannerExpressionConverter.INSTANCE());
 		planningConfigurationBuilder =
 			new DatalogPlanningConfigurationBuilder(
@@ -85,7 +88,7 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	 * */
 	@Override
 	public List<Operation> parse(String text) {
-		FrameworkConfig config = plannerContext.createFrameworkConfig();
+		FrameworkConfig config = plannerContext.getFrameworkConfig();
 		ParserManager parserManager = new ParserManager(config);
 		RelNode relationalTree = parserManager.parse(text);
 

@@ -90,31 +90,11 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	@Override
 	public void evaluateDatalogRules(String program) {
 		List<Operation> operations = planner.parse(program);
-
-
-
-		/*
-		 val planner = getFlinkPlanner
-    // parse the sql query
-    val parsed = planner.parse(query)
-    if (null != parsed && parsed.getKind.belongsTo(SqlKind.QUERY)) {
-      // validate the sql query
-      val validated = planner.validate(parsed)
-      // transform to a relational tree
-      val relational = planner.rel(validated)
-      createTable(new PlannerQueryOperation(relational.rel))
-    } else {
-      throw new TableException(
-        "Unsupported SQL query! sqlQuery() only accepts SQL queries of type " +
-          "SELECT, UNION, INTERSECT, EXCEPT, VALUES, and ORDER_BY.")
-    }
-
-		*/
+		//...
 	}
 
 	@Override
 	public Table datalogQuery(String query) {
-		((FlinkBatchDatalogPlanner)planner).setProgramType(ParsableTypes.QUERY);
 		List<Operation> operations = planner.parse(query);
 		if (operations.size() != 1) {
 			throw new ValidationException(
@@ -122,7 +102,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		}
 		Operation operation = operations.get(0);
 		if (operation instanceof QueryOperation) { //not sure yet if we have to implement the QueryOperation separately for Datalog as well or it is enough to use the existing QueryOperation.
-			return createTable((QueryOperation) operation);
+			return createTable((QueryOperation) operation); // i think for a valid query, the table would already be there...
 		} else {
 			throw new ValidationException(
 				"Unsupported Datalog query.");
@@ -159,6 +139,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public <T> void registerDataSet(String name, DataSet<T> dataSet, String fields) {
+
 		registerTable(name, fromDataSet(dataSet, fields));
 	}
 
