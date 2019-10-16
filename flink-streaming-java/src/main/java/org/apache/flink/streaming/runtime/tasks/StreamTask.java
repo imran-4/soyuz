@@ -514,6 +514,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 				synchronized (lock) {
 					operatorChain.releaseOutputs();
 				}
+			} else {
+				// failed to allocate operatorChain, clean up record writers
+				for (RecordWriter<SerializationDelegate<StreamRecord<OUT>>> writer: recordWriters) {
+					writer.close();
+				}
 			}
 
 			mailboxProcessor.close();
@@ -1408,7 +1413,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 			}
 		}
 
-		RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output = new RecordWriterBuilder()
+		RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output = new RecordWriterBuilder<SerializationDelegate<StreamRecord<OUT>>>()
 			.setChannelSelector(outputPartitioner)
 			.setTimeout(bufferTimeout)
 			.setTaskName(taskName)
