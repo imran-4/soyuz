@@ -2,11 +2,16 @@ package org.apache.flink.datalog.planner.delegation;
 
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.prepare.PlannerImpl;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -14,8 +19,10 @@ import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
 import org.apache.flink.table.api.TableConfig;
+
 import org.apache.flink.table.catalog.FunctionCatalog;
 import org.apache.flink.table.planner.calcite.*;
 import org.apache.flink.table.planner.catalog.FunctionCatalogOperatorTable;
@@ -39,45 +46,58 @@ public class DatalogPlannerContext {
 	private final Context context;
 	private final CalciteSchema rootSchema;
 	private final FrameworkConfig frameworkConfig;
+	private final RelOptCluster cluster;
+	private final RelTraitDef[] traits;
 
 	public DatalogPlannerContext(
 		TableConfig tableConfig,
 		FunctionCatalog functionCatalog,
-		CalciteSchema rootSchema) {
+		CalciteSchema rootSchema, RelTraitDef[] traits) {
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.context = new FlinkContextImpl(tableConfig, functionCatalog);
 		this.rootSchema = rootSchema;
+		this.traits = traits;
 
-		frameworkConfig = createFrameworkConfig();
+		this.frameworkConfig = createFrameworkConfig();
 		RelOptPlanner planner = new VolcanoPlanner(frameworkConfig.getCostFactory(), frameworkConfig.getContext());
 		planner.setExecutor(frameworkConfig.getExecutor());
+//		this.cluster = FlinkRelOptClusterFactory.create(planner, new RexBuilder(typeFactory));
+
+		this.cluster = FlinkRelOptClusterFactory.create(planner, new RexBuilder(typeFactory));
 	}
 
-	public FrameworkConfig createFrameworkConfig() {
+	private FrameworkConfig createFrameworkConfig() {
 		return Frameworks.newConfigBuilder()
 			.defaultSchema(rootSchema.plus())
-			.typeSystem(typeSystem)
-			.operatorTable(getSqlOperatorTable(getCalciteConfig(tableConfig), functionCatalog))
-			.executor(new ExpressionReducer(tableConfig, false))
+			.typeSystem(typeSystem) //(RelDataTypeSystem.DEFAULT)//RelDataTypeSystem.DEFAULT
+//			.operatorTable(getSqlOperatorTable(getCalciteConfig(tableConfig), functionCatalog))
+//			.executor(new ExpressionReducer(tableConfig, false))
+			.traitDefs(traits)
 			.context(context)
 			.build();
+	}
+
+	public FrameworkConfig getFrameworkConfig() {
+		return this.frameworkConfig;
 	}
 
 	public FlinkTypeFactory getTypeFactory() {
 		return typeFactory;
 	}
 
-	public FlinkPlannerImpl createFlinkPlanner(String currentCatalog, String currentDatabase) {
-//		RelOptCluster cluster;
-//		return new FlinkPlannerImpl(
-//			createFrameworkConfig(),
-//			isLenient -> createCatalogReader(isLenient, currentCatalog, currentDatabase),
-//			typeFactory,
-//			cluster);
-
-		return null;
+	public FlinkDatalogPlannerImpl createFlinkDatalogPlanner(String currentCatalog, String currentDatabase) {
+		return new FlinkDatalogPlannerImpl(
+			createFrameworkConfig(),
+			isLenient -> createCatalogReader(false, currentCatalog, currentDatabase),
+			typeFactory,
+			cluster);
 	}
+
+//	public FlinkRelBuilder createRelBuilder(String currentCatalog, String currentDatabase) {
+//		FlinkCalciteCatalogReader relOptSchema = createCatalogReader(false, currentCatalog, currentDatabase);
+//		return new FlinkRelBuilder(this.context, cluster, relOptSchema);
+//	}
 
 	private FlinkCalciteCatalogReader createCatalogReader(
 		boolean lenientCaseSensitivity,
@@ -131,7 +151,7 @@ public class DatalogPlannerContext {
 
 	private SqlOperatorTable getBuiltinSqlOperatorTable(FunctionCatalog functionCatalog) {
 		return ChainedSqlOperatorTable.of(
-			new FunctionCatalogOperatorTable(functionCatalog, typeFactory),
+			new FunctionCatalogOperatorTable(functionCatalog,  typeFactory),
 			FlinkSqlOperatorTable.instance());
 	}
 

@@ -24,7 +24,10 @@ grammar Datalog;
 
 
 compileUnit
-    : (ruleClause+ | query) EOF
+    : (rules | query) EOF
+    ;
+rules
+    : ruleClause+
     ;
 ruleClause
     : headPredicate COLON_HYPGHEN predicateList DOT

@@ -8,14 +8,15 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
+import org.apache.flink.table.catalog.CatalogManager;
 
 import java.util.List;
 
 public class ParserManager {
-	private FrameworkConfig config;
+	private RelTreeBuilder builder;
 
 	public ParserManager(FrameworkConfig config) {
-		this.config = config;
+		this.builder = new RelTreeBuilder(config);
 	}
 
 	public RelNode parse(String program) {
@@ -45,10 +46,9 @@ public class ParserManager {
 			return null; //will take care of it later
 		} else {
 			//create AST or RelNode (of Calcite) here.....
-			RelTreeBuilder builder = new RelTreeBuilder(config);
-			RelNode ast = builder.visit(tree);
-			System.out.println(ast.toString());
-			return ast;
+			RelNode relNode = builder.visit(tree);
+			System.out.println(relNode.toString());
+			return relNode;
 		}
 	}
 }

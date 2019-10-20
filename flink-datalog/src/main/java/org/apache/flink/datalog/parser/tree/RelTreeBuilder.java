@@ -12,7 +12,6 @@ import org.apache.calcite.tools.RelBuilder;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.table.catalog.CatalogManager;
-import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,13 +24,14 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	private CatalogManager catalogManager;
 	private String currentCatalog;
 	private String currentDatabase;
+	//need environemtn here...
 
-	public RelTreeBuilder(FrameworkConfig config, CatalogManager catalogManager) {
+	public RelTreeBuilder(FrameworkConfig config) {
 		this.config = config;
 		builder = RelBuilder.create(config);
-		this.catalogManager = catalogManager;
-		this.currentCatalog = catalogManager.getCurrentCatalog();
-		this.currentDatabase = catalogManager.getCurrentDatabase();
+//		this.catalogManager = catalogManager;
+//		this.currentCatalog = catalogManager.getCurrentCatalog();
+//		this.currentDatabase = catalogManager.getCurrentDatabase();
 	}
 
 	// DO WE NEED TO IMPLEMENT SEMI NAIVE EVALUATION HERE..
@@ -40,9 +40,9 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		System.out.println("Inside visitCompileUnit" + ctx.getText());
 		if (ctx.query() != null) {
 			return visit(ctx.query());
-		} else if (ctx.ruleClause().size() > 0) {
+		} else if (ctx.rules().ruleClause().size() > 0) {
 			//todo:...
-			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
+			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.rules().ruleClause()) {
 				visit(ruleClauseContext);
 			}
 			return null;
@@ -55,6 +55,7 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	public RelNode visitQuery(DatalogParser.QueryContext ctx) {
 		builder.clear();
 		String predicateName = ctx.predicate().predicateName().getText();
+
 		builder.scan(this.currentCatalog, this.currentDatabase, predicateName);
 		List<RexNode> filters = new ArrayList<>();
 		List<RexNode> fields = new ArrayList<>();
@@ -101,9 +102,9 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 			nodes.add(visit(predicateContext));
 		}
 //		builder.union(true); //union most recent added operations
-		RelDataTypeFactory factory = new FlinkTypeFactory(RelDataTypeSystem.DEFAULT);
-		RexBuilder rexBuilder = new RexBuilder(factory);
-		rexBuilder.makeLiteral("");
+//		RelDataTypeFactory factory = new FlinkTypeFactory(RelDataTypeSystem.DEFAULT);
+//		RexBuilder rexBuilder = new RexBuilder(factory);
+//		rexBuilder.makeLiteral("");
 		if (numberOfPredicates > 1) { //join based on the predicate type.
 //			builder.join(JoinRelType.FULL, rexBuilder.);
 		}

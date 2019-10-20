@@ -1,16 +1,16 @@
 package org.apache.flink.datalog.planner;
 
-import org.apache.calcite.adapter.jdbc.JdbcCatalogSchema;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.prepare.PlannerImpl;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.datalog.parser.ParsableTypes;
 import org.apache.flink.datalog.parser.ParserManager;
+import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.datalog.planner.delegation.DatalogPlannerContext;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
@@ -23,11 +23,9 @@ import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.expressions.PlannerTypeInferenceUtilImpl;
 import org.apache.flink.table.operations.ModifyOperation;
 import org.apache.flink.table.operations.Operation;
-import org.apache.flink.table.planner.catalog.DatabaseCalciteSchema;
-import org.apache.flink.table.planner.operations.SqlToOperationConverter;
+import org.apache.flink.table.planner.plan.trait.FlinkRelDistributionTraitDef;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -40,47 +38,37 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	private FunctionCatalog functionCatalog;
 	private CatalogManager catalogManager;
 	private ExpressionBridge<PlannerExpression> expressionBridge;
-	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
+	//	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 	private CalciteSchema internalSchema;
 	private DatalogPlannerContext plannerContext;
 	private ObjectIdentifier objectIdentifier;
 
-//	public FlinkBatchDatalogPlanner() {
-//		//change it later
-////		super(null,null,null,null,false);
-//	}
 
 	public FlinkBatchDatalogPlanner(Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager, boolean isStreamingMode) {
-		this.executor =  executor;
+		this.executor = executor;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
 		functionCatalog.setPlannerTypeInferenceUtil(PlannerTypeInferenceUtilImpl.INSTANCE);
 		internalSchema = asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false));
-//
-//		internalSchema = asRootSchema(new DatabaseCalciteSchema(catalogManager.getCurrentDatabase(), catalogManager.getCurrentCatalog(), catalogManager.getCatalog(catalogManager.getCurrentCatalog()).orElse(null), false));
 		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(functionCatalog, PlannerExpressionConverter.INSTANCE());
-		planningConfigurationBuilder =
-			new DatalogPlanningConfigurationBuilder(
-				tableConfig,
-				functionCatalog,
-				internalSchema,
-				expressionBridge);
-
-//		CalciteSchema schema = asRootSchema(internalSchema.plus());
-		this.plannerContext = new DatalogPlannerContext(tableConfig, functionCatalog, this.internalSchema);
+//		planningConfigurationBuilder =
+//			new DatalogPlanningConfigurationBuilder(
+//				tableConfig,
+//				functionCatalog,
+//				internalSchema,
+//				expressionBridge);
+		List<RelTraitDef> traits = new ArrayList<>();
+		traits.add(ConventionTraitDef.INSTANCE);
+		traits.add(FlinkRelDistributionTraitDef.INSTANCE());
+		traits.add(RelCollationTraitDef.INSTANCE);
+		this.plannerContext = new DatalogPlannerContext(tableConfig, functionCatalog, this.internalSchema, traits.toArray(new RelTraitDef[0]));
 	}
 
-//	public void setProgramType(ParsableTypes parsableType) {
-//		this.programType = parsableType;
-//	}
-
-
-	private FlinkPlannerImpl getFlinkPlanner() {
-		var currentCatalogName = catalogManager.getCurrentCatalog();
-		var currentDatabase = catalogManager.getCurrentDatabase();
-
-		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
+	private FlinkDatalogPlannerImpl createFlinkDatalogPlanner() {
+		String currentCatalogName = catalogManager.getCurrentCatalog();
+		String currentDatabase = catalogManager.getCurrentDatabase();
+		return plannerContext.createFlinkDatalogPlanner(currentCatalogName, currentDatabase);
 	}
 
 	/*
@@ -88,13 +76,11 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	 * */
 	@Override
 	public List<Operation> parse(String text) {
-		FrameworkConfig config = plannerContext.getFrameworkConfig();
-		ParserManager parserManager = new ParserManager(config);
-		RelNode relationalTree = parserManager.parse(text);
+		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
+		RelNode relationalTree = planner.parse(text);
 
 //		return convert(planner, relationalTree);
 		return null;
-
 	}
 
 	@Override
