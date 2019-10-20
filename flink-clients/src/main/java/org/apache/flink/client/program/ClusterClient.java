@@ -31,15 +31,10 @@ import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.Preconditions;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import java.net.URL;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -50,16 +45,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class ClusterClient<T> implements AutoCloseable {
 
-	protected final Logger log = LoggerFactory.getLogger(getClass());
-
 	/** Configuration of the client. */
 	private final Configuration flinkConfig;
 
-	/**
-	 * For interactive invocations, the job results are only available after the ContextEnvironment has
-	 * been run inside the user JAR. We pass the Client to every instance of the ContextEnvironment
-	 * which lets us access the execution result here.
-	 */
 	protected JobExecutionResult lastJobExecutionResult;
 
 	/** Switch for blocking/detached job submission of the client. */
@@ -91,50 +79,6 @@ public abstract class ClusterClient<T> implements AutoCloseable {
 	@Override
 	public void close() throws Exception {
 
-	}
-
-	// ------------------------------------------------------------------------
-	//  Program submission / execution
-	// ------------------------------------------------------------------------
-
-	/**
-	 * General purpose method to run a user jar from the CliFrontend in either blocking or detached mode, depending
-	 * on whether {@code setDetached(true)} or {@code setDetached(false)}.
-	 * @param prog the packaged program
-	 * @param parallelism the parallelism to execute the contained Flink job
-	 * @return The result of the execution
-	 * @throws ProgramMissingJobException
-	 * @throws ProgramInvocationException
-	 */
-	public JobSubmissionResult run(PackagedProgram prog, int parallelism)
-			throws ProgramInvocationException, ProgramMissingJobException {
-		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		try {
-			Thread.currentThread().setContextClassLoader(prog.getUserCodeClassLoader());
-
-			log.info("Starting program (detached: {})", isDetached());
-
-			final List<URL> libraries = prog.getAllLibraries();
-
-			ContextEnvironmentFactory factory = new ContextEnvironmentFactory(this, libraries,
-					prog.getClasspaths(), prog.getUserCodeClassLoader(), parallelism, isDetached(),
-					prog.getSavepointSettings());
-			ContextEnvironment.setAsContext(factory);
-
-			try {
-				// invoke main method
-				prog.invokeInteractiveModeForExecution();
-				if (lastJobExecutionResult == null) {
-					throw new ProgramMissingJobException("The program didn't contain a Flink job.");
-				}
-				return this.lastJobExecutionResult;
-			} finally {
-				ContextEnvironment.unsetContext();
-			}
-		}
-		finally {
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
 	}
 
 	/**
@@ -281,5 +225,14 @@ public abstract class ClusterClient<T> implements AutoCloseable {
 
 	public void shutDownCluster() {
 		throw new UnsupportedOperationException("The " + getClass().getSimpleName() + " does not support shutDownCluster.");
+	}
+
+	/**
+	 * For interactive invocations, the job results are only available after the ContextEnvironment has
+	 * been run inside the user JAR. We pass the Client to every instance of the ContextEnvironment
+	 * which lets us access the execution result here.
+	 */
+	public JobExecutionResult getLastJobExecutionResult() {
+		return lastJobExecutionResult;
 	}
 }
