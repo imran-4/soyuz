@@ -5,12 +5,15 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.datalog.executor.DatalogBatchExecutor;
 import org.apache.flink.datalog.parser.ParserManager;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
-import org.apache.flink.datalog.planner.delegation.DatalogPlannerContext;
 import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
@@ -23,6 +26,7 @@ import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.expressions.PlannerTypeInferenceUtilImpl;
 import org.apache.flink.table.operations.ModifyOperation;
 import org.apache.flink.table.operations.Operation;
+import org.apache.flink.table.planner.operations.PlannerQueryOperation;
 import org.apache.flink.table.planner.plan.trait.FlinkRelDistributionTraitDef;
 
 import java.util.ArrayList;
@@ -40,9 +44,8 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	private ExpressionBridge<PlannerExpression> expressionBridge;
 	//	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 	private CalciteSchema internalSchema;
-	private DatalogPlannerContext plannerContext;
+//	private DatalogPlannerContext plannerContext;
 	private ObjectIdentifier objectIdentifier;
-
 
 	public FlinkBatchDatalogPlanner(Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager, boolean isStreamingMode) {
 		this.executor = executor;
@@ -62,29 +65,32 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		traits.add(ConventionTraitDef.INSTANCE);
 		traits.add(FlinkRelDistributionTraitDef.INSTANCE());
 		traits.add(RelCollationTraitDef.INSTANCE);
-		this.plannerContext = new DatalogPlannerContext(tableConfig, functionCatalog, this.internalSchema, traits.toArray(new RelTraitDef[0]));
+//		this.plannerContext = new DatalogPlannerContext(tableConfig, functionCatalog, this.internalSchema, traits.toArray(new RelTraitDef[0]));
+//		((DatalogBatchExecutor)this.executor).getExecutionEnvironment();
 	}
 
 	private FlinkDatalogPlannerImpl createFlinkDatalogPlanner() {
 		String currentCatalogName = catalogManager.getCurrentCatalog();
 		String currentDatabase = catalogManager.getCurrentDatabase();
-		return plannerContext.createFlinkDatalogPlanner(currentCatalogName, currentDatabase);
+//		return plannerContext.createFlinkDatalogPlanner(currentCatalogName, currentDatabase);
+		return null;
 	}
+//
+//	private FlinkRelBuilder getFlinkRelBuilder() {
+//		#
+//	}
 
-	/*
-	 * By default parse() method will have parseable type "RULE". So it wont be able to parse a query if you use this method. To parse a query, you can use parseQuery() method.
-	 * */
 	@Override
 	public List<Operation> parse(String text) {
 		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
-		RelNode relationalTree = planner.parse(text);
-
-//		return convert(planner, relationalTree);
-		return null;
+		RelNode relNode = planner.parse(text);
+		RelRoot relRoot = RelRoot.of(relNode, SqlKind.SELECT);
+		return List.of(new PlannerQueryOperation(relRoot.project()));
 	}
 
 	@Override
 	public List<Transformation<?>> translate(List<ModifyOperation> modifyOperations) {
+		System.out.println("---------------******");
 		return modifyOperations
 			.stream()
 			.map(this::translate)

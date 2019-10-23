@@ -1,13 +1,17 @@
 package org.apache.flink.datalog;
 
+import org.apache.calcite.rel.RelNode;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.datalog.catalog.DatalogCatalog;
+import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
+import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
@@ -16,15 +20,14 @@ import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.delegation.PlannerFactory;
 import org.apache.flink.table.descriptors.BatchTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
-import org.apache.flink.table.expressions.Expression;
-import org.apache.flink.table.expressions.ExpressionParser;
-import org.apache.flink.table.expressions.TableReferenceExpression;
+import org.apache.flink.table.expressions.*;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
+import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -35,6 +38,8 @@ import org.apache.flink.table.typeutils.FieldInfoUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
+
 public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
@@ -44,8 +49,9 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private TableConfig tableConfig;
 	private Planner planner;
 	private ExecutionEnvironment executionEnvironment;
+	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 
-	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, Planner planner, ExecutionEnvironment executionEnvironment) {
+	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, Planner planner, ExecutionEnvironment executionEnvironment, DatalogPlanningConfigurationBuilder planningConfigurationBuilder) {
 		this.executionEnvironment = executionEnvironment;
 		this.executor = executor;
 		this.tableConfig = tableConfig;
@@ -60,6 +66,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			},
 			false
 		);
+		this.planningConfigurationBuilder = planningConfigurationBuilder;
+
 	}
 
 	public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
@@ -73,13 +81,24 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		Map<String, String> plannerProperties = settings.toPlannerProperties();
 		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
 			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);   //this should create FlinkDatalogPlanner
+		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge(functionCatalog, PlannerExpressionConverter.INSTANCE());
+
+		DatalogPlanningConfigurationBuilder planningConfigurationBuilder =
+			new DatalogPlanningConfigurationBuilder(
+				tableConfig,
+				functionCatalog,
+				asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
+				expressionBridge);
+
 		return new BatchDatalogEnvironmentImpl(
 			catalogManager,
 			tableConfig,
 			executor,
 			functionCatalog,
 			planner,
-			executionEnvironment
+			executionEnvironment,
+			planningConfigurationBuilder
+
 		);
 	}
 
@@ -91,6 +110,16 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public Table datalogQuery(String query) {
+		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
+		RelNode parsed = datalogPlanner.parse(query);
+		if (null != parsed) {
+			createTable(new PlannerQueryOperation(parsed));
+		} else {
+			throw new TableException(
+				"Unsupported Datalog query!");
+		}
+		//-------------------------
+
 		List<Operation> operations = planner.parse(query);
 		if (operations.size() != 1) {
 			throw new ValidationException(
@@ -104,6 +133,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 				"Unsupported Datalog query.");
 		}
 	}
+
 
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
@@ -195,7 +225,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			throw new TableException(
 				"Only tables that belong to this TableEnvironment can be registered.");
 		}
-		QueryOperationCatalogView view = new QueryOperationCatalogView(table.getQueryOperation());
+		CatalogBaseTable view = new QueryOperationCatalogView(table.getQueryOperation());
 		catalogManager.createTable(view, catalogManager.qualifyIdentifier(
 			catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
@@ -464,4 +494,18 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			typeInfoSchema.getIndices(),
 			typeInfoSchema.toTableSchema());
 	}
+
+	private FlinkDatalogPlannerImpl getFlinkPlanner() {
+		String currentCatalogName = catalogManager.getCurrentCatalog();
+		String currentDatabase = catalogManager.getCurrentDatabase();
+
+		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
+	}
+
+//	private FlinkRelBuilder getFlinkRelBuilder() {
+//		String currentCatalogName = catalogManager.getCurrentCatalog();
+//		String currentDatabase = catalogManager.getCurrentDatabase();
+//		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
+//	}
+
 }

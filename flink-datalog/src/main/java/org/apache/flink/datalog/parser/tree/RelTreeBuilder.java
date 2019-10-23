@@ -1,16 +1,16 @@
 package org.apache.flink.datalog.parser.tree;
 
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 
 import java.util.ArrayList;
@@ -19,20 +19,23 @@ import java.util.List;
 //Todo: return list of plans (RelNode) --depends on the input programs
 
 public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
-	private RelBuilder builder;
 	private FrameworkConfig config;
+	private RelOptCluster cluster;
 	private CatalogManager catalogManager;
 	private String currentCatalog;
 	private String currentDatabase;
-	//need environemtn here...
 
-	public RelTreeBuilder(FrameworkConfig config) {
-		this.config = config;
-		builder = RelBuilder.create(config);
-//		this.catalogManager = catalogManager;
-//		this.currentCatalog = catalogManager.getCurrentCatalog();
-//		this.currentDatabase = catalogManager.getCurrentDatabase();
+	private FlinkRelBuilder relBuilder;
+	public RelTreeBuilder(FlinkRelBuilder relBuilder) {
+		this.relBuilder = relBuilder;
 	}
+//	public RelTreeBuilder(FrameworkConfig config) {
+//		this.config = config;
+////		this.currentCatalog = catalogManager.getCurrentCatalog();
+////		this.currentDatabase = catalogManager.getCurrentDatabase();
+//
+////		config.getRelBuilderFactory().create(cluster, (RelOptSchema)null);
+//	}
 
 	// DO WE NEED TO IMPLEMENT SEMI NAIVE EVALUATION HERE..
 	@Override
@@ -40,42 +43,22 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		System.out.println("Inside visitCompileUnit" + ctx.getText());
 		if (ctx.query() != null) {
 			return visit(ctx.query());
-		} else if (ctx.rules().ruleClause().size() > 0) {
-			//todo:...
-			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.rules().ruleClause()) {
-				visit(ruleClauseContext);
-			}
-			return null;
+		} else if (ctx.rules() != null) {
+			return visit(ctx.rules());
+		} else return null;
+	}
+
+	@Override
+	public RelNode visitRules(DatalogParser.RulesContext ctx) {
+		for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
+			// here find a rule without IDB (or do it using predicate connection graph)
 		}
-		System.out.println(RelOptUtil.toString(builder.build()));
 		return null;
 	}
 
 	@Override
 	public RelNode visitQuery(DatalogParser.QueryContext ctx) {
-		builder.clear();
-		String predicateName = ctx.predicate().predicateName().getText();
-
-		builder.scan(this.currentCatalog, this.currentDatabase, predicateName);
-		List<RexNode> filters = new ArrayList<>();
-		List<RexNode> fields = new ArrayList<>();
-		int i = 1;
-		for (DatalogParser.TermContext termContext : ctx.predicate().termList().term()) {
-			if (termContext.CONSTANT() != null) {  // or other types that are not VARIABLE()
-				filters.add(builder.call(SqlStdOperatorTable.EQUALS,
-					builder.field(i),
-					builder.literal(termContext.CONSTANT().getText())));
-			}
-			fields.add(builder.field(i)); // add all fields for the projection
-			i++;
-		}
-		builder.clear();
-		builder
-			.scan(this.currentCatalog, this.currentDatabase,predicateName)
-			.filter(builder.call(SqlStdOperatorTable.AND, filters))
-			.project(fields);
-		System.out.println(RelOptUtil.toString(builder.build()));
-		return builder.build();
+		return visit(ctx.predicate()); // query is just a predicate ending with ?
 	}
 
 	@Override
@@ -83,14 +66,14 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		System.out.println("Inside visitRuleClause" + ctx.getText());
 
 		//take unions
-		builder.push(visit(ctx.predicateList()));
-		builder.push(visit(ctx.headPredicate())); //use transient scan
+		relBuilder.push((visit(ctx.predicateList())));
+		relBuilder.push((visit(ctx.headPredicate()))); //use transient scan
 
 		String headPredicateName = "abc";
-		builder.repeatUnion(headPredicateName, true);
+		relBuilder.repeatUnion(headPredicateName, true);
 
-		System.out.println(RelOptUtil.toString(builder.build()));
-		return builder.build();
+		System.out.println(RelOptUtil.toString(relBuilder.build()));
+		return relBuilder.build();
 	}
 
 	@Override
@@ -108,24 +91,41 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		if (numberOfPredicates > 1) { //join based on the predicate type.
 //			builder.join(JoinRelType.FULL, rexBuilder.);
 		}
-		System.out.println(RelOptUtil.toString(builder.build()));
-		return builder.build();
+		System.out.println(RelOptUtil.toString(relBuilder.build()));
+		return relBuilder.build();
 	}
 
 	@Override
 	public RelNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-		return builder.transientScan(ctx.predicate().predicateName().getText()).project().build();
+
+		// head predicates are IDBs.
+		return relBuilder.transientScan(ctx.predicate().predicateName().getText()).project().build();
 	}
 
 	@Override
 	public RelNode visitPredicate(DatalogParser.PredicateContext ctx) {
-		System.out.println("Inside visitPredicateList" + ctx.getText());
 		String predicateName = ctx.predicateName().getText();
-		List<RexNode> rexNodes = new ArrayList<>();
+//		builder.scan(this.currentCatalog, this.currentDatabase, predicateName);
+		relBuilder.scan("my_catalog","my_database", "abc");
+		List<RexNode> filters = new ArrayList<>();
+		List<RexNode> fields = new ArrayList<>();
+		int i = 1;
 		for (DatalogParser.TermContext termContext : ctx.termList().term()) {
-//			rexNodes.add(visit(termContext));
+			if (termContext.CONSTANT() != null) {  // or other types that are not VARIABLE()
+				filters.add(relBuilder.call(SqlStdOperatorTable.EQUALS,
+					relBuilder.field(i),
+					relBuilder.literal(termContext.CONSTANT().getText())));
+			}
+			fields.add(relBuilder.field(i)); // add all fields for the projection
+			i++;
 		}
-		return builder.scan(this.currentCatalog, this.currentDatabase, predicateName).project(rexNodes.toArray(new RexNode[0])).build();   //todo: project might have variables or constants..
+		relBuilder.clear();
+		relBuilder
+			.scan(this.currentCatalog, this.currentDatabase, predicateName)
+			.filter(relBuilder.call(SqlStdOperatorTable.AND, filters))
+			.project(fields);
+		System.out.println(RelOptUtil.toString(relBuilder.build()));
+		return relBuilder.build();
 	}
 
 //	@Override
@@ -146,4 +146,5 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 //	public RelNode visitAtom(DatalogParser.AtomContext ctx) {
 //		return builder.project(builder.field(ctx.getText())).build();
 //	}
+	//-----------------------------------------------------
 }

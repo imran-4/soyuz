@@ -8,6 +8,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 
 import java.util.List;
@@ -15,8 +16,8 @@ import java.util.List;
 public class ParserManager {
 	private RelTreeBuilder builder;
 
-	public ParserManager(FrameworkConfig config) {
-		this.builder = new RelTreeBuilder(config);
+	public ParserManager(FlinkRelBuilder flinkRelBuilder) {
+		this.builder = new RelTreeBuilder(flinkRelBuilder);
 	}
 
 	public RelNode parse(String program) {

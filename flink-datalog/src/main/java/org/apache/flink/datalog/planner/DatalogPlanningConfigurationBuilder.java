@@ -4,6 +4,7 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -12,6 +13,7 @@ import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
 import org.apache.flink.sql.parser.validate.FlinkSqlConformance;
 import org.apache.flink.table.api.SqlDialect;
@@ -53,20 +55,17 @@ public class DatalogPlanningConfigurationBuilder {
 		// the converter is needed when calling temporal table functions from SQL, because
 		// they reference a history table represented with a tree of table operations
 		this.context = Contexts.of(expressionBridge);
-
 		this.planner = new VolcanoPlanner(costFactory, context);
 		planner.setExecutor(new ExpressionReducer(tableConfig));
 		planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-
 		this.expressionBridge = expressionBridge;
-
 		this.rootSchema = rootSchema;
 	}
 
 	/**
 	 * Creates a configured {@link FlinkRelBuilder} for a planning session.
 	 *
-	 * @param currentCatalog the current default catalog to look for first during planning.
+	 * @param currentCatalog  the current default catalog to look for first during planning.
 	 * @param currentDatabase the current default database to look for first during planning.
 	 * @return configured rel builder
 	 */
@@ -82,24 +81,28 @@ public class DatalogPlanningConfigurationBuilder {
 	/**
 	 * Creates a configured {@link FlinkPlannerImpl} for a planning session.
 	 *
-	 * @param currentCatalog the current default catalog to look for first during planning.
+	 * @param currentCatalog  the current default catalog to look for first during planning.
 	 * @param currentDatabase the current default database to look for first during planning.
 	 * @return configured flink planner
 	 */
-	public FlinkPlannerImpl createFlinkPlanner(String currentCatalog, String currentDatabase) {
-		return new FlinkPlannerImpl(
+	public FlinkDatalogPlannerImpl createFlinkPlanner(String currentCatalog, String currentDatabase) {
+		return new FlinkDatalogPlannerImpl(
 			createFrameworkConfig(),
 			isLenient -> createCatalogReader(isLenient, currentCatalog, currentDatabase),
 			planner,
-			typeFactory);
+			typeFactory, this.createRelBuilder(currentCatalog, currentDatabase));
 	}
 
-	/** Returns the Calcite {@link org.apache.calcite.plan.RelOptPlanner} that will be used. */
+	/**
+	 * Returns the Calcite {@link org.apache.calcite.plan.RelOptPlanner} that will be used.
+	 */
 	public RelOptPlanner getPlanner() {
 		return planner;
 	}
 
-	/** Returns the {@link FlinkTypeFactory} that will be used. */
+	/**
+	 * Returns the {@link FlinkTypeFactory} that will be used.
+	 */
 	public FlinkTypeFactory getTypeFactory() {
 		return typeFactory;
 	}
@@ -164,9 +167,9 @@ public class DatalogPlanningConfigurationBuilder {
 	private FrameworkConfig createFrameworkConfig() {
 		return Frameworks
 			.newConfigBuilder()
-			.parserConfig(getSqlParserConfig())
 			.costFactory(costFactory)
 			.typeSystem(typeSystem)
+			.defaultSchema(this.rootSchema.plus())
 			.operatorTable(getSqlOperatorTable(calciteConfig(tableConfig), functionCatalog))
 			.sqlToRelConverterConfig(
 				getSqlToRelConverterConfig(
@@ -174,6 +177,18 @@ public class DatalogPlanningConfigurationBuilder {
 					expressionBridge))
 			.executor(new ExpressionReducer(tableConfig))
 			.build();
+		//		return Frameworks
+//			.newConfigBuilder()
+//			.parserConfig(getSqlParserConfig())
+//			.costFactory(costFactory)
+//			.typeSystem(typeSystem)
+//			.operatorTable(getSqlOperatorTable(calciteConfig(tableConfig), functionCatalog))
+//			.sqlToRelConverterConfig(
+//				getSqlToRelConverterConfig(
+//					calciteConfig(tableConfig),
+//					expressionBridge))
+//			.executor(new ExpressionReducer(tableConfig))
+//			.build();
 	}
 
 	private CalciteConfig calciteConfig(TableConfig tableConfig) {
