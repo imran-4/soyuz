@@ -1,16 +1,24 @@
 package org.apache.flink.datalog;
 
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.datalog.catalog.DatalogCatalog;
+import org.apache.flink.datalog.plan.DatalogBatchOptimizer;
+import org.apache.flink.datalog.plan.DatalogOptimizer;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.calcite.CalciteConfig;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
+import org.apache.flink.table.calcite.FlinkTypeFactory;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
@@ -26,17 +34,22 @@ import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
+import org.apache.flink.table.plan.nodes.dataset.DataSetRel;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
 import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.sources.TableSourceValidation;
+import org.apache.flink.table.types.DataType;
+import org.apache.flink.table.types.utils.TypeConversions;
 import org.apache.flink.table.typeutils.FieldInfoUtils;
+import org.apache.flink.types.Row;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
+import static org.apache.flink.table.typeutils.FieldInfoUtils.validateInputTypeInfo;
 
 public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private final OperationTreeBuilder operationTreeBuilder;
@@ -48,6 +61,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private Planner planner;
 	private ExecutionEnvironment executionEnvironment;
 	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
+	private DatalogOptimizer optimizer;
 
 	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, Planner planner, ExecutionEnvironment executionEnvironment, DatalogPlanningConfigurationBuilder planningConfigurationBuilder) {
 		this.executionEnvironment = executionEnvironment;
@@ -66,6 +80,10 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		);
 		this.planningConfigurationBuilder = planningConfigurationBuilder;
 
+		this.optimizer = new DatalogBatchOptimizer(
+			(x) -> tableConfig.getPlannerConfig().unwrap(CalciteConfig.class).orElse(CalciteConfig.DEFAULT()),
+			planningConfigurationBuilder
+		);
 	}
 
 	public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
@@ -79,7 +97,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		Map<String, String> plannerProperties = settings.toPlannerProperties();
 		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
 			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);   //this should create FlinkDatalogPlanner
-		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge(functionCatalog, PlannerExpressionConverter.INSTANCE());
+		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
 
 		DatalogPlanningConfigurationBuilder planningConfigurationBuilder =
 			new DatalogPlanningConfigurationBuilder(
@@ -96,14 +114,44 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			planner,
 			executionEnvironment,
 			planningConfigurationBuilder
-
 		);
 	}
 
 	@Override
 	public void evaluateDatalogRules(String program) {
-		List<Operation> operations = planner.parse(program);
-		//...
+		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
+		RelNode parsed = datalogPlanner.parse(program);
+		/*
+		 parsed match {
+		  case insert: RichSqlInsert =>
+			// validate the insert
+			val validatedInsert = planner.validate(insert).asInstanceOf[RichSqlInsert]
+			// we do not validate the row type for sql insert now, so validate the source
+			// separately.
+			val validatedQuery = planner.validate(validatedInsert.getSource)
+			val tableOperation = new PlannerQueryOperation(planner.rel(validatedQuery).rel)
+			// get query result as Table
+			val queryResult = createTable(tableOperation)
+			// get name of sink table
+			val targetTablePath = insert.getTargetTable.asInstanceOf[SqlIdentifier].names
+
+			// insert query result into sink table
+			insertInto(queryResult, InsertOptions(insert.getStaticPartitionKVs, insert.isOverwrite),
+			  targetTablePath.asScala:_*)
+		  case createTable: SqlCreateTable =>
+			val operation = SqlToOperationConverter
+			  .convert(planner, createTable)
+			  .asInstanceOf[CreateTableOperation]
+			val objectIdentifier = catalogManager.qualifyIdentifier(operation.getTablePath: _*)
+			catalogManager.createTable(
+			  operation.getCatalogTable,
+			  objectIdentifier,
+			  operation.isIgnoreIfExists)
+		  case _ =>
+			throw new TableException(
+			  "Unsupported Datalog query!")
+		}
+		*/
 	}
 
 	@Override
@@ -116,30 +164,16 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			throw new TableException(
 				"Unsupported Datalog query!");
 		}
-		//-------------------------
-//		List<Operation> operations = planner.parse(query);
-//		if (operations.size() != 1) {
-//			throw new ValidationException(
-//				"Unsupported Datalog query! datalogQuery() only accepts a single Datalog query.");
-//		}
-//		Operation operation = operations.get(0);
-//		if (operation instanceof QueryOperation) { //not sure yet if we have to implement the QueryOperation separately for Datalog as well or it is enough to use the existing QueryOperation.
-//			return createTable((QueryOperation) operation); // i think for a valid query, the table would already be there...
-//		} else {
-//			throw new ValidationException(
-//				"Unsupported Datalog query.");
-//		}
 	}
-
 
 	@Override
 	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
-		throw new UnsupportedOperationException("Not supported.");
+		throw new UnsupportedOperationException("Not supported."); //there are no functions in datalog
 	}
 
 	@Override
 	public <T, ACC> void registerFunction(String name, AggregateFunction<T, ACC> aggregateFunction) {
-		throw new UnsupportedOperationException("Not supported");
+		throw new UnsupportedOperationException("Not supported"); //there are no functions in datalog
 	}
 
 	@Override
@@ -162,28 +196,27 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 	@Override
 	public <T> void registerDataSet(String name, DataSet<T> dataSet, String fields) {
-
 		registerTable(name, fromDataSet(dataSet, fields));
 	}
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, Class<T> clazz) {
-		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
+		return translate(table, TypeExtractor.createTypeInfo(clazz));
 	}
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, TypeInformation<T> typeInfo) {
-		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
+		return translate(table, typeInfo);//(typeInfo);
 	}
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, Class<T> clazz, BatchQueryConfig queryConfig) {
-		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
+		return translate(table, TypeExtractor.createTypeInfo(clazz));
 	}
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, TypeInformation<T> typeInfo, BatchQueryConfig queryConfig) {
-		throw new UnsupportedOperationException("Not implemented yet. But to be implemented soon.");
+		return translate(table, typeInfo);
 	}
 
 	@Override
@@ -478,14 +511,9 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private <T> DataSetQueryOperation<T> asQueryOperation(DataSet<T> dataSet, Optional<List<Expression>> fields) {
 		TypeInformation<T> dataSetType = dataSet.getType();
 
-		FieldInfoUtils.TypeInfoSchema typeInfoSchema = fields.map(f -> {
-			FieldInfoUtils.TypeInfoSchema fieldsInfo = FieldInfoUtils.getFieldsInfo(
-				dataSetType,
-				f.toArray(new Expression[0]));
-
-			return fieldsInfo;
-		}).orElseGet(() -> FieldInfoUtils.getFieldsInfo(dataSetType));
-
+		FieldInfoUtils.TypeInfoSchema typeInfoSchema = fields.map(f -> FieldInfoUtils.getFieldsInfo(
+			dataSetType,
+			f.toArray(new Expression[0]))).orElseGet(() -> FieldInfoUtils.getFieldsInfo(dataSetType));
 		return new DataSetQueryOperation<T>(
 			dataSet,
 			typeInfoSchema.getIndices(),
@@ -498,4 +526,72 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
 	}
+
+	private FlinkRelBuilder getRelBuilder() {
+		String currentCatalogName = catalogManager.getCurrentCatalog();
+		String currentDatabase = catalogManager.getCurrentDatabase();
+
+		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
+	}
+
+	private <T> DataSet<T> translate(Table table, TypeInformation<T> tpe) {
+		QueryOperation queryOperation = table.getQueryOperation();
+		RelNode relNode = getRelBuilder().tableOperation(queryOperation).build();
+		var dataSetPlan = optimizer.optimize(relNode);
+		return translate(dataSetPlan, getTableSchema(queryOperation.getTableSchema().getFieldNames(), dataSetPlan), tpe);
+	}
+
+	private <T> DataSet<T> translate(RelNode logicalPlan, TableSchema logicalType, TypeInformation<T> tpe) {
+		validateInputTypeInfo(tpe);
+		if (logicalPlan.getClass().equals(DataSetRel.class)) { //not sure if it is correct
+			DataSetRel node = (DataSetRel) logicalPlan;
+			var plan = node.translateToPlan(null, new BatchQueryConfig());
+			var conversion =
+				getConversionMapper(
+					plan.getType(),
+					logicalType,
+					tpe,
+					"DataSetSinkConversion");
+			/*
+			logicalPlan match {
+      case node: DataSetRel =>
+        val plan = node.translateToPlan(this, new BatchQueryConfig)
+        val conversion =
+          getConversionMapper(
+            plan.getType,
+            logicalType,
+            tpe,
+            "DataSetSinkConversion")
+        conversion match {
+          case None => plan.asInstanceOf[DataSet[A]] // no conversion necessary
+          case Some(mapFunction: MapFunction[Row, A]) =>
+            plan.map(mapFunction)
+              .returns(tpe)
+              .name(s"to: ${tpe.getTypeClass.getSimpleName}")
+              .asInstanceOf[DataSet[A]]
+        }
+
+      case _ =>
+        throw new TableException("Cannot generate DataSet due to an invalid logical plan. " +
+          "This is a bug and should not happen. Please file an issue.")
+    }
+			*/
+		} else
+			throw new TableException("Cannot generate DataSet due to an invalid logical plan.");
+		return null;
+	}
+
+	private TableSchema getTableSchema(String[] originalNames, RelNode optimizedPlan) {
+		DataType[] fieldTypes = (DataType[]) optimizedPlan.getRowType().getFieldList().stream().map(RelDataTypeField::getType)
+			.map(FlinkTypeFactory::toTypeInfo)
+			.map(TypeConversions::fromLegacyInfoToDataType)
+			.toArray();
+		return TableSchema.builder().fields(originalNames, fieldTypes).build();
+	}
+
+	private <T> Optional<MapFunction<Row, T>> getConversionMapper(TypeInformation<Row> type, TableSchema logicalType, TypeInformation<T> tpe, String dataSetSinkConversion) {
+		return Optional.of(null);
+	}
 }
+
+

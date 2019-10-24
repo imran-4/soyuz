@@ -48,7 +48,6 @@ public class ParserManager {
 		} else {
 			//create AST or RelNode (of Calcite) here.....
 			RelNode relNode = builder.visit(tree);
-			System.out.println(relNode.toString());
 			return relNode;
 		}
 	}

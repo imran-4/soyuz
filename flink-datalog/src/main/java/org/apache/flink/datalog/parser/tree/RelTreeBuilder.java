@@ -58,7 +58,7 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 
 	@Override
 	public RelNode visitQuery(DatalogParser.QueryContext ctx) {
-		return visit(ctx.predicate()); // query is just a predicate ending with ?
+		return visit(ctx.predicate()); // a query is just a predicate ending with ?
 	}
 
 	@Override
@@ -128,24 +128,4 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 		System.out.println(RelOptUtil.toString(queryNode));
 		return queryNode;
 	}
-
-//	@Override
-//	public RelNode visitTermList(DatalogParser.TermListContext ctx) {
-//		for (DatalogParser.TermContext termContext : ctx.term()) {
-//			builder.push(visitChildren(termContext));
-//		}
-//		System.out.println(RelOptUtil.toString(builder.build()));
-//		return builder.build();
-//	}
-//
-//	@Override
-//	public RelNode visitTerm(DatalogParser.TermContext ctx) {
-//		return builder.field("","");
-//	}
-//
-//	@Override
-//	public RelNode visitAtom(DatalogParser.AtomContext ctx) {
-//		return builder.project(builder.field(ctx.getText())).build();
-//	}
-	//-----------------------------------------------------
 }

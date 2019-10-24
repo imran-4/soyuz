@@ -4,7 +4,6 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -28,6 +27,7 @@ import org.apache.flink.table.codegen.ExpressionReducer;
 import org.apache.flink.table.expressions.ExpressionBridge;
 import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.plan.cost.DataSetCostFactory;
+import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.util.JavaScalaConversionUtil;
 
 import static java.util.Arrays.asList;
@@ -78,13 +78,7 @@ public class DatalogPlanningConfigurationBuilder {
 		return new FlinkRelBuilder(context, cluster, relOptSchema, expressionBridge);
 	}
 
-	/**
-	 * Creates a configured {@link FlinkPlannerImpl} for a planning session.
-	 *
-	 * @param currentCatalog  the current default catalog to look for first during planning.
-	 * @param currentDatabase the current default database to look for first during planning.
-	 * @return configured flink planner
-	 */
+
 	public FlinkDatalogPlannerImpl createFlinkPlanner(String currentCatalog, String currentDatabase) {
 		return new FlinkDatalogPlannerImpl(
 			createFrameworkConfig(),
