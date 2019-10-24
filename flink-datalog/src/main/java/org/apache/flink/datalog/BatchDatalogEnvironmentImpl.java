@@ -11,7 +11,6 @@ import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
-import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
@@ -27,7 +26,6 @@ import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
-import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -113,25 +111,24 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
 		RelNode parsed = datalogPlanner.parse(query);
 		if (null != parsed) {
-			createTable(new PlannerQueryOperation(parsed));
+			return createTable(new PlannerQueryOperation(parsed));
 		} else {
 			throw new TableException(
 				"Unsupported Datalog query!");
 		}
 		//-------------------------
-
-		List<Operation> operations = planner.parse(query);
-		if (operations.size() != 1) {
-			throw new ValidationException(
-				"Unsupported Datalog query! datalogQuery() only accepts a single Datalog query.");
-		}
-		Operation operation = operations.get(0);
-		if (operation instanceof QueryOperation) { //not sure yet if we have to implement the QueryOperation separately for Datalog as well or it is enough to use the existing QueryOperation.
-			return createTable((QueryOperation) operation); // i think for a valid query, the table would already be there...
-		} else {
-			throw new ValidationException(
-				"Unsupported Datalog query.");
-		}
+//		List<Operation> operations = planner.parse(query);
+//		if (operations.size() != 1) {
+//			throw new ValidationException(
+//				"Unsupported Datalog query! datalogQuery() only accepts a single Datalog query.");
+//		}
+//		Operation operation = operations.get(0);
+//		if (operation instanceof QueryOperation) { //not sure yet if we have to implement the QueryOperation separately for Datalog as well or it is enough to use the existing QueryOperation.
+//			return createTable((QueryOperation) operation); // i think for a valid query, the table would already be there...
+//		} else {
+//			throw new ValidationException(
+//				"Unsupported Datalog query.");
+//		}
 	}
 
 
@@ -501,11 +498,4 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
 	}
-
-//	private FlinkRelBuilder getFlinkRelBuilder() {
-//		String currentCatalogName = catalogManager.getCurrentCatalog();
-//		String currentDatabase = catalogManager.getCurrentDatabase();
-//		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
-//	}
-
 }

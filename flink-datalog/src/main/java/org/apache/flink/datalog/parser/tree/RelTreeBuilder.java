@@ -4,17 +4,23 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.commons.lang.math.IntRange;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 //Todo: return list of plans (RelNode) --depends on the input programs
 
@@ -29,13 +35,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	public RelTreeBuilder(FlinkRelBuilder relBuilder) {
 		this.relBuilder = relBuilder;
 	}
-//	public RelTreeBuilder(FrameworkConfig config) {
-//		this.config = config;
-////		this.currentCatalog = catalogManager.getCurrentCatalog();
-////		this.currentDatabase = catalogManager.getCurrentDatabase();
-//
-////		config.getRelBuilderFactory().create(cluster, (RelOptSchema)null);
-//	}
 
 	// DO WE NEED TO IMPLEMENT SEMI NAIVE EVALUATION HERE..
 	@Override
@@ -45,7 +44,8 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 			return visit(ctx.query());
 		} else if (ctx.rules() != null) {
 			return visit(ctx.rules());
-		} else return null;
+		} else
+			return null;
 	}
 
 	@Override
@@ -97,7 +97,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 
 	@Override
 	public RelNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-
 		// head predicates are IDBs.
 		return relBuilder.transientScan(ctx.predicate().predicateName().getText()).project().build();
 	}
@@ -105,27 +104,29 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> {
 	@Override
 	public RelNode visitPredicate(DatalogParser.PredicateContext ctx) {
 		String predicateName = ctx.predicateName().getText();
-//		builder.scan(this.currentCatalog, this.currentDatabase, predicateName);
-		relBuilder.scan("my_catalog","my_database", "abc");
+		this.currentCatalog = "my_catalog";
+		this.currentDatabase = "my_database";
 		List<RexNode> filters = new ArrayList<>();
-		List<RexNode> fields = new ArrayList<>();
-		int i = 1;
+		relBuilder.clear();
+		relBuilder.scan(this.currentCatalog, this.currentDatabase, predicateName);
+		int i = 0;
 		for (DatalogParser.TermContext termContext : ctx.termList().term()) {
-			if (termContext.CONSTANT() != null) {  // or other types that are not VARIABLE()
+			if (termContext.CONSTANT() != null) {
 				filters.add(relBuilder.call(SqlStdOperatorTable.EQUALS,
 					relBuilder.field(i),
 					relBuilder.literal(termContext.CONSTANT().getText())));
 			}
-			fields.add(relBuilder.field(i)); // add all fields for the projection
 			i++;
 		}
-		relBuilder.clear();
-		relBuilder
-			.scan(this.currentCatalog, this.currentDatabase, predicateName)
-			.filter(relBuilder.call(SqlStdOperatorTable.AND, filters))
-			.project(fields);
-		System.out.println(RelOptUtil.toString(relBuilder.build()));
-		return relBuilder.build();
+		if (filters.size() == 1)
+			relBuilder.filter(filters.get(0));
+		else if (filters.size()  > 1)
+			relBuilder.filter(relBuilder.call(SqlStdOperatorTable.AND, filters));
+
+		relBuilder.project(relBuilder.fields(IntStream.range(0, ctx.termList().term().size()).boxed().collect(Collectors.toList())));
+		RelNode queryNode = relBuilder.build();
+		System.out.println(RelOptUtil.toString(queryNode));
+		return queryNode;
 	}
 
 //	@Override
