@@ -18,15 +18,15 @@ public class Main {
 			new Tuple2<>("b", "c"),
 			new Tuple2<>("c", "c"),
 			new Tuple2<>("c", "d")); //will also support loading data using facts. e.g., fact(a,b). fact(b,c).
-		datalogEnv.registerDataSet("graph", dataSet, "v1, v2"); //register EDB. EDBs are registered explicitly.
+		datalogEnv.registerDataSet("graph", dataSet, "v1,v2"); //register EDB. EDBs are registered explicitly.
 		DataSource<Tuple2<String, String>> dataSet1 = env.fromElements(
 			new Tuple2<>("b", "1"),
 			new Tuple2<>("c", "1"),
 			new Tuple2<>("c", "1"),
 			new Tuple2<>("d", "1")); //just to test the query logical plan...will remove it later
-		datalogEnv.registerDataSet("abc", dataSet1, "v2, v3");
+		datalogEnv.registerDataSet("abc", dataSet1, "v2,v3");
 		String inputProgram =
-			"abc(X,Y) :- graph(X, Y).\n" +
+			"abc(X,Y) :- graph(X,Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 		datalogEnv.evaluateDatalogRules(inputProgram);
 		Table queryResult = datalogEnv.datalogQuery("abc(a,b)?");

@@ -11,9 +11,13 @@ import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we need to use FlinkRelBuilder instead of RelNode
 	private FlinkRelBuilder relBuilder;
@@ -67,22 +71,28 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 			RelNode predicate = visit(predicateContext);
 			nodes.add(predicate);
 		}
-
+//		List<RelNode> joinedNodes = new ArrayList<>();
+		RelNode rootRelNode = null;
 		if (nodes.size() == 1) {
-			relBuilder.pushAll(nodes);
+			return relBuilder.pushAll(nodes).build();
 		} else if (nodes.size() > 1) {
 			for (int i = 0; i < nodes.size() - 1; i++) {
-
-				List<String> leftPredicateFields = nodes.get(i).getRowType().getFieldNames();
+				List<String> leftPredicateFields = rootRelNode == null ? nodes.get(i).getRowType().getFieldNames() : rootRelNode.getRowType().getFieldNames();
 				List<String> rightPredicateFields = nodes.get(i + 1).getRowType().getFieldNames();
 				String[] matched = leftPredicateFields.stream()
 					.filter(rightPredicateFields::contains).toArray(String[]::new);
-				relBuilder.push(nodes.get(i)).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched);
+				List<String> fieldsToProject = Stream.concat(leftPredicateFields.stream(), rightPredicateFields.stream()).filter(x -> !Arrays.asList(matched).contains(x))
+					.collect(Collectors.toList());
+				if (rootRelNode != null) {
+					rootRelNode = relBuilder.push(rootRelNode).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched).project(relBuilder.fields(fieldsToProject)).build();
+				} else {
+					rootRelNode = relBuilder.push(nodes.get(i)).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched).project(relBuilder.fields(fieldsToProject)).build();
+				}
 			}
+			RelNode predicateListNode = rootRelNode;
+			System.out.println(RelOptUtil.toString(predicateListNode));
+			return predicateListNode;
 		} else return null;
-		RelNode predicateListNode = relBuilder.build();
-		System.out.println(RelOptUtil.toString(predicateListNode));
-		return predicateListNode;
 	}
 
 	@Override
