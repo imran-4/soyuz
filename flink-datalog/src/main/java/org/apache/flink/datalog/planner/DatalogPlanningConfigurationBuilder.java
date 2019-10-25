@@ -12,6 +12,8 @@ import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.flink.datalog.BatchDatalogEnvironmentImpl;
+import org.apache.flink.datalog.DatalogEnvironment;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.sql.parser.impl.FlinkSqlParserImpl;
 import org.apache.flink.sql.parser.validate.FlinkSqlConformance;
@@ -43,23 +45,25 @@ public class DatalogPlanningConfigurationBuilder {
 	private final TableConfig tableConfig;
 	private final FunctionCatalog functionCatalog;
 	private CalciteSchema rootSchema;
+	private DatalogEnvironment datalogEnvironment;
 
 	public DatalogPlanningConfigurationBuilder(
 		TableConfig tableConfig,
 		FunctionCatalog functionCatalog,
 		CalciteSchema rootSchema,
-		ExpressionBridge<PlannerExpression> expressionBridge) {
+		ExpressionBridge<PlannerExpression> expressionBridge, DatalogEnvironment datalogEnvironment) {
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 
 		// the converter is needed when calling temporal table functions from SQL, because
 		// they reference a history table represented with a tree of table operations
-		this.context = Contexts.of(expressionBridge);
+		this.context = Contexts.of(expressionBridge, datalogEnvironment);
 		this.planner = new VolcanoPlanner(costFactory, context);
 		planner.setExecutor(new ExpressionReducer(tableConfig));
 		planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 		this.expressionBridge = expressionBridge;
 		this.rootSchema = rootSchema;
+		this.datalogEnvironment = datalogEnvironment;
 	}
 
 	/**
@@ -73,6 +77,7 @@ public class DatalogPlanningConfigurationBuilder {
 		RelOptCluster cluster = FlinkRelOptClusterFactory.create(
 			planner,
 			new RexBuilder(typeFactory));
+
 		RelOptSchema relOptSchema = createCatalogReader(false, currentCatalog, currentDatabase);
 
 		return new FlinkRelBuilder(context, cluster, relOptSchema, expressionBridge);

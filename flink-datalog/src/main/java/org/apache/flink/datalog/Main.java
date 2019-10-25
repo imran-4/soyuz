@@ -19,20 +19,19 @@ public class Main {
 			new Tuple2<>("c", "c"),
 			new Tuple2<>("c", "d")); //will also support loading data using facts. e.g., fact(a,b). fact(b,c).
 		datalogEnv.registerDataSet("graph", dataSet, "v1, v2"); //register EDB. EDBs are registered explicitly.
-
-		DataSource<Tuple3<String, String, String>> dataSet1 = env.fromElements(
-			new Tuple3<>("a", "b", "1"),
-			new Tuple3<>("b", "c", "1"),
-			new Tuple3<>("c", "c", "1"),
-			new Tuple3<>("c", "d", "1")); //just to test the query logical plan...will remove it later
-		datalogEnv.registerDataSet("abc", dataSet1, "v1, v2, v3");
+		DataSource<Tuple2<String, String>> dataSet1 = env.fromElements(
+			new Tuple2<>("b", "1"),
+			new Tuple2<>("c", "1"),
+			new Tuple2<>("c", "1"),
+			new Tuple2<>("d", "1")); //just to test the query logical plan...will remove it later
+		datalogEnv.registerDataSet("abc", dataSet1, "v2, v3");
 		String inputProgram =
 			"abc(X,Y) :- graph(X, Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
-//		datalogEnv.evaluateDatalogRules(inputProgram);
+		datalogEnv.evaluateDatalogRules(inputProgram);
 		Table queryResult = datalogEnv.datalogQuery("abc(a,b)?");
 		try {
-			DataSet<Tuple3<String, String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
+			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
 			dataSet2.collect();
 		} catch (Exception e) {
 			e.printStackTrace();

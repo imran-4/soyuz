@@ -1,33 +1,32 @@
 package org.apache.flink.datalog.parser.tree;
 
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.flink.datalog.BatchDatalogEnvironmentImpl;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.apache.flink.table.catalog.CatalogManager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we need to use FlinkRelBuilder instead of RelNode
 	private FlinkRelBuilder relBuilder;
-	private CatalogManager catalogManager;
 	private String currentCatalog;
 	private String currentDatabase;
 
+	private TableEnvironment environment;
+
 	public RelTreeBuilder(FlinkRelBuilder relBuilder) {
 		this.relBuilder = relBuilder;
-//		relBuilder.getCluster().getPlanner().getContext();
-		this.currentCatalog = "my_catalog";
-		this.currentDatabase = "my_database";
+		this.environment = relBuilder.getCluster().getPlanner().getContext().unwrap(BatchDatalogEnvironmentImpl.class);
+		this.currentCatalog = this.environment.getCurrentCatalog();
+		this.currentDatabase = this.environment.getCurrentDatabase();
 	}
 
 	// DO WE NEED TO IMPLEMENT SEMI NAIVE EVALUATION HERE..
@@ -56,8 +55,9 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 		RelNode predicates = visit(ctx.predicateList());
 		RelNode headPredicate = visit(ctx.headPredicate());
 		relBuilder.push(predicates).push(headPredicate).union(true);
-		System.out.println(RelOptUtil.toString(relBuilder.build()));
-		return relBuilder.build();
+		RelNode ruleClauseNode = relBuilder.build();
+		System.out.println(RelOptUtil.toString(ruleClauseNode));
+		return ruleClauseNode;
 	}
 
 	@Override
@@ -67,13 +67,22 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 			RelNode predicate = visit(predicateContext);
 			nodes.add(predicate);
 		}
+
 		if (nodes.size() == 1) {
 			relBuilder.pushAll(nodes);
 		} else if (nodes.size() > 1) {
-//			relBuilder.pushAll(nodes).join(JoinRelType.INNER, );
+			for (int i = 0; i < nodes.size() - 1; i++) {
+
+				List<String> leftPredicateFields = nodes.get(i).getRowType().getFieldNames();
+				List<String> rightPredicateFields = nodes.get(i + 1).getRowType().getFieldNames();
+				String[] matched = leftPredicateFields.stream()
+					.filter(rightPredicateFields::contains).toArray(String[]::new);
+				relBuilder.push(nodes.get(i)).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched);
+			}
 		} else return null;
-		System.out.println(RelOptUtil.toString(relBuilder.build()));
-		return relBuilder.build();
+		RelNode predicateListNode = relBuilder.build();
+		System.out.println(RelOptUtil.toString(predicateListNode));
+		return predicateListNode;
 	}
 
 	@Override
@@ -109,5 +118,9 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 		RelNode queryNode = relBuilder.build();
 		System.out.println(RelOptUtil.toString(queryNode));
 		return queryNode;
+	}
+
+	private void addTableToCatalog(String name, List<String> columns) {
+//		this.environment.registerTable(name, new QueryOperationCatalogView(new Table()));
 	}
 }

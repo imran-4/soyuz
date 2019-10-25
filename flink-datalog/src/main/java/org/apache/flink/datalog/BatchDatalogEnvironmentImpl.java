@@ -2,6 +2,7 @@ package org.apache.flink.datalog;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -78,7 +79,14 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			},
 			false
 		);
-		this.planningConfigurationBuilder = planningConfigurationBuilder;
+//		this.planningConfigurationBuilder = planningConfigurationBuilder;
+		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
+		this.planningConfigurationBuilder = new DatalogPlanningConfigurationBuilder(
+			tableConfig,
+			functionCatalog,
+			asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
+			expressionBridge,
+			this);
 
 		this.optimizer = new DatalogBatchOptimizer(
 			(x) -> tableConfig.getPlannerConfig().unwrap(CalciteConfig.class).orElse(CalciteConfig.DEFAULT()),
@@ -97,14 +105,13 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		Map<String, String> plannerProperties = settings.toPlannerProperties();
 		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
 			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);   //this should create FlinkDatalogPlanner
-		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
 
-		DatalogPlanningConfigurationBuilder planningConfigurationBuilder =
-			new DatalogPlanningConfigurationBuilder(
-				tableConfig,
-				functionCatalog,
-				asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
-				expressionBridge);
+//		DatalogPlanningConfigurationBuilder planningConfigurationBuilder =
+//			new DatalogPlanningConfigurationBuilder(
+//				tableConfig,
+//				functionCatalog,
+//				asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
+//				expressionBridge);
 
 		return new BatchDatalogEnvironmentImpl(
 			catalogManager,
@@ -113,7 +120,7 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 			functionCatalog,
 			planner,
 			executionEnvironment,
-			planningConfigurationBuilder
+			null//			planningConfigurationBuilder
 		);
 	}
 
@@ -523,14 +530,12 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	private FlinkDatalogPlannerImpl getFlinkPlanner() {
 		String currentCatalogName = catalogManager.getCurrentCatalog();
 		String currentDatabase = catalogManager.getCurrentDatabase();
-
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
 	}
 
 	private FlinkRelBuilder getRelBuilder() {
 		String currentCatalogName = catalogManager.getCurrentCatalog();
 		String currentDatabase = catalogManager.getCurrentDatabase();
-
 		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
 	}
 
