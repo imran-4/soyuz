@@ -14,7 +14,6 @@ import org.apache.flink.table.calcite.FlinkRelBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -46,12 +45,18 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 
 	@Override
 	public RelNode visitRules(DatalogParser.RulesContext ctx) {
+		// here find a rule without IDB (or do it using predicate connection graph)
+		//*******************************
+		// todo::
 		List<RelNode> ruleClauses = new ArrayList<>();
 		for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
-			// here find a rule without IDB (or do it using predicate connection graph)
-			ruleClauses.add(visit(ruleClauseContext));
+			RelNode ruleClauseRelNode = visit(ruleClauseContext);
+			ruleClauses.add(ruleClauseRelNode);
 		}
-		return null;
+		RelNode ruleNodes = relBuilder.pushAll(ruleClauses).build();
+		System.out.print(">>>>>>>>>");
+		System.out.println(RelOptUtil.toString(ruleNodes));
+		return ruleNodes;
 	}
 
 	@Override
