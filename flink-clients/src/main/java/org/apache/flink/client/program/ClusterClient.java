@@ -18,7 +18,6 @@
 
 package org.apache.flink.client.program;
 
-import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.configuration.Configuration;
@@ -29,7 +28,6 @@ import org.apache.flink.runtime.jobmaster.JobResult;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.OptionalFailure;
-import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,28 +43,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class ClusterClient<T> implements AutoCloseable {
 
-	/** Configuration of the client. */
-	private final Configuration flinkConfig;
-
-	protected JobExecutionResult lastJobExecutionResult;
-
 	/** Switch for blocking/detached job submission of the client. */
 	private boolean detachedJobSubmission = false;
-
-	// ------------------------------------------------------------------------
-	//                            Construction
-	// ------------------------------------------------------------------------
-
-	/**
-	 * Creates a instance that submits the programs to the JobManager defined in the
-	 * configuration. This method will try to resolve the JobManager hostname and throw an exception
-	 * if that is not possible.
-	 *
-	 * @param flinkConfig The config used to obtain the job-manager's address, and used to configure the optimizer.
-	 */
-	public ClusterClient(Configuration flinkConfig) {
-		this.flinkConfig = Preconditions.checkNotNull(flinkConfig);
-	}
 
 	/**
 	 * User overridable hook to close the client, possibly closes internal services.
@@ -195,9 +173,7 @@ public abstract class ClusterClient<T> implements AutoCloseable {
 	 * Return the Flink configuration object.
 	 * @return The Flink configuration object
 	 */
-	public Configuration getFlinkConfiguration() {
-		return flinkConfig.clone();
-	}
+	public abstract Configuration getFlinkConfiguration();
 
 	/**
 	 * Calls the subclasses' submitJob method. It may decide to simply call one of the run methods or it may perform
@@ -225,14 +201,5 @@ public abstract class ClusterClient<T> implements AutoCloseable {
 
 	public void shutDownCluster() {
 		throw new UnsupportedOperationException("The " + getClass().getSimpleName() + " does not support shutDownCluster.");
-	}
-
-	/**
-	 * For interactive invocations, the job results are only available after the ContextEnvironment has
-	 * been run inside the user JAR. We pass the Client to every instance of the ContextEnvironment
-	 * which lets us access the execution result here.
-	 */
-	public JobExecutionResult getLastJobExecutionResult() {
-		return lastJobExecutionResult;
 	}
 }

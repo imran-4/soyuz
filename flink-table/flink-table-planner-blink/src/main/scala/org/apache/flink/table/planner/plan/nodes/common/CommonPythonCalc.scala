@@ -18,19 +18,14 @@
 
 package org.apache.flink.table.planner.plan.nodes.common
 
-import org.apache.calcite.plan.RelOptCluster
-import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rex._
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.flink.api.dag.Transformation
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator
 import org.apache.flink.streaming.api.transformations.OneInputTransformation
-import org.apache.flink.table.api.TableConfig
 import org.apache.flink.table.dataformat.BaseRow
-import org.apache.flink.table.functions.FunctionLanguage
 import org.apache.flink.table.functions.python.{PythonFunction, PythonFunctionInfo, SimplePythonFunction}
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory
-import org.apache.flink.table.planner.codegen.{CalcCodeGenerator, CodeGeneratorContext}
 import org.apache.flink.table.planner.functions.utils.ScalarSqlFunction
 import org.apache.flink.table.planner.plan.nodes.common.CommonPythonCalc.PYTHON_SCALAR_FUNCTION_OPERATOR_NAME
 import org.apache.flink.table.runtime.typeutils.BaseRowTypeInfo
@@ -54,44 +49,44 @@ trait CommonPythonCalc {
 
     val udfInputOffsets = inputNodes.toArray
       .map(_._1)
-      .filter(_.isInstanceOf[RexInputRef])
-      .map(_.asInstanceOf[RexInputRef].getIndex)
+      .collect { case inputRef: RexInputRef => inputRef.getIndex }
     (udfInputOffsets, pythonFunctionInfos)
   }
 
   private def createPythonScalarFunctionInfo(
-      rexCall: RexCall,
-      inputNodes: mutable.Map[RexNode, Integer]): PythonFunctionInfo = rexCall.getOperator match {
-    case sfc: ScalarSqlFunction if sfc.scalarFunction.getLanguage == FunctionLanguage.PYTHON =>
-      val inputs = new mutable.ArrayBuffer[AnyRef]()
-      rexCall.getOperands.foreach {
-        case pythonRexCall: RexCall if pythonRexCall.getOperator.asInstanceOf[ScalarSqlFunction]
-          .scalarFunction.getLanguage == FunctionLanguage.PYTHON =>
-          // Continuous Python UDFs can be chained together
-          val argPythonInfo = createPythonScalarFunctionInfo(pythonRexCall, inputNodes)
-          inputs.append(argPythonInfo)
+      pythonRexCall: RexCall,
+      inputNodes: mutable.Map[RexNode, Integer]): PythonFunctionInfo = {
+    pythonRexCall.getOperator match {
+      case sfc: ScalarSqlFunction =>
+        val inputs = new mutable.ArrayBuffer[AnyRef]()
+        pythonRexCall.getOperands.foreach {
+          case pythonRexCall: RexCall =>
+            // Continuous Python UDFs can be chained together
+            val argPythonInfo = createPythonScalarFunctionInfo(pythonRexCall, inputNodes)
+            inputs.append(argPythonInfo)
 
-        case literal: RexLiteral =>
-          inputs.append(
-            convertLiteralToPython.invoke(null, literal, literal.getType.getSqlTypeName))
+          case literal: RexLiteral =>
+            inputs.append(
+              convertLiteralToPython.invoke(null, literal, literal.getType.getSqlTypeName))
 
-        case argNode: RexNode =>
-          // For input arguments of RexInputRef, it's replaced with an offset into the input row
-          inputNodes.get(argNode) match {
-            case Some(existing) => inputs.append(existing)
-            case None =>
-              val inputOffset = Integer.valueOf(inputNodes.size)
-              inputs.append(inputOffset)
-              inputNodes.put(argNode, inputOffset)
-          }
-      }
+          case argNode: RexNode =>
+            // For input arguments of RexInputRef, it's replaced with an offset into the input row
+            inputNodes.get(argNode) match {
+              case Some(existing) => inputs.append(existing)
+              case None =>
+                val inputOffset = Integer.valueOf(inputNodes.size)
+                inputs.append(inputOffset)
+                inputNodes.put(argNode, inputOffset)
+            }
+        }
 
-      // Extracts the necessary information for Python function execution, such as
-      // the serialized Python function, the Python env, etc
-      val pythonFunction = new SimplePythonFunction(
-        sfc.scalarFunction.asInstanceOf[PythonFunction].getSerializedPythonFunction,
-        sfc.scalarFunction.asInstanceOf[PythonFunction].getPythonEnv)
-      new PythonFunctionInfo(pythonFunction, inputs.toArray)
+        // Extracts the necessary information for Python function execution, such as
+        // the serialized Python function, the Python env, etc
+        val pythonFunction = new SimplePythonFunction(
+          sfc.scalarFunction.asInstanceOf[PythonFunction].getSerializedPythonFunction,
+          sfc.scalarFunction.asInstanceOf[PythonFunction].getPythonEnv)
+        new PythonFunctionInfo(pythonFunction, inputs.toArray)
+    }
   }
 
   private def getPythonScalarFunctionOperator(
@@ -116,34 +111,19 @@ trait CommonPythonCalc {
       .asInstanceOf[OneInputStreamOperator[BaseRow, BaseRow]]
   }
 
-  private def createPythonOneInputTransformation(
+  def createPythonOneInputTransformation(
       inputTransform: Transformation[BaseRow],
       calcProgram: RexProgram,
-      name: String) = {
+      name: String): OneInputTransformation[BaseRow, BaseRow] = {
     val pythonRexCalls = calcProgram.getProjectList
       .map(calcProgram.expandLocalRef)
-      .filter(_.isInstanceOf[RexCall])
-      .map(_.asInstanceOf[RexCall])
+      .collect { case call: RexCall => call }
       .toArray
 
     val forwardedFields: Array[Int] = calcProgram.getProjectList
       .map(calcProgram.expandLocalRef)
-      .filter(_.isInstanceOf[RexInputRef])
-      .map(_.asInstanceOf[RexInputRef].getIndex)
+      .collect { case inputRef: RexInputRef => inputRef.getIndex }
       .toArray
-
-    val resultProjectList = {
-      var idx = 0
-      calcProgram.getProjectList
-        .map(calcProgram.expandLocalRef)
-        .map {
-          case pythonCall: RexCall =>
-            val inputRef = new RexInputRef(forwardedFields.length + idx, pythonCall.getType)
-            idx += 1
-            inputRef
-          case node => node
-        }
-    }
 
     val (pythonUdfInputOffsets, pythonFunctionInfos) =
       extractPythonScalarFunctionInfos(pythonRexCalls)
@@ -162,76 +142,13 @@ trait CommonPythonCalc {
       pythonFunctionInfos,
       forwardedFields)
 
-    val pythonInputTransform = new OneInputTransformation(
+    new OneInputTransformation(
       inputTransform,
       name,
       pythonOperator,
       pythonOperatorResultTyeInfo,
       inputTransform.getParallelism
     )
-    (pythonInputTransform, pythonOperatorResultTyeInfo, resultProjectList)
-  }
-
-  private def createProjectionRexProgram(
-      inputRowType: RowType,
-      outputRelData: RelDataType,
-      projectList: mutable.Buffer[RexNode],
-      cluster: RelOptCluster) = {
-    val factory = cluster.getTypeFactory.asInstanceOf[FlinkTypeFactory]
-    val inputRelData = factory.createFieldTypeFromLogicalType(inputRowType)
-    RexProgram.create(inputRelData, projectList, null, outputRelData, cluster.getRexBuilder)
-  }
-
-  protected def createOneInputTransformation(
-      inputTransform: Transformation[BaseRow],
-      inputsContainSingleton: Boolean,
-      calcProgram: RexProgram,
-      name: String,
-      config : TableConfig,
-      ctx : CodeGeneratorContext,
-      cluster: RelOptCluster,
-      rowType: RelDataType,
-      opName: String): OneInputTransformation[BaseRow, BaseRow] = {
-    val (pythonInputTransform, pythonOperatorResultTyeInfo, resultProjectList) =
-      createPythonOneInputTransformation(inputTransform, calcProgram, name)
-
-    if (inputsContainSingleton) {
-      pythonInputTransform.setParallelism(1)
-      pythonInputTransform.setMaxParallelism(1)
-    }
-
-    val onlyFilter = resultProjectList.zipWithIndex.forall { case (rexNode, index) =>
-      rexNode.isInstanceOf[RexInputRef] && rexNode.asInstanceOf[RexInputRef].getIndex == index
-    }
-
-    if (onlyFilter) {
-      pythonInputTransform
-    } else {
-      // After executing python OneInputTransformation, the order of the output fields
-      // is Python Call after the forwarding fields, so in the case of sequential changes,
-      // a calc is needed to adjust the order.
-      val outputType = FlinkTypeFactory.toLogicalRowType(rowType)
-      val rexProgram = createProjectionRexProgram(
-        pythonOperatorResultTyeInfo.toRowType, rowType, resultProjectList, cluster)
-      val substituteOperator = CalcCodeGenerator.generateCalcOperator(
-        ctx,
-        cluster,
-        pythonInputTransform,
-        outputType,
-        config,
-        rexProgram,
-        None,
-        retainHeader = true,
-        opName
-      )
-
-      new OneInputTransformation(
-        pythonInputTransform,
-        name,
-        substituteOperator,
-        BaseRowTypeInfo.of(outputType),
-        pythonInputTransform.getParallelism)
-    }
   }
 }
 

@@ -139,7 +139,10 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 		this.executionVertexOperations = checkNotNull(executionVertexOperations);
 		this.executionVertexVersioner = checkNotNull(executionVertexVersioner);
 
-		this.executionFailureHandler = new ExecutionFailureHandler(failoverStrategyFactory.create(getFailoverTopology()), restartBackoffTimeStrategy);
+		this.executionFailureHandler = new ExecutionFailureHandler(
+			getFailoverTopology(),
+			failoverStrategyFactory.create(getFailoverTopology()),
+			restartBackoffTimeStrategy);
 		this.schedulingStrategy = schedulingStrategyFactory.createInstance(this, getSchedulingTopology(), getJobGraph());
 		this.executionSlotAllocator = checkNotNull(executionSlotAllocatorFactory).createInstance(getInputsLocationsRetriever());
 	}
@@ -170,6 +173,13 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 
 	private void handleTaskFailure(final ExecutionVertexID executionVertexId, final Throwable error) {
 		final FailureHandlingResult failureHandlingResult = executionFailureHandler.getFailureHandlingResult(executionVertexId, error);
+		maybeRestartTasks(failureHandlingResult);
+	}
+
+	@Override
+	public void handleGlobalFailure(final Throwable error) {
+		log.info("Trying to recover from a global failure.", error);
+		final FailureHandlingResult failureHandlingResult = executionFailureHandler.getGlobalFailureHandlingResult(error);
 		maybeRestartTasks(failureHandlingResult);
 	}
 
@@ -363,7 +373,6 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 			if (executionVertexVersioner.isModified(requiredVertexVersion)) {
 				log.debug("Refusing to assign slot to execution vertex {} because this deployment was " +
 					"superseded by another deployment", executionVertexId);
-				stopDeployment(deploymentHandle);
 				return null;
 			}
 
@@ -399,7 +408,6 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 			if (executionVertexVersioner.isModified(requiredVertexVersion)) {
 				log.debug("Refusing to deploy execution vertex {} because this deployment was " +
 					"superseded by another deployment", executionVertexId);
-				stopDeployment(deploymentHandle);
 				return null;
 			}
 
@@ -410,15 +418,6 @@ public class DefaultScheduler extends SchedulerBase implements SchedulerOperatio
 			}
 			return null;
 		};
-	}
-
-	private void stopDeployment(final DeploymentHandle deploymentHandle) {
-		cancelExecutionVertex(deploymentHandle.getExecutionVertexId());
-		// Canceling the vertex normally releases the slot. However, we might not have assigned
-		// the slot to the vertex yet.
-		deploymentHandle
-			.getLogicalSlot()
-			.ifPresent(logicalSlot -> logicalSlot.releaseSlot(null));
 	}
 
 	private void deployTaskSafe(final ExecutionVertexID executionVertexId) {
