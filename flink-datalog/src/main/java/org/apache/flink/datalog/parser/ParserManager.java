@@ -4,12 +4,11 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
+import org.apache.flink.datalog.parser.tree.graph.GraphBuilder;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.apache.flink.table.catalog.CatalogManager;
 
 import java.util.List;
 
@@ -20,8 +19,8 @@ public class ParserManager {
 		this.builder = new RelTreeBuilder(flinkRelBuilder);
 	}
 
-	public RelNode parse(String program) {
-		CharStream input = CharStreams.fromString(program);
+	private ParseTree parse(String text) {
+		CharStream input = CharStreams.fromString(text);
 		DatalogLexer lexer = new DatalogLexer(input);
 		TokenStream tokens = new CommonTokenStream(lexer);
 		DatalogParser parser = new DatalogParser(tokens);
@@ -45,10 +44,22 @@ public class ParserManager {
 				}
 			}
 			return null; //will take care of it later
-		} else {
-			//create AST or RelNode (of Calcite) here.....
-			RelNode relNode = builder.visit(tree);
-			return relNode;
 		}
+		return tree;
+
+	}
+
+	public RelNode parse(String inputProgram, String query) {
+		ParseTree inputProgramTree = this.parse(inputProgram);
+		ParseTree queryTree = this.parse(query);
+
+		//create AST or RelNode (of Calcite) here.....
+//		RelNode programRelNode = builder.visit(inputProgramTree);
+//		RelNode queryRelNode = builder.visit(inputProgramTree);
+//		return queryRelNode;
+
+		GraphBuilder graphBuilder = new GraphBuilder();
+		graphBuilder.visit(inputProgramTree);
+		return null;
 	}
 }

@@ -103,14 +103,14 @@ public class FlinkDatalogPlannerImpl {
 //		validator
 //	}
 //
-	public RelNode parse(String program) {
+	public RelNode parse(String inputProgram, String query) {
 		try {
 //			ready();
 //			RexBuilder rexBuilder = createRexBuilder();
 //			RelOptCluster cluster = FlinkRelOptClusterFactory.create(planner, rexBuilder);
 //			CatalogReader catalogReader = (CatalogReader) catalogReaderSupplier.apply(false);
 			ParserManager parserManager = new ParserManager(this.flinkRelBuilder);
-			return parserManager.parse(program);
+			return parserManager.parse(inputProgram, query);
 
 		} catch (Exception e) {
 			e.printStackTrace();

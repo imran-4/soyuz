@@ -15,7 +15,6 @@ public interface StreamDatalogEnvironment extends DatalogEnvironment, StreamTabl
 		return null;
 	}
 
-	void evaluateDatalogRules(String text);
 
-	Table datalogQuery(String query);
+	Table datalogQuery(String inputProgram, String query);
 }

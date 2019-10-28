@@ -2,7 +2,6 @@ package org.apache.flink.datalog;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -124,47 +123,47 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		);
 	}
 
-	@Override
-	public void evaluateDatalogRules(String program) {
-		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
-		RelNode parsed = datalogPlanner.parse(program);
-		/*
-		 parsed match {
-		  case insert: RichSqlInsert =>
-			// validate the insert
-			val validatedInsert = planner.validate(insert).asInstanceOf[RichSqlInsert]
-			// we do not validate the row type for sql insert now, so validate the source
-			// separately.
-			val validatedQuery = planner.validate(validatedInsert.getSource)
-			val tableOperation = new PlannerQueryOperation(planner.rel(validatedQuery).rel)
-			// get query result as Table
-			val queryResult = createTable(tableOperation)
-			// get name of sink table
-			val targetTablePath = insert.getTargetTable.asInstanceOf[SqlIdentifier].names
+//	@Override
+//	public void evaluateDatalogRules(String program) {
+//		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
+//		RelNode parsed = datalogPlanner.parse(program);
+//		/*
+//		 parsed match {
+//		  case insert: RichSqlInsert =>
+//			// validate the insert
+//			val validatedInsert = planner.validate(insert).asInstanceOf[RichSqlInsert]
+//			// we do not validate the row type for sql insert now, so validate the source
+//			// separately.
+//			val validatedQuery = planner.validate(validatedInsert.getSource)
+//			val tableOperation = new PlannerQueryOperation(planner.rel(validatedQuery).rel)
+//			// get query result as Table
+//			val queryResult = createTable(tableOperation)
+//			// get name of sink table
+//			val targetTablePath = insert.getTargetTable.asInstanceOf[SqlIdentifier].names
+//
+//			// insert query result into sink table
+//			insertInto(queryResult, InsertOptions(insert.getStaticPartitionKVs, insert.isOverwrite),
+//			  targetTablePath.asScala:_*)
+//		  case createTable: SqlCreateTable =>
+//			val operation = SqlToOperationConverter
+//			  .convert(planner, createTable)
+//			  .asInstanceOf[CreateTableOperation]
+//			val objectIdentifier = catalogManager.qualifyIdentifier(operation.getTablePath: _*)
+//			catalogManager.createTable(
+//			  operation.getCatalogTable,
+//			  objectIdentifier,
+//			  operation.isIgnoreIfExists)
+//		  case _ =>
+//			throw new TableException(
+//			  "Unsupported Datalog query!")
+//		}
+//		*/
+//	}
 
-			// insert query result into sink table
-			insertInto(queryResult, InsertOptions(insert.getStaticPartitionKVs, insert.isOverwrite),
-			  targetTablePath.asScala:_*)
-		  case createTable: SqlCreateTable =>
-			val operation = SqlToOperationConverter
-			  .convert(planner, createTable)
-			  .asInstanceOf[CreateTableOperation]
-			val objectIdentifier = catalogManager.qualifyIdentifier(operation.getTablePath: _*)
-			catalogManager.createTable(
-			  operation.getCatalogTable,
-			  objectIdentifier,
-			  operation.isIgnoreIfExists)
-		  case _ =>
-			throw new TableException(
-			  "Unsupported Datalog query!")
-		}
-		*/
-	}
-
 	@Override
-	public Table datalogQuery(String query) {
+	public Table datalogQuery(String inputProgram, String query) {
 		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
-		RelNode parsed = datalogPlanner.parse(query);
+		RelNode parsed = datalogPlanner.parse(inputProgram, query);
 		if (null != parsed) {
 			return createTable(new PlannerQueryOperation(parsed));
 		} else {

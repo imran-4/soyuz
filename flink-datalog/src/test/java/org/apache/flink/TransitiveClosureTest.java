@@ -1,7 +1,5 @@
 package org.apache.flink;
 
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -21,8 +19,8 @@ public class TransitiveClosureTest {
 			"abc(X,Y) :- graph(X, Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
 
-		datalogEnv.evaluateDatalogRules(inputProgram);
-		Table queryResult = datalogEnv.datalogQuery("abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
+//		datalogEnv.evaluateDatalogRules(inputProgram);
+		Table queryResult = datalogEnv.datalogQuery(inputProgram, "abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
 		try {
 			datalogEnv.toDataSet(queryResult,Tuple2.class).collect();
 		} catch (Exception e) {

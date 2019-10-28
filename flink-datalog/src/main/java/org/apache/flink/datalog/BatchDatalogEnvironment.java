@@ -1,6 +1,5 @@
 package org.apache.flink.datalog;
 
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
@@ -25,7 +24,7 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
 	/*
 	*
 	* */
-	void evaluateDatalogRules(String program);
+//	void evaluateDatalogRules(String program);
 
-	Table datalogQuery(String query);
+	Table datalogQuery(String inputProgram, String query);
 }

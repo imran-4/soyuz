@@ -83,7 +83,7 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	@Override
 	public List<Operation> parse(String text) {
 		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
-		RelNode relNode = planner.parse(text);
+		RelNode relNode = planner.parse(text, text);
 		RelRoot relRoot = RelRoot.of(relNode, SqlKind.SELECT);
 		return List.of(new PlannerQueryOperation(relRoot.project()));
 	}

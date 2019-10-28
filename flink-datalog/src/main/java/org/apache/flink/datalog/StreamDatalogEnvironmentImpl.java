@@ -55,12 +55,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public void evaluateDatalogRules(String text) {
-
-	}
-
-	@Override
-	public Table datalogQuery(String query) {
+	public Table datalogQuery(String inputProgram, String query) {
 		return null;
 	}
 

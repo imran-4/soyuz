@@ -28,8 +28,19 @@ public class Main {
 		String inputProgram =
 			"abc(X,Y) :- graph(X,Y).\n" +
 				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
-		datalogEnv.evaluateDatalogRules(inputProgram);
-		Table queryResult = datalogEnv.datalogQuery("abc(a,b)?");
+		String inputProgram1 =
+			"msic(SI,SZ) :- su(S1,s3), su(S2, S3), mt(S3).\n" +
+				"msic(Sl,S2) :- au(SI,P), au(SU2,P).\n" +
+				"msic(SI,Sf) :- au(S1, PI), au(S2, PZ), ci(PI, SZ), ci(P2, SI).\n" +
+				"msic(SI,St) :- au(Sl, PI), au(S2, PZ), ci(PI,P2), ci(P2, Pl).\n" +
+				"know(S2, R, T) :- orig(S1, R, T), msic(S1, S2).\n" +
+				"sif(Sl,SZ, Xi, T) :- at(S1, M, T), at(S2, M, T), cnf(M, X, T).\n" +
+				"knowl(L, R, T) :- cra(S, L, T), know(S, R, T).\n" +
+				"know(S2, R, T) :- know(S1, R, T), abt(R, X), sif(S1, S2, R, T)."; // only for testing the graph
+
+		String query = "abc(a,b)?";
+//		datalogEnv.evaluateDatalogRules(inputProgram);
+		Table queryResult = datalogEnv.datalogQuery(inputProgram1, query);
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
 			dataSet2.collect();

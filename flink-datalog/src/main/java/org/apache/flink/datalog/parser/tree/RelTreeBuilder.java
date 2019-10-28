@@ -1,5 +1,6 @@
 package org.apache.flink.datalog.parser.tree;
 
+import org.antlr.v4.runtime.RuleContext;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -22,7 +23,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 	private FlinkRelBuilder relBuilder;
 	private String currentCatalog;
 	private String currentDatabase;
-
 	private TableEnvironment environment;
 
 	public RelTreeBuilder(FlinkRelBuilder relBuilder) {
@@ -54,7 +54,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 			ruleClauses.add(ruleClauseRelNode);
 		}
 		RelNode ruleNodes = relBuilder.pushAll(ruleClauses).build();
-		System.out.print(">>>>>>>>>");
 		System.out.println(RelOptUtil.toString(ruleNodes));
 		return ruleNodes;
 	}
@@ -76,7 +75,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 			RelNode predicate = visit(predicateContext);
 			nodes.add(predicate);
 		}
-//		List<RelNode> joinedNodes = new ArrayList<>();
 		RelNode rootRelNode = null;
 		if (nodes.size() == 1) {
 			return relBuilder.pushAll(nodes).build();
@@ -88,11 +86,10 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 					.filter(rightPredicateFields::contains).toArray(String[]::new);
 				List<String> fieldsToProject = Stream.concat(leftPredicateFields.stream(), rightPredicateFields.stream()).filter(x -> !Arrays.asList(matched).contains(x))
 					.collect(Collectors.toList());
-				if (rootRelNode != null) {
+				if (rootRelNode != null)
 					rootRelNode = relBuilder.push(rootRelNode).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched).project(relBuilder.fields(fieldsToProject)).build();
-				} else {
+				else
 					rootRelNode = relBuilder.push(nodes.get(i)).push(nodes.get(i + 1)).join(JoinRelType.INNER, matched).project(relBuilder.fields(fieldsToProject)).build();
-				}
 			}
 			RelNode predicateListNode = rootRelNode;
 			System.out.println(RelOptUtil.toString(predicateListNode));
@@ -102,7 +99,21 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 
 	@Override
 	public RelNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-		return relBuilder.scan(ctx.predicate().predicateName().getText()).project(relBuilder.fields(IntStream.range(0, ctx.predicate().termList().term().size()).boxed().collect(Collectors.toList()))).build();
+		String predicateName = ctx.predicate().predicateName().getText();
+		List<String> predicateParameters = Arrays
+			.stream(ctx.predicate().termList().term().toArray(new DatalogParser.TermContext[0]))
+			.map(RuleContext::getText)
+			.collect(Collectors.toList());
+		this.addTableToCatalog(predicateName, predicateParameters);
+
+		return relBuilder
+			.scan(predicateName)
+			.project(relBuilder
+				.fields(IntStream
+					.range(0, ctx.predicate().termList().term().size())
+					.boxed()
+					.collect(Collectors.toList())))
+			.build();
 	}
 
 	@Override
