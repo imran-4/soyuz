@@ -24,7 +24,7 @@ grammar Datalog;
 
 
 compileUnit
-    : (rules | query) EOF
+    : rules query EOF
     ;
 rules
     : ruleClause+
