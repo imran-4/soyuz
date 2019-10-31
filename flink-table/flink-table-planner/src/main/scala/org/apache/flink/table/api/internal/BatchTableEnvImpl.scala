@@ -34,6 +34,7 @@ import org.apache.flink.table.explain.PlanJsonParser
 import org.apache.flink.table.expressions.utils.ApiExpressionDefaultVisitor
 import org.apache.flink.table.expressions.{Expression, UnresolvedCallExpression}
 import org.apache.flink.table.functions.BuiltInFunctionDefinitions.TIME_ATTRIBUTES
+import org.apache.flink.table.module.ModuleManager
 import org.apache.flink.table.operations.DataSetQueryOperation
 import org.apache.flink.table.plan.BatchOptimizer
 import org.apache.flink.table.plan.nodes.dataset.DataSetRel
@@ -48,7 +49,6 @@ import org.apache.flink.table.utils.TableConnectorUtils
 import org.apache.flink.types.Row
 
 import _root_.scala.collection.JavaConverters._
-import _root_.scala.collection.JavaConversions._
 
 /**
   * The abstract base class for the implementation of batch TableEnvironments.
@@ -59,8 +59,9 @@ import _root_.scala.collection.JavaConversions._
 abstract class BatchTableEnvImpl(
     private[flink] val execEnv: ExecutionEnvironment,
     config: TableConfig,
-    catalogManager: CatalogManager)
-  extends TableEnvImpl(config, catalogManager) {
+    catalogManager: CatalogManager,
+    moduleManager: ModuleManager)
+  extends TableEnvImpl(config, catalogManager, moduleManager) {
 
   private[flink] val optimizer = new BatchOptimizer(
     () => config.getPlannerConfig.unwrap(classOf[CalciteConfig]).orElse(CalciteConfig.DEFAULT),
@@ -116,13 +117,12 @@ abstract class BatchTableEnvImpl(
         // translate the Table into a DataSet and provide the type that the TableSink expects.
         val result: DataSet[T] = translate(table)(outputType)
         // Give the DataSet to the TableSink to emit it.
-        batchSink.emitDataSet(shuffleByPartitionFieldsIfNeeded(batchSink, result))
+        batchSink.emitDataSet(result)
       case boundedSink: OutputFormatTableSink[T] =>
         val outputType = fromDataTypeToLegacyInfo(sink.getConsumedDataType)
           .asInstanceOf[TypeInformation[T]]
         // translate the Table into a DataSet and provide the type that the TableSink expects.
-        val translated: DataSet[T] = translate(table)(outputType)
-        val result = shuffleByPartitionFieldsIfNeeded(boundedSink, translated)
+        val result: DataSet[T] = translate(table)(outputType)
         // use the OutputFormat to consume the DataSet.
         val dataSink = result.output(boundedSink.getOutputFormat)
         dataSink.name(
@@ -132,26 +132,6 @@ abstract class BatchTableEnvImpl(
       case _ =>
         throw new TableException(
           "BatchTableSink or OutputFormatTableSink required to emit batch Table.")
-    }
-  }
-
-  /**
-    * Key by the partition fields if the sink is a [[PartitionableTableSink]].
-    * @param sink    the table sink
-    * @param dataSet the data set
-    * @tparam R      the data set record type
-    * @return a data set that maybe keyed by.
-    */
-  private def shuffleByPartitionFieldsIfNeeded[R](
-      sink: TableSink[_],
-      dataSet: DataSet[R]): DataSet[R] = {
-    sink match {
-      case partitionableSink: PartitionableTableSink
-        if partitionableSink.getPartitionFieldNames.nonEmpty =>
-        val fieldNames = sink.getTableSchema.getFieldNames
-        val indices = partitionableSink.getPartitionFieldNames.map(fieldNames.indexOf(_))
-        dataSet.partitionByHash(indices:_*)
-      case _ => dataSet
     }
   }
 

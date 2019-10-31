@@ -27,7 +27,6 @@ import org.apache.flink.table.catalog.exceptions.FunctionNotExistException;
 import org.apache.flink.table.delegation.PlannerTypeInferenceUtil;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.AggregateFunctionDefinition;
-import org.apache.flink.table.functions.BuiltInFunctionDefinitions;
 import org.apache.flink.table.functions.FunctionDefinition;
 import org.apache.flink.table.functions.FunctionDefinitionUtil;
 import org.apache.flink.table.functions.ScalarFunction;
@@ -38,6 +37,7 @@ import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.functions.TableFunctionDefinition;
 import org.apache.flink.table.functions.UserDefinedAggregateFunction;
 import org.apache.flink.table.functions.UserFunctionsTypeHelper;
+import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.util.Preconditions;
 
 import java.util.HashSet;
@@ -45,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -57,6 +56,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class FunctionCatalog implements FunctionLookup {
 
 	private final CatalogManager catalogManager;
+	private final ModuleManager moduleManager;
 
 	private final Map<String, FunctionDefinition> tempSystemFunctions = new LinkedHashMap<>();
 	private final Map<ObjectIdentifier, FunctionDefinition> tempCatalogFunctions = new LinkedHashMap<>();
@@ -66,8 +66,9 @@ public class FunctionCatalog implements FunctionLookup {
 	 */
 	private PlannerTypeInferenceUtil plannerTypeInferenceUtil;
 
-	public FunctionCatalog(CatalogManager catalogManager) {
+	public FunctionCatalog(CatalogManager catalogManager, ModuleManager moduleManager) {
 		this.catalogManager = checkNotNull(catalogManager);
+		this.moduleManager = checkNotNull(moduleManager);
 	}
 
 	public void setPlannerTypeInferenceUtil(PlannerTypeInferenceUtil plannerTypeInferenceUtil) {
@@ -200,12 +201,7 @@ public class FunctionCatalog implements FunctionLookup {
 		Set<String> result = getUserDefinedFunctionNames();
 
 		// Get built-in functions
-		result.addAll(
-			BuiltInFunctionDefinitions.getDefinitions()
-				.stream()
-				.map(f -> normalizeName(f.getName()))
-				.collect(Collectors.toSet())
-		);
+		result.addAll(moduleManager.listFunctions());
 
 		return result.toArray(new String[0]);
 	}
@@ -232,7 +228,7 @@ public class FunctionCatalog implements FunctionLookup {
 
 	@Override
 	public Optional<FunctionLookup.Result> lookupFunction(String name) {
-		String functionName = normalizeName(name);
+		String normalizedName = FunctionCatalogUtil.normalizeName(name);
 
 		FunctionDefinition userCandidate;
 
@@ -240,12 +236,12 @@ public class FunctionCatalog implements FunctionLookup {
 
 		try {
 			CatalogFunction catalogFunction = catalog.getFunction(
-				new ObjectPath(catalogManager.getCurrentDatabase(), functionName));
+				new ObjectPath(catalogManager.getCurrentDatabase(), normalizedName));
 
 			if (catalog.getFunctionDefinitionFactory().isPresent()) {
-				userCandidate = catalog.getFunctionDefinitionFactory().get().createFunctionDefinition(functionName, catalogFunction);
+				userCandidate = catalog.getFunctionDefinitionFactory().get().createFunctionDefinition(normalizedName, catalogFunction);
 			} else {
-				userCandidate = FunctionDefinitionUtil.createFunctionDefinition(functionName, catalogFunction);
+				userCandidate = FunctionDefinitionUtil.createFunctionDefinition(normalizedName, catalogFunction);
 			}
 
 			return Optional.of(
@@ -258,23 +254,13 @@ public class FunctionCatalog implements FunctionLookup {
 		}
 
 		// If no corresponding function is found in catalog, check in-memory functions
-		userCandidate = tempSystemFunctions.get(functionName);
+		userCandidate = tempSystemFunctions.get(normalizedName);
 
 		final Optional<FunctionDefinition> foundDefinition;
 		if (userCandidate != null) {
 			foundDefinition = Optional.of(userCandidate);
 		} else {
-
-			// TODO once we connect this class with the Catalog APIs we need to make sure that
-			//  built-in functions are present in "root" built-in catalog. This allows to
-			//  overwrite built-in functions but also fallback to the "root" catalog. It should be
-			//  possible to disable the "root" catalog if that is desired.
-
-			foundDefinition = BuiltInFunctionDefinitions.getDefinitions()
-				.stream()
-				.filter(f -> functionName.equals(normalizeName(f.getName())))
-				.findFirst()
-				.map(Function.identity());
+			foundDefinition = moduleManager.getFunctionDefinition(normalizedName);
 		}
 
 		return foundDefinition.map(definition -> new FunctionLookup.Result(
@@ -295,7 +281,7 @@ public class FunctionCatalog implements FunctionLookup {
 	}
 
 	private void registerTempSystemFunction(String name, FunctionDefinition functionDefinition) {
-		tempSystemFunctions.put(normalizeName(name), functionDefinition);
+		tempSystemFunctions.put(FunctionCatalogUtil.normalizeName(name), functionDefinition);
 	}
 
 	private void registerTempCatalogFunction(ObjectIdentifier oi, FunctionDefinition functionDefinition) {
@@ -303,15 +289,10 @@ public class FunctionCatalog implements FunctionLookup {
 	}
 
 	@VisibleForTesting
-	static String normalizeName(String name) {
-		return name.toUpperCase();
-	}
-
-	@VisibleForTesting
 	static ObjectIdentifier normalizeObjectIdentifier(ObjectIdentifier oi) {
 		return ObjectIdentifier.of(
 			oi.getCatalogName(),
 			oi.getDatabaseName(),
-			oi.getObjectName().toUpperCase());
+			FunctionCatalogUtil.normalizeName(oi.getObjectName()));
 	}
 }

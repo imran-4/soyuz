@@ -28,8 +28,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,6 +71,27 @@ public class ExpressionTest {
 	@Test
 	public void testExpressionEquality() {
 		assertEquals(TREE_WITH_VALUE, TREE_WITH_SAME_VALUE);
+	}
+
+	@Test
+	public void testArrayValueLiteralEquality() {
+		assertEquals(
+			new ValueLiteralExpression(new Integer[][]{null, null, {1, 2, 3}}),
+			new ValueLiteralExpression(new Integer[][]{null, null, {1, 2, 3}}));
+
+		assertEquals(
+			new ValueLiteralExpression(
+				new String[][]{null, null, {"1", "2", "3", "Dog's"}},
+				DataTypes.ARRAY(DataTypes.ARRAY(DataTypes.STRING()))),
+			new ValueLiteralExpression(
+				new String[][]{null, null, {"1", "2", "3", "Dog's"}},
+				DataTypes.ARRAY(DataTypes.ARRAY(DataTypes.STRING())))
+		);
+
+		assertEquals(
+			new ValueLiteralExpression("abc".getBytes(StandardCharsets.UTF_8)),
+			new ValueLiteralExpression("abc".getBytes(StandardCharsets.UTF_8))
+		);
 	}
 
 	@Test
@@ -157,6 +180,16 @@ public class ExpressionTest {
 		assertEquals(
 			intervalUnit,
 			new ValueLiteralExpression(intervalUnit).getValueAs(TimeIntervalUnit.class)
+				.orElseThrow(AssertionError::new));
+	}
+
+	@Test
+	public void testPeriodValueLiteralExtraction() {
+		final Period period = Period.ofMonths(10);
+		Integer expectedValue = 10;
+		assertEquals(
+			expectedValue,
+			new ValueLiteralExpression(period).getValueAs(Integer.class)
 				.orElseThrow(AssertionError::new));
 	}
 
