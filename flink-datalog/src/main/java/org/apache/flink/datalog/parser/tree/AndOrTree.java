@@ -5,6 +5,7 @@ import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.QueryPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
+import org.apache.flink.datalog.parser.tree.predicate.TermData;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node> {
 	private static OrNode rootNode = null;
 	private static Map<String, Boolean> rulesHead = new LinkedHashMap<>();
+	Node tempNode = rootNode;
 
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
@@ -26,17 +28,18 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 
 	@Override
 	public boolean hasNext() {
+
 		return false;
 	}
 
 	@Override
 	public Node next() {
-		return null;
+		return rootNode.getChildren().get(0);
 	}
 
 	@Override
 	public void remove() {
-
+		throw new java.lang.UnsupportedOperationException("Remove operation is not supported.");
 	}
 
 	@Override
@@ -49,13 +52,12 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 		public List<AndNode> visitRules(DatalogParser.RulesContext ctx) {
 			String queryPredicateName = rootNode.getPredicateData().getPredicateName();
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
-			Iterator<DatalogParser.RuleClauseContext> ruleClauseContextIterator = ctx.ruleClause().iterator();
-			while (ruleClauseContextIterator.hasNext()) {
-				DatalogParser.RuleClauseContext ruleClauseContext = ruleClauseContextIterator.next();
+			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
 				if (headPredicateName.equals(queryPredicateName)) {
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
 //					ruleClauseContextIterator.remove();
+//					rulesHead.putIfAbsent(headPredicateName, true);
 				} else {
 					rulesHead.putIfAbsent(headPredicateName, true);
 				}
@@ -87,27 +89,36 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 		@Override
 		public List<OrNode> visitPredicateList(DatalogParser.PredicateListContext ctx) {
 			List<OrNode> ruleBodyNodes = new ArrayList<>();
+
 			for (int i = 0; i < ctx.predicate().size(); i++) {
 				OrNode bodyNode = null;
-				if (ctx.predicate(i) != null) {
-					bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
-					String bodyNodePredicateName = bodyNode.getPredicateData().getPredicateName();
 
-					if (rulesHead.getOrDefault(bodyNodePredicateName, false)) {
-						List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
-						for (DatalogParser.RuleClauseContext ruleClauseContext: ((DatalogParser.RulesContext)ctx.getParent().getParent()).ruleClause()) {
-							String currentRuleClauseHeadPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-							if (currentRuleClauseHeadPredicateName.equals(bodyNodePredicateName)) {
-								ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
-							}
-							bodyNode.setChildren(ruleHeadsMatchingQuery);
+				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
+				String bodyNodePredicateName = bodyNode.getPredicateData().getPredicateName();
+
+				if (rulesHead.getOrDefault(bodyNodePredicateName, false)) { //todo: may to see if there is a better way to implement the following.
+					List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
+					for (DatalogParser.RuleClauseContext ruleClauseContext : ((DatalogParser.RulesContext) ctx.getParent().getParent()).ruleClause()) {
+						String currentRuleClauseHeadPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
+						if (currentRuleClauseHeadPredicateName.equals(bodyNodePredicateName)) {
+							ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
+//							rulesHead.putIfAbsent(currentRuleClauseHeadPredicateName, true);///////todo: not sure.........
 						}
+						bodyNode.setChildren(ruleHeadsMatchingQuery);
 					}
-
-				} else {
-					bodyNode = new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate(i));
 				}
+
 				ruleBodyNodes.add(bodyNode);
+			}
+			for (int i = 0; i < ctx.primitivePredicate().size(); i++) {
+				OrNode bodyNode = null;
+
+				bodyNode = new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate(i));
+				ruleBodyNodes.add(bodyNode);
+
+			}
+			for (int i = 0; i < ctx.notPredicate().size(); i++) {
+				throw new UnsupportedOperationException("Not operator is not supported yet.");
 			}
 			return ruleBodyNodes;
 		}
@@ -127,8 +138,6 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 		}
 	}
 
-	//--------------------------------------------------------------------
-
 	private static class PrimitivePredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
@@ -143,17 +152,21 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 		}
 	}
 
-	private static class TermListBuilder extends DatalogBaseVisitor<List<String>> {
+	private static class TermListBuilder extends DatalogBaseVisitor<List<TermData>> {
 		@Override
-		public List<String> visitTermList(DatalogParser.TermListContext ctx) {
+		public List<TermData> visitTermList(DatalogParser.TermListContext ctx) {
 			return ctx.term().stream().map(termContext -> new TermBuilder().visitTerm(termContext)).collect(Collectors.toList());
 		}
 	}
 
-	private static class TermBuilder extends DatalogBaseVisitor<String> {
+	private static class TermBuilder extends DatalogBaseVisitor<TermData> {
 		@Override
-		public String visitTerm(DatalogParser.TermContext ctx) {
-			return ctx.getText();
+		public TermData visitTerm(DatalogParser.TermContext ctx) {
+			if (ctx.CONSTANT() != null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+				return new TermData(ctx.getText(), TermData.Adornment.BOUND);
+			} else {
+				return new TermData(ctx.getText(), TermData.Adornment.FREE);
+			}
 		}
 	}
 }

@@ -101,13 +101,12 @@ DATABASE_KEYWORD
 DATATYPE
     : 'Integer' | 'Float' | 'String' | 'Char' | 'Boolean'
     ;
+COMPARISON_OPERATOR
+    : '<' | '>'  | '!=' | '>=' | '<=' | '='
+    ;
 OPERATOR //TODO: add more binary operators
     : '+' | '*' | '-' | '/'
-    | COMPARISON_OPERATOR
     | '>>' | '<<'
-    ;
-COMPARISON_OPERATOR
-    : '<' | '>' | '=' | '!=' | '>=' | '<='
     ;
 UNARY_OPERATOR //TODO: add more unary operators
     : '-' | '+'

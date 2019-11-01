@@ -20,7 +20,7 @@ public class PrimitivePredicateData extends PredicateData {
 	}
 
 	@Override
-	public List<String> getPredicateParameters() {
+	public List<TermData> getPredicateParameters() {
 		return null;
 	}
 

@@ -4,9 +4,9 @@ import java.util.List;
 
 public class SimplePredicateData extends PredicateData {
 	private String predicateName;
-	private List<String> predicateParameters;
+	private List<TermData> predicateParameters;
 
-	public SimplePredicateData(String predicateName, List<String> predicateParameters) {
+	public SimplePredicateData(String predicateName, List<TermData> predicateParameters) {
 		this.predicateName = predicateName;
 		this.predicateParameters = predicateParameters;
 	}
@@ -17,7 +17,7 @@ public class SimplePredicateData extends PredicateData {
 	}
 
 	@Override
-	public List<String> getPredicateParameters() {
+	public List<TermData> getPredicateParameters() {
 		return predicateParameters;
 	}
 

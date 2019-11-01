@@ -13,6 +13,7 @@ public class AndNode extends Node{
 		this.predicateData = predicateData;
 	}
 
+	@Override
 	public List<OrNode> getChildren() {
 		return children;
 	}
@@ -21,8 +22,14 @@ public class AndNode extends Node{
 		this.children = children;
 	}
 
+	@Override
 	public PredicateData getPredicateData() {
 		return predicateData;
+	}
+
+	@Override
+	public int getChildrenCount() {
+		return this.children.size();
 	}
 
 	@Override

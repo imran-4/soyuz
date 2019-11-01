@@ -7,20 +7,27 @@ import java.util.List;
 
 public class OrNode extends Node {
 	private PredicateData predicateData;
-	private List<? extends AndNode> children = new ArrayList<>();
+	private List<AndNode> children = new ArrayList<>();
 
 	public OrNode(PredicateData predicateData) {
 		this.predicateData = predicateData;
 	}
 
-	public List<? extends AndNode> getChildren() {
+	@Override
+	public List<AndNode> getChildren() {
 		return children;
 	}
 
-	public void setChildren(List<? extends AndNode> children) {
+	public void setChildren(List<AndNode> children) {
 		this.children = children;
 	}
 
+	@Override
+	public int getChildrenCount() {
+		return this.children.size();
+	}
+
+	@Override
 	public PredicateData getPredicateData() {
 		return predicateData;
 	}

@@ -32,6 +32,10 @@ import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
+import org.apache.flink.table.module.Module;
+import org.apache.flink.table.module.ModuleManager;
+import org.apache.flink.table.module.exceptions.ModuleAlreadyExistException;
+import org.apache.flink.table.module.exceptions.ModuleNotFoundException;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.plan.nodes.dataset.DataSetRel;
@@ -97,7 +101,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		CatalogManager catalogManager = new CatalogManager(
 			settings.getBuiltInCatalogName(),
 			new DatalogCatalog(settings.getBuiltInCatalogName(), settings.getBuiltInDatabaseName()));
-		FunctionCatalog functionCatalog = new FunctionCatalog(catalogManager);
+		ModuleManager moduleManager = new ModuleManager();
+		FunctionCatalog functionCatalog = new FunctionCatalog(catalogManager, moduleManager);
 		Map<String, String> executorProperties = settings.toExecutorProperties();
 		Executor executor = ComponentFactoryService.find(ExecutorFactory.class, executorProperties)
 			.create(executorProperties);
@@ -251,6 +256,16 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	}
 
 	@Override
+	public void loadModule(String moduleName, Module module) throws ModuleAlreadyExistException {
+
+	}
+
+	@Override
+	public void unloadModule(String moduleName) throws ModuleNotFoundException {
+
+	}
+
+	@Override
 	public void registerFunction(String name, ScalarFunction function) {
 		throw new UnsupportedOperationException("Not supported");
 	}
@@ -341,6 +356,11 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	@Override
 	public String[] listCatalogs() {
 		return this.catalogManager.getCatalogs().toArray(new String[0]);
+	}
+
+	@Override
+	public String[] listModules() {
+		return new String[0];
 	}
 
 	@Override

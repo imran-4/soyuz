@@ -18,6 +18,9 @@ import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableAggregateFunction;
 import org.apache.flink.table.functions.TableFunction;
+import org.apache.flink.table.module.Module;
+import org.apache.flink.table.module.exceptions.ModuleAlreadyExistException;
+import org.apache.flink.table.module.exceptions.ModuleNotFoundException;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
@@ -151,6 +154,16 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
+	public void loadModule(String moduleName, Module module) throws ModuleAlreadyExistException {
+
+	}
+
+	@Override
+	public void unloadModule(String moduleName) throws ModuleNotFoundException {
+
+	}
+
+	@Override
 	public void registerFunction(String name, ScalarFunction function) {
 		throw new UnsupportedOperationException("Not supported");
 	}
@@ -241,6 +254,11 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	@Override
 	public String[] listCatalogs() {
 		return this.catalogManager.getCatalogs().toArray(new String[0]);
+	}
+
+	@Override
+	public String[] listModules() {
+		return new String[0];
 	}
 
 	@Override
