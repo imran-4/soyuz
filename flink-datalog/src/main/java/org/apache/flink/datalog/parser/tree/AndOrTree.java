@@ -12,29 +12,27 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node> {
-	private static OrNode rootNode = null;
-	private static Map<String, Boolean> rulesHead = new LinkedHashMap<>();
-	Node tempNode = rootNode;
+//	private static OrNode rootNode = null;
+//	private static Map<String, Boolean> rulesHead = new LinkedHashMap<>();
 
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
-		rulesHead = new LinkedHashMap<>();
+//		rulesHead = new LinkedHashMap<>();
 
-		rootNode = new QueryBuilder().visitQuery(ctx.query());
-		rootNode.setChildren(new RulesBuilder().visitRules(ctx.rules()));
+		OrNode rootNode = new QueryBuilder().visitQuery(ctx.query());
+		rootNode.setChildren(new RulesBuilder(rootNode).visitRules(ctx.rules()));
 		System.out.println(rootNode);
 		return rootNode;
 	}
 
 	@Override
 	public boolean hasNext() {
-
 		return false;
 	}
 
 	@Override
 	public Node next() {
-		return rootNode.getChildren().get(0);
+		return null;
 	}
 
 	@Override
@@ -48,44 +46,50 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
+		private OrNode topLevelNode;
+		RulesBuilder(OrNode topLevelNode) {
+			this.topLevelNode = topLevelNode;
+		}
+
 		@Override
 		public List<AndNode> visitRules(DatalogParser.RulesContext ctx) {
-			String queryPredicateName = rootNode.getPredicateData().getPredicateName();
+			String queryPredicateName = topLevelNode.getPredicateData().getPredicateName();
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-				if (headPredicateName.equals(queryPredicateName)) {
-					ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
+				if (headPredicateName.equals(queryPredicateName) && !topLevelNode.isRecursive()) {
+					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
 //					ruleClauseContextIterator.remove();
 //					rulesHead.putIfAbsent(headPredicateName, true);
-				} else {
-					rulesHead.putIfAbsent(headPredicateName, true);
 				}
 			}
-//			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
-//				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-//				rulesHead.putIfAbsent(headPredicateName, true);
-//				if (headPredicateName.equals(queryPredicateName)) {
-//					ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
-//					rulesHead.put(headPredicateName, false);
-////					rulesToRemove.add(i);
-//					ctx.ruleClause().remove(ruleClauseContext);
-//				}
-//			}
 			return ruleHeadsMatchingQuery;
 		}
 	}
 
 	private static class RuleClauseBuilder extends DatalogBaseVisitor<AndNode> {
+		DatalogParser.RulesContext rulesContext;
+		RuleClauseBuilder(DatalogParser.RulesContext rulesContext) {
+			this.rulesContext = rulesContext;
+		}
+
 		@Override
 		public AndNode visitRuleClause(DatalogParser.RuleClauseContext ctx) {
-			AndNode headPredicateNode = new HeadPredicateBuilder().visit(ctx.headPredicate());
-			headPredicateNode.setChildren(new PredicateListBuilder().visitPredicateList(ctx.predicateList()));
+			DatalogParser.HeadPredicateContext headPredicateContext = ctx.headPredicate();
+			AndNode headPredicateNode = new HeadPredicateBuilder().visit(headPredicateContext);
+			headPredicateNode.setChildren(new PredicateListBuilder(headPredicateNode, rulesContext).visitPredicateList(ctx.predicateList()));
 			return headPredicateNode;
 		}
 	}
 
 	private static class PredicateListBuilder extends DatalogBaseVisitor<List<OrNode>> {
+		DatalogParser.RulesContext rulesContext;
+		AndNode headPredicateNode;
+		PredicateListBuilder(AndNode headPredicateContext, DatalogParser.RulesContext rulesContext) {
+			this.headPredicateNode = headPredicateContext;
+			this.rulesContext = rulesContext;
+		}
+
 		@Override
 		public List<OrNode> visitPredicateList(DatalogParser.PredicateListContext ctx) {
 			List<OrNode> ruleBodyNodes = new ArrayList<>();
@@ -93,23 +97,18 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 			for (int i = 0; i < ctx.predicate().size(); i++) {
 				OrNode bodyNode = null;
 
+
 				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
-				String bodyNodePredicateName = bodyNode.getPredicateData().getPredicateName();
-
-				if (rulesHead.getOrDefault(bodyNodePredicateName, false)) { //todo: may to see if there is a better way to implement the following.
-					List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
-					for (DatalogParser.RuleClauseContext ruleClauseContext : ((DatalogParser.RulesContext) ctx.getParent().getParent()).ruleClause()) {
-						String currentRuleClauseHeadPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-						if (currentRuleClauseHeadPredicateName.equals(bodyNodePredicateName)) {
-							ruleHeadsMatchingQuery.add(new RuleClauseBuilder().visitRuleClause(ruleClauseContext));
-//							rulesHead.putIfAbsent(currentRuleClauseHeadPredicateName, true);///////todo: not sure.........
-						}
-						bodyNode.setChildren(ruleHeadsMatchingQuery);
-					}
+				if (bodyNode.getPredicateData().getPredicateName().equals(headPredicateNode.getPredicateData().getPredicateName())) {
+					bodyNode.setRecursive(true);
 				}
-
+				List<AndNode> subNodes = new RulesBuilder(bodyNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent());
+				if (subNodes.size() > 0) {
+					bodyNode.setChildren(subNodes);
+				}
 				ruleBodyNodes.add(bodyNode);
 			}
+
 			for (int i = 0; i < ctx.primitivePredicate().size(); i++) {
 				OrNode bodyNode = null;
 
