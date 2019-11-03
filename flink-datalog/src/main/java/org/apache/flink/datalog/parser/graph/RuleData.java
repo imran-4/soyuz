@@ -7,19 +7,10 @@ public class RuleData {
 	private PredicateData headPredicate;
 	private List<PredicateData> bodyPredicate;
 
-	public RuleData(int ruleId, PredicateData headPredicate, List<PredicateData> bodyPredicate) {
+	RuleData(int ruleId, PredicateData headPredicate, List<PredicateData> bodyPredicate) {
 		this.ruleId = ruleId;
 		this.headPredicate = headPredicate;
 		this.bodyPredicate = bodyPredicate;
-	}
-
-	@Override
-	public String toString() {
-		return "RuleData{" +
-			"ruleId='" + ruleId + '\'' +
-			", headPredicate=" + headPredicate +
-			", bodyPredicate=" + bodyPredicate +
-			'}';
 	}
 
 	public int getRuleId() {
@@ -34,4 +25,12 @@ public class RuleData {
 		return bodyPredicate;
 	}
 
+	@Override
+	public String toString() {
+		return "RuleData{" +
+			"ruleId='" + ruleId + '\'' +
+			", headPredicate=" + headPredicate +
+			", bodyPredicate=" + bodyPredicate +
+			'}';
+	}
 }

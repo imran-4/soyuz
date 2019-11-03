@@ -50,7 +50,7 @@ public class Main {
 		String inputProgram3 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"+
 			"sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
 		String query3 = "sg(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram3, query3);
+		Table queryResult = datalogEnv.datalogQuery(inputProgram2, query2);
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
 			dataSet2.collect();

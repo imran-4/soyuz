@@ -6,42 +6,48 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class GraphBuilder extends DatalogBaseVisitor<Graph<Vertex, Edge>> {
+public class PrecedenceGraphBuilder extends DatalogBaseVisitor<Graph<Vertex, Edge>> {
 	private static Graph<Vertex, Edge> graph = new DefaultDirectedGraph<>(Edge.class);
-	private static Map<String, List<String>> rulePredicateMapping = new HashMap<>(); //predicate_name,rule_id
+	private static Vertex rootVertex;
 	private static int ruleId = 0;
 
 	@Override
 	public Graph<Vertex, Edge> visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
-		if (ctx.query() != null) {
-//			return visit(ctx.query());
-		} else if (ctx.rules() != null) {
+		if (ctx.query() == null) {
+			return null;
+		}
+		PredicateData query = new QueryBuilder().visitQuery(ctx.query());
+		rootVertex = new QueryVertex(query.getPredicateName(), query);
+		graph.addVertex(rootVertex);
+		if (ctx.rules() != null) {
 			RulesBuilder rulesBuilder = new RulesBuilder();
 			List<RuleData> rulesData = rulesBuilder.visitRules(ctx.rules());
 			for (RuleData ruleData : rulesData) {
-				graph.addVertex(new Vertex(String.valueOf(ruleData.getRuleId()), ruleData));
+				Vertex ruleVertex = new RuleVertex(String.valueOf(ruleData.getRuleId()), ruleData);
+				graph.addVertex(ruleVertex);
 			}
-
-			for (Vertex source : graph.vertexSet()) {
-//				String sourceHeadPredicateName = source.getRuleData().getHeadPredicate().getPredicateName();
-				List<String> sourceBodyPredicateNames = source.getRuleData().getBodyPredicate().stream().map(PredicateData::getPredicateName).collect(Collectors.toList());
+			for (Vertex source : graph.vertexSet()) { //doesn't look good, but ok for now...
+				List<String> sourcePredicateNames = new ArrayList<>();
+				if (source instanceof RuleVertex) {
+					sourcePredicateNames = ((RuleVertex) source).getRuleData().getBodyPredicate().stream().map(PredicateData::getPredicateName).collect(Collectors.toList());
+				} else if (source instanceof QueryVertex) {
+					sourcePredicateNames = List.of(((QueryVertex) source).getTopPredicateData().getPredicateName());
+				}
 				for (Vertex dest : graph.vertexSet()) {
-					String destHeadPredicate = dest.getRuleData().getHeadPredicate().getPredicateName();
-//					List<String> destBodyPredicates = dest.getRuleData().getBodyPredicate().stream().map(PredicateData::getPredicateName).collect(Collectors.toList());
-					if (sourceBodyPredicateNames.contains(destHeadPredicate)) {
-						graph.addEdge(source, dest, new Edge(""));
+					if (dest instanceof RuleVertex) {
+						String destHeadPredicate = ((RuleVertex) dest).getRuleData().getHeadPredicate().getPredicateName();
+						if (sourcePredicateNames.contains(destHeadPredicate)) {
+							graph.addEdge(source, dest, new Edge(""));
+						}
 					}
 				}
 			}
 			System.out.println(graph);
-		} else
-			return null;
-		return null;
+		}
+		return graph;
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<RuleData>> {
@@ -58,19 +64,6 @@ public class GraphBuilder extends DatalogBaseVisitor<Graph<Vertex, Edge>> {
 			List<PredicateData> bodyPredicate = new PredicateListBuilder().visitPredicateList(ctx.predicateList());
 			RuleData ruleData = new RuleData(ruleId, headPredicate, bodyPredicate);
 			ruleId++;
-//			Vertex vertex = new Vertex(String.valueOf(ruleId), ruleData);
-//			graph.addVertex(vertex);
-//
-//			for (PredicateData predicate : bodyPredicate) {
-//				String predicateName = predicate.getPredicateName();
-//				List<String> predicateValue = rulePredicateMapping.get(predicateName);
-//				if (predicateValue == null)
-//					predicateValue = new ArrayList<>();
-//				else {
-//					predicateValue.add(String.valueOf(ruleId));
-//				}
-//				rulePredicateMapping.put(predicateName, predicateValue);
-//			}
 			return ruleData;
 		}
 	}
@@ -103,17 +96,17 @@ public class GraphBuilder extends DatalogBaseVisitor<Graph<Vertex, Edge>> {
 		}
 	}
 
-	private static class TermListBuilder extends DatalogBaseVisitor<List<String>> {
+	private static class TermListBuilder extends DatalogBaseVisitor<List<TermData>> {
 		@Override
-		public List<String> visitTermList(DatalogParser.TermListContext ctx) {
+		public List<TermData> visitTermList(DatalogParser.TermListContext ctx) {
 			return ctx.term().stream().map(termContext -> new TermBuilder().visitTerm(termContext)).collect(Collectors.toList());
 		}
 	}
 
-	private static class TermBuilder extends DatalogBaseVisitor<String> {
+	private static class TermBuilder extends DatalogBaseVisitor<TermData> {
 		@Override
-		public String visitTerm(DatalogParser.TermContext ctx) {
-			return ctx.getText();
+		public TermData visitTerm(DatalogParser.TermContext ctx) {
+			return new TermData(ctx.getText(), ctx.VARIABLE() != null ? TermData.Adornment.FREE : TermData.Adornment.BOUND);
 		}
 	}
 }

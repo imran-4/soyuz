@@ -5,8 +5,12 @@ import org.jgrapht.graph.DefaultEdge;
 public class Edge extends DefaultEdge {
 	private String label;
 
-	public Edge(String label) {
+	Edge(String label) {
 		this.label = label;
+	}
+
+	public String getLabel() {
+		return label;
 	}
 
 	@Override
@@ -14,9 +18,5 @@ public class Edge extends DefaultEdge {
 		return "Edge{" +
 			"label='" + label + '\'' +
 			'}';
-	}
-
-	public String getLabel() {
-		return label;
 	}
 }

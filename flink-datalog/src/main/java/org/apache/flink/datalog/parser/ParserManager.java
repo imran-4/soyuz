@@ -6,10 +6,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.calcite.rel.RelNode;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.datalog.parser.graph.Edge;
+import org.apache.flink.datalog.parser.graph.PrecedenceGraphBuilder;
+import org.apache.flink.datalog.parser.graph.Vertex;
 import org.apache.flink.datalog.parser.tree.AndOrTree;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
+import org.jgrapht.Graph;
 
 import java.util.List;
 
@@ -56,9 +60,15 @@ public class ParserManager {
 			query;
 		ParseTree programTree = this.parse(program);
 
-		AndOrTree graphBuilder = new AndOrTree();
+//		AndOrTree graphBuilder = new AndOrTree();
+//		assert programTree != null;
+//		Node rootNode = graphBuilder.visit(programTree);
+
+		PrecedenceGraphBuilder graphBuilder = new PrecedenceGraphBuilder();
 		assert programTree != null;
-		Node rootNode = graphBuilder.visit(programTree);
+		Graph<Vertex, Edge> graph = graphBuilder.visit(programTree);
+
+
 
 		return null;
 	}

@@ -12,16 +12,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node> {
-//	private static OrNode rootNode = null;
-//	private static Map<String, Boolean> rulesHead = new LinkedHashMap<>();
+	private static OrNode rootNode = null;
 
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
-//		rulesHead = new LinkedHashMap<>();
-
 		OrNode rootNode = new QueryBuilder().visitQuery(ctx.query());
 		rootNode.setChildren(new RulesBuilder(rootNode).visitRules(ctx.rules()));
 		System.out.println(rootNode);
+		AndOrTree.rootNode = rootNode;
 		return rootNode;
 	}
 
@@ -59,8 +57,6 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
 				if (headPredicateName.equals(queryPredicateName) && !topLevelNode.isRecursive()) {
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
-//					ruleClauseContextIterator.remove();
-//					rulesHead.putIfAbsent(headPredicateName, true);
 				}
 			}
 			return ruleHeadsMatchingQuery;
@@ -102,7 +98,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 				if (bodyNode.getPredicateData().getPredicateName().equals(headPredicateNode.getPredicateData().getPredicateName())) {
 					bodyNode.setRecursive(true);
 				}
-				List<AndNode> subNodes = new RulesBuilder(bodyNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent());
+				List<AndNode> subNodes = new RulesBuilder(bodyNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
 				if (subNodes.size() > 0) {
 					bodyNode.setChildren(subNodes);
 				}
