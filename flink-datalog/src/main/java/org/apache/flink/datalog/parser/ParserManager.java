@@ -3,28 +3,16 @@ package org.apache.flink.datalog.parser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.calcite.rel.RelNode;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
-import org.apache.flink.datalog.parser.graph.Edge;
-import org.apache.flink.datalog.parser.graph.PrecedenceGraphBuilder;
-import org.apache.flink.datalog.parser.graph.Vertex;
 import org.apache.flink.datalog.parser.tree.AndOrTree;
 import org.apache.flink.datalog.parser.tree.Node;
-import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
-import org.apache.flink.datalog.plan.logical.LogicalPlan;
-import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.jgrapht.Graph;
 
 import java.util.List;
 
 public class ParserManager {
-	private RelTreeBuilder builder;
-	private FlinkRelBuilder flinkRelBuilder;
+	public ParserManager() {
 
-	public ParserManager(FlinkRelBuilder flinkRelBuilder) {
-		this.flinkRelBuilder = flinkRelBuilder;
-		this.builder = new RelTreeBuilder(flinkRelBuilder);
 	}
 
 	private ParseTree parse(String text) {
@@ -56,8 +44,9 @@ public class ParserManager {
 		return tree;
 
 	}
-//	public Graph<Vertex, Edge> parse(String inputProgram, String query) {
-	public RelNode parse(String inputProgram, String query) {
+
+	//	public Graph<Vertex, Edge> parse(String inputProgram, String query) {
+	public Node parse(String inputProgram, String query) {
 		String program = inputProgram +
 			System.getProperty("line.separator") +
 			query;
@@ -65,16 +54,10 @@ public class ParserManager {
 
 		AndOrTree treeBuilder = new AndOrTree();
 		assert programTree != null;
-		Node rootNode = treeBuilder.visit(programTree);
+		return treeBuilder.visit(programTree);
 
 //		PrecedenceGraphBuilder graphBuilder = new PrecedenceGraphBuilder();
 //		assert programTree != null;
 //		Graph<Vertex, Edge> graph = graphBuilder.visit(programTree);
-
-		LogicalPlan plan = new LogicalPlan(this.flinkRelBuilder);
-		RelNode relataionalAlgebra = plan.visit(rootNode);
-		System.out.println(relataionalAlgebra);
-
-		return null;
 	}
 }

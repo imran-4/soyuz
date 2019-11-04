@@ -51,7 +51,7 @@ retraction //this should also be a separate compilation unit
     : predicate TILDE
     ;
 predicateList
-    : ( predicate | notPredicate | primitivePredicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
+    : ( predicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
     ;
 notPredicate   // only use in predicateList
     : NOT predicate

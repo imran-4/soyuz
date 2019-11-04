@@ -10,8 +10,10 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.datalog.catalog.DatalogCatalog;
+import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.DatalogBatchOptimizer;
 import org.apache.flink.datalog.plan.DatalogOptimizer;
+import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
@@ -168,9 +170,17 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 	@Override
 	public Table datalogQuery(String inputProgram, String query) {
 		FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
-		RelNode parsed = datalogPlanner.parse(inputProgram, query);
-		if (null != parsed) {
-			return createTable(new PlannerQueryOperation(parsed));
+		Node andOrTreeNode = datalogPlanner.parse(inputProgram, query); //node of And-Or Tree
+
+		//todo: update catalog here, because the updated catalog will be needed in creating logical algebra (if we use scan() but may be it is not needed in transientScan()).
+		LogicalPlan plan = new LogicalPlan(this.getRelBuilder());
+		RelNode relataionalAlgebra = plan.visit(andOrTreeNode);
+		System.out.println(relataionalAlgebra);
+
+		String idbName = "xyz";
+		this.registerTable(idbName, fromDataSet(null, "x,y"));
+		if (null != andOrTreeNode) {
+			return createTable(new PlannerQueryOperation(relataionalAlgebra));
 		} else {
 			throw new TableException(
 				"Unsupported Datalog query!");

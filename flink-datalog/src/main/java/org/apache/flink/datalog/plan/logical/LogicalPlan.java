@@ -7,9 +7,12 @@ import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.flink.datalog.parser.tree.AndNode;
 import org.apache.flink.datalog.parser.tree.OrNode;
-import org.apache.flink.datalog.parser.tree.predicate.*;
+import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
+import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
+import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
+import org.apache.flink.datalog.parser.tree.predicate.TermData;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.apache.flink.table.expressions.And;
+import org.apache.flink.table.plan.nodes.dataset.DataSetRel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +24,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 
 	public LogicalPlan(FlinkRelBuilder relBuilder) {
 		this.relBuilder = relBuilder;
+
 	}
 
 	private static List<String> getMatchingColumns(List<String> previousSibling, List<String> currentSibling) {
@@ -47,8 +51,8 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	@Override
 	public RelNode visitOrNode(OrNode node) {
 		PredicateData predicateData = node.getPredicateData();
-		List<AndNode> childNodes = node.getChildren();
-		if (childNodes.size()  >  0) {
+		List<AndNode> childNodes = node.getChildren(); ///or use visitChildren()
+		if (childNodes.size() > 0) {
 			for (AndNode andNode : childNodes) {
 				relBuilder.push(visit(andNode));
 			}
@@ -60,24 +64,28 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			return relBuilder.build();
 		} else {
 			if (predicateData instanceof SimplePredicateData) { //this should also return correct logical plan if there is only query and no program rules are provided (i.e., there is only one node in the And-Or tree.)
+				relBuilder.scan(predicateData.getPredicateName());
 				List<RexNode> fieldsToProject = new ArrayList<>();
 				List<RexNode> filterNodes = new ArrayList<>();
 				int i = 0;
 				for (TermData termData : predicateData.getPredicateParameters()) {
 					if (termData.getAdornment() == TermData.Adornment.BOUND) {
+
 					}
 					fieldsToProject.add(relBuilder.field(i));
 					i++;
 				}
-				return relBuilder.scan(predicateData.getPredicateName()).project(fieldsToProject).filter(filterNodes).build();
+				return relBuilder.project(fieldsToProject).filter(filterNodes).build();
 			} else if (predicateData instanceof PrimitivePredicateData) {
-				relBuilder.filter(relBuilder.call(getBinaryOperator(((PrimitivePredicateData) predicateData).getOperator()),
+				//todo: check if filter() works before scan()
+				return relBuilder.filter(relBuilder.call(getBinaryOperator(((PrimitivePredicateData) predicateData).getOperator()),
 					relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName()),
 					relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName()))
 				).build();
+			} else {
+				return null;
 			}
 		}
-		return null;
 	}
 
 	@Override
@@ -92,18 +100,23 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 				} else if (predicateData instanceof SimplePredicateData) {
 					if (previousRelNode != null) {
 						List<String> matchingColumns = getMatchingColumns(previousRelNode.getRowType().getFieldNames(), node.getRowType().getFieldNames());
-						previousRelNode = relBuilder.join(JoinRelType.INNER, matchingColumns.toArray(new String[0])).project().build();
+						previousRelNode = relBuilder.join(JoinRelType.INNER, matchingColumns.toArray(new String[0])).build();
 					} else {
 						previousRelNode = node;
 					}
 					relBuilder.push(previousRelNode);
 				}
 			}
-			return relBuilder.build();
+			// todo: handle bounded predicate values here..
+			String andPredicateName = andNode.getPredicateData().getPredicateName();
+			List<TermData> andPredicateParameters = andNode.getPredicateData().getPredicateParameters();
+			for (TermData parameter : andPredicateParameters) {
+
+			}
+			return relBuilder.transientScan(andPredicateName).project().filter().build();
 		} else {
 			System.err.println("AND node must have children.");
 		}
 		return null;
 	}
-
 }
