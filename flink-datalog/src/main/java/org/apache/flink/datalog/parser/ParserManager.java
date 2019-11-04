@@ -72,10 +72,8 @@ public class ParserManager {
 //		Graph<Vertex, Edge> graph = graphBuilder.visit(programTree);
 
 		LogicalPlan plan = new LogicalPlan(this.flinkRelBuilder);
-		plan.visit(rootNode);
-
-
-
+		RelNode relataionalAlgebra = plan.visit(rootNode);
+		System.out.println(relataionalAlgebra);
 
 		return null;
 	}

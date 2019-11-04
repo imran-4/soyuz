@@ -20,7 +20,7 @@ public class AndNode extends Node {
 		return children;
 	}
 
-	public void setChildren(List<OrNode> children) {
+	void setChildren(List<OrNode> children) {
 		this.children = children;
 	}
 
