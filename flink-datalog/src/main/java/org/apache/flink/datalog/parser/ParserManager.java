@@ -12,6 +12,7 @@ import org.apache.flink.datalog.parser.graph.Vertex;
 import org.apache.flink.datalog.parser.tree.AndOrTree;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.parser.tree.RelTreeBuilder;
+import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.jgrapht.Graph;
 
@@ -19,8 +20,10 @@ import java.util.List;
 
 public class ParserManager {
 	private RelTreeBuilder builder;
+	private FlinkRelBuilder flinkRelBuilder;
 
 	public ParserManager(FlinkRelBuilder flinkRelBuilder) {
+		this.flinkRelBuilder = flinkRelBuilder;
 		this.builder = new RelTreeBuilder(flinkRelBuilder);
 	}
 
@@ -53,20 +56,24 @@ public class ParserManager {
 		return tree;
 
 	}
-
+//	public Graph<Vertex, Edge> parse(String inputProgram, String query) {
 	public RelNode parse(String inputProgram, String query) {
 		String program = inputProgram +
 			System.getProperty("line.separator") +
 			query;
 		ParseTree programTree = this.parse(program);
 
-//		AndOrTree graphBuilder = new AndOrTree();
-//		assert programTree != null;
-//		Node rootNode = graphBuilder.visit(programTree);
-
-		PrecedenceGraphBuilder graphBuilder = new PrecedenceGraphBuilder();
+		AndOrTree treeBuilder = new AndOrTree();
 		assert programTree != null;
-		Graph<Vertex, Edge> graph = graphBuilder.visit(programTree);
+		Node rootNode = treeBuilder.visit(programTree);
+
+//		PrecedenceGraphBuilder graphBuilder = new PrecedenceGraphBuilder();
+//		assert programTree != null;
+//		Graph<Vertex, Edge> graph = graphBuilder.visit(programTree);
+
+		LogicalPlan plan = new LogicalPlan(this.flinkRelBuilder);
+		plan.visit(rootNode);
+
 
 
 

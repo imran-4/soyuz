@@ -1,11 +1,13 @@
 package org.apache.flink.datalog.parser.tree;
 
 import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
+import org.apache.flink.datalog.plan.logical.AndOrTreeVisitor;
+import org.apache.flink.datalog.plan.logical.TreeVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AndNode extends Node{
+public class AndNode extends Node {
 	private PredicateData predicateData;
 	private List<OrNode> children = new ArrayList<>();
 
@@ -46,5 +48,11 @@ public class AndNode extends Node{
 			"predicateData=" + predicateData +
 			", children=" + children +
 			'}';
+	}
+
+	@Override
+	public <T> T accept(TreeVisitor<? extends T> visitor) {
+		if (visitor instanceof AndOrTreeVisitor) return ((AndOrTreeVisitor<? extends T>) visitor).visitAndNode(this);
+		else return visitor.visitChildren(this);
 	}
 }

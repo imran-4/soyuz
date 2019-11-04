@@ -7,11 +7,11 @@ import org.apache.flink.datalog.parser.tree.predicate.QueryPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.TermData;
 
-import java.util.*;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node> {
+public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static OrNode rootNode = null;
 
 	@Override
@@ -23,28 +23,9 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 		return rootNode;
 	}
 
-	@Override
-	public boolean hasNext() {
-		return false;
-	}
-
-	@Override
-	public Node next() {
-		return null;
-	}
-
-	@Override
-	public void remove() {
-		throw new java.lang.UnsupportedOperationException("Remove operation is not supported.");
-	}
-
-	@Override
-	public void forEachRemaining(Consumer<? super Node> action) {
-
-	}
-
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
 		private OrNode topLevelNode;
+
 		RulesBuilder(OrNode topLevelNode) {
 			this.topLevelNode = topLevelNode;
 		}
@@ -65,6 +46,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 
 	private static class RuleClauseBuilder extends DatalogBaseVisitor<AndNode> {
 		DatalogParser.RulesContext rulesContext;
+
 		RuleClauseBuilder(DatalogParser.RulesContext rulesContext) {
 			this.rulesContext = rulesContext;
 		}
@@ -81,6 +63,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> implements Iterator<Node
 	private static class PredicateListBuilder extends DatalogBaseVisitor<List<OrNode>> {
 		DatalogParser.RulesContext rulesContext;
 		AndNode headPredicateNode;
+
 		PredicateListBuilder(AndNode headPredicateContext, DatalogParser.RulesContext rulesContext) {
 			this.headPredicateNode = headPredicateContext;
 			this.rulesContext = rulesContext;

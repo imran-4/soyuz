@@ -104,7 +104,6 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 			.stream(ctx.predicate().termList().term().toArray(new DatalogParser.TermContext[0]))
 			.map(RuleContext::getText)
 			.collect(Collectors.toList());
-		this.addTableToCatalog(predicateName, predicateParameters);
 
 		return relBuilder
 			.scan(predicateName)
@@ -144,9 +143,5 @@ public class RelTreeBuilder extends DatalogBaseVisitor<RelNode> { //may be we ne
 		RelNode queryNode = relBuilder.build();
 		System.out.println(RelOptUtil.toString(queryNode));
 		return queryNode;
-	}
-
-	private void addTableToCatalog(String name, List<String> columns) {
-//		this.environment.registerTable(name, new QueryOperationCatalogView(new Table()));
 	}
 }

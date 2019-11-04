@@ -4,7 +4,7 @@ import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
 
 import java.util.List;
 
-public abstract class Node implements Cloneable {
+public abstract class Node implements Tree {
 
 	public abstract List<? extends Node> getChildren();
 

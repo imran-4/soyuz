@@ -1,6 +1,9 @@
 package org.apache.flink.datalog.parser.tree;
 
+import org.apache.flink.datalog.DatalogVisitor;
 import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
+import org.apache.flink.datalog.plan.logical.AndOrTreeVisitor;
+import org.apache.flink.datalog.plan.logical.TreeVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,16 +58,17 @@ public class OrNode extends Node {
 		return predicateData.equals(orNode.predicateData);
 	}
 
-//	@Override
-//	public Object clone() throws CloneNotSupportedException {
-//		return (OrNode)super.clone();
-//	}
-
 	@Override
 	public String toString() {
 		return "OrNode{" +
 			"predicateData=" + predicateData +
 			", children=" + children +
 			'}';
+	}
+
+	@Override
+	public <T> T accept(TreeVisitor<? extends T> visitor) {
+		if ( visitor instanceof AndOrTreeVisitor) return ((AndOrTreeVisitor<? extends T>)visitor).visitOrNode(this);
+		else return visitor.visitChildren(this);
 	}
 }
