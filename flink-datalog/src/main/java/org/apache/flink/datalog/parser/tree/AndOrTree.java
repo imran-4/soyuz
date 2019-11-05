@@ -36,7 +36,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-				if (headPredicateName.equals(queryPredicateName) && !topLevelNode.isRecursive()) {
+				if (headPredicateName.equals(queryPredicateName) ) { //&& !topLevelNode.isRecursive()   //todo: fix this with isrecursive in AndNode...
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
 				}
 			}
@@ -79,7 +79,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 
 				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
 				if (bodyNode.getPredicateData().getPredicateName().equals(headPredicateNode.getPredicateData().getPredicateName())) {
-					bodyNode.setRecursive(true);
+					headPredicateNode.setRecursive(true);
 				}
 				List<AndNode> subNodes = new RulesBuilder(bodyNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
 				if (subNodes.size() > 0) {

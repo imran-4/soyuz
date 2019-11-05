@@ -173,9 +173,11 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 		Node andOrTreeNode = datalogPlanner.parse(inputProgram, query); //node of And-Or Tree
 
 		//todo: update catalog here, because the updated catalog will be needed in creating logical algebra (if we use scan() but may be it is not needed in transientScan()).
-		LogicalPlan plan = new LogicalPlan(this.getRelBuilder());
+		LogicalPlan plan = new LogicalPlan(this.getRelBuilder(), this.catalogManager);
 		RelNode relataionalAlgebra = plan.visit(andOrTreeNode);
 		System.out.println(relataionalAlgebra);
+
+		DataSetRel dataSetRel = null;
 
 		String idbName = "xyz";
 		this.registerTable(idbName, fromDataSet(null, "x,y"));

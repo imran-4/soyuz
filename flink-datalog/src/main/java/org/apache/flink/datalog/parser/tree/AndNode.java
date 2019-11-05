@@ -1,8 +1,6 @@
 package org.apache.flink.datalog.parser.tree;
 
 import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
-import org.apache.flink.datalog.plan.logical.AndOrTreeVisitor;
-import org.apache.flink.datalog.plan.logical.TreeVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,9 +8,22 @@ import java.util.List;
 public class AndNode extends Node {
 	private PredicateData predicateData;
 	private List<OrNode> children = new ArrayList<>();
+	private boolean isRecursive = false;
 
 	public AndNode(PredicateData predicateData) {
 		this.predicateData = predicateData;
+	}
+	public AndNode(PredicateData predicateData, boolean isRecursive) {
+		this.predicateData = predicateData;
+		this.isRecursive = isRecursive;
+	}
+
+	public void setRecursive(boolean isRecursive) {
+		this.isRecursive = isRecursive;
+	}
+
+	public boolean isRecursive() {
+		return this.isRecursive;
 	}
 
 	@Override

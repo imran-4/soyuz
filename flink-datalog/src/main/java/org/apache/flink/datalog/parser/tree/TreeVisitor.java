@@ -1,4 +1,4 @@
-package org.apache.flink.datalog.plan.logical;
+package org.apache.flink.datalog.parser.tree;
 
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.apache.flink.datalog.parser.tree.AndOrTree;

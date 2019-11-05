@@ -11,6 +11,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.parser.ParserManager;
+import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.table.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.calcite.FlinkRelOptClusterFactory;
@@ -103,13 +104,13 @@ public class FlinkDatalogPlannerImpl {
 //		validator
 //	}
 //
-	public RelNode parse(String inputProgram, String query) {
+	public Node parse(String inputProgram, String query) {
 		try {
 //			ready();
 //			RexBuilder rexBuilder = createRexBuilder();
 //			RelOptCluster cluster = FlinkRelOptClusterFactory.create(planner, rexBuilder);
 //			CatalogReader catalogReader = (CatalogReader) catalogReaderSupplier.apply(false);
-			ParserManager parserManager = new ParserManager(this.flinkRelBuilder);
+			ParserManager parserManager = new ParserManager();
 			return parserManager.parse(inputProgram, query);
 
 		} catch (Exception e) {

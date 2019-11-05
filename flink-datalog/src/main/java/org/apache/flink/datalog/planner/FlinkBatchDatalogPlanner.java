@@ -11,6 +11,8 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.datalog.executor.DatalogBatchExecutor;
 import org.apache.flink.datalog.parser.ParserManager;
+import org.apache.flink.datalog.parser.tree.Node;
+import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
@@ -75,16 +77,19 @@ public class FlinkBatchDatalogPlanner implements Planner {
 //		return plannerContext.createFlinkDatalogPlanner(currentCatalogName, currentDatabase);
 		return null;
 	}
-//
-//	private FlinkRelBuilder getFlinkRelBuilder() {
-//		#
-//	}
+
+	private FlinkRelBuilder getFlinkRelBuilder() {
+		//todo:
+		return null;
+	}
 
 	@Override
 	public List<Operation> parse(String text) {
 		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
-		RelNode relNode = planner.parse(text, text);
-		RelRoot relRoot = RelRoot.of(relNode, SqlKind.SELECT);
+		Node andOrTreeRootNode = planner.parse(text, text);
+
+		LogicalPlan plan = new LogicalPlan(getFlinkRelBuilder());
+		RelRoot relRoot = RelRoot.of(plan.visit(andOrTreeRootNode), SqlKind.SELECT);
 		return List.of(new PlannerQueryOperation(relRoot.project()));
 	}
 

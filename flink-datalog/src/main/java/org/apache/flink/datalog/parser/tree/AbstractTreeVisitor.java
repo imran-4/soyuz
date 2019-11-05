@@ -1,8 +1,4 @@
-package org.apache.flink.datalog.plan.logical;
-
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.flink.datalog.parser.tree.Node;
-import org.apache.flink.datalog.parser.tree.Tree;
+package org.apache.flink.datalog.parser.tree;
 
 public abstract class AbstractTreeVisitor<T> implements TreeVisitor<T> {
 	public AbstractTreeVisitor() {

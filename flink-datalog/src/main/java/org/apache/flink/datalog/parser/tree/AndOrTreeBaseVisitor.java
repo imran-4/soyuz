@@ -1,7 +1,4 @@
-package org.apache.flink.datalog.plan.logical;
-
-import org.apache.flink.datalog.parser.tree.AndNode;
-import org.apache.flink.datalog.parser.tree.OrNode;
+package org.apache.flink.datalog.parser.tree;
 
 public class AndOrTreeBaseVisitor<T> extends AbstractTreeVisitor<T> implements AndOrTreeVisitor<T> {
 	@Override

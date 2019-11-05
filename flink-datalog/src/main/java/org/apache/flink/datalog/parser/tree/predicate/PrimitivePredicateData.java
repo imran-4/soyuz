@@ -6,6 +6,22 @@ import java.util.List;
 public class PrimitivePredicateData extends PredicateData {
 	private String expressions; //for now use String
 
+	public TermData getLeftTerm() {
+		return leftTerm;
+	}
+
+	public String getOperator() {
+		return operator;
+	}
+
+	public TermData getRightTerm() {
+		return rightTerm;
+	}
+
+	private TermData leftTerm;
+	private String operator;
+	private TermData rightTerm;
+
 	public PrimitivePredicateData(String expressions) {
 		this.expressions = expressions;
 	}
@@ -29,5 +45,13 @@ public class PrimitivePredicateData extends PredicateData {
 		return "PrimitivePredicateData{" +
 			"expressions='" + expressions + '\'' +
 			'}';
+	}
+
+	public enum Operators {
+		EQUALS,
+		NOT_EQUALS,
+		LESS_THAN,
+		GREATER_THAN,
+		//...
 	}
 }
