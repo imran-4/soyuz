@@ -30,7 +30,7 @@ public class Main {
 				"tc(X,Y) :- tc(X,Z),graph(Z,Y).";
 		String query = "tc(X,Y)?";
 		String inputProgram1 =
-				"msic(SI,SZ) :- su(S1,s3), su(S2, S3), mt(S3).\n" +
+			"msic(SI,SZ) :- su(S1,s3), su(S2, S3), mt(S3).\n" +
 				"msic(Sl,S2) :- au(SI,P), au(SU2,P).\n" +
 				"msic(SI,Sf) :- au(S1, PI), au(S2, PZ), ci(PI, SZ), ci(P2, SI).\n" +
 				"msic(SI,St) :- au(Sl, PI), au(S2, PZ), ci(PI,P2), ci(P2, Pl).\n" +
@@ -39,16 +39,15 @@ public class Main {
 				"knowl(L, R, T) :- cra(S, L, T), know(S, R, T).\n" +
 				"know(S2, R, T) :- know(S1, R, T), abt(R, X), sif(S1, S2, R, T)."; // only for testing the graph
 		String query1 = "know(X,Y,Z)?";
-//		datalogEnv.evaluateDatalogRules(inputProgram);
 
-		String inputProgram2 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"+
+		String inputProgram2 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n" +
 			"arc1(X,Y):- arc(Z,Y).\n" +
 			"arc1(X,Y):- arc1(X,Z), arc(Z,Y).\n" +
 			"sg(X,Y):-arc(A,X),sg(A,B),arc1(B,Y).\n";
 		String query2 = "sg(X,Y)?";
 
-
-		String inputProgram3 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"+
+		datalogEnv.registerDataSet("arc", dataSet1, "v1,v2");
+		String inputProgram3 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n" +
 			"sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
 		String query3 = "sg(X,Y)?";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram3, query3);
