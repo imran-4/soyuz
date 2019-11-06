@@ -130,10 +130,10 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			} else if (predicateData instanceof PrimitivePredicateData) {
 				RexNode leftExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
 				RexNode rightExpression = null;
-				if (((PrimitivePredicateData) predicateData).getLeftTerm().getAdornment() == TermData.Adornment.BOUND) {
-					rightExpression = relBuilder.literal(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
-				} else if (((PrimitivePredicateData) predicateData).getLeftTerm().getAdornment() == TermData.Adornment.FREE) {
-					rightExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
+				if (((PrimitivePredicateData) predicateData).getRightTerm().getAdornment() == TermData.Adornment.BOUND) {
+					rightExpression = relBuilder.literal(((PrimitivePredicateData) predicateData).getRightTerm().getTermName());
+				} else if (((PrimitivePredicateData) predicateData).getRightTerm().getAdornment() == TermData.Adornment.FREE) {
+					rightExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getRightTerm().getTermName());
 				}
 				return relBuilder.filter(
 					relBuilder.call(

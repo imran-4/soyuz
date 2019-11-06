@@ -4,7 +4,15 @@ package org.apache.flink.datalog.parser.tree.predicate;
 import java.util.List;
 
 public class PrimitivePredicateData extends PredicateData {
-	private String expressions; //for now use String
+	private TermData leftTerm;
+	private String operator;
+	private TermData rightTerm;
+
+	public PrimitivePredicateData(TermData leftTerm, String operator, TermData rightTerm) {
+		this.leftTerm = leftTerm;
+		this.operator = operator;
+		this.rightTerm = rightTerm;
+	}
 
 	public TermData getLeftTerm() {
 		return leftTerm;
@@ -16,18 +24,6 @@ public class PrimitivePredicateData extends PredicateData {
 
 	public TermData getRightTerm() {
 		return rightTerm;
-	}
-
-	private TermData leftTerm;
-	private String operator;
-	private TermData rightTerm;
-
-	public PrimitivePredicateData(String expressions) {
-		this.expressions = expressions;
-	}
-
-	public String getExpressions() {
-		return expressions;
 	}
 
 	@Override
@@ -43,7 +39,9 @@ public class PrimitivePredicateData extends PredicateData {
 	@Override
 	public String toString() {
 		return "PrimitivePredicateData{" +
-			"expressions='" + expressions + '\'' +
+			"leftTerm=" + leftTerm +
+			", operator='" + operator + '\'' +
+			", rightTerm=" + rightTerm +
 			'}';
 	}
 

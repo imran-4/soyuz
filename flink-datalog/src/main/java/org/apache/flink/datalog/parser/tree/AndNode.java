@@ -13,6 +13,7 @@ public class AndNode extends Node {
 	public AndNode(PredicateData predicateData) {
 		this.predicateData = predicateData;
 	}
+
 	public AndNode(PredicateData predicateData, boolean isRecursive) {
 		this.predicateData = predicateData;
 		this.isRecursive = isRecursive;
@@ -58,6 +59,7 @@ public class AndNode extends Node {
 		return "AndNode{" +
 			"predicateData=" + predicateData +
 			", children=" + children +
+			", isRecursive=" + isRecursive +
 			'}';
 	}
 

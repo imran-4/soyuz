@@ -88,7 +88,7 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
 		Node andOrTreeRootNode = planner.parse(text, text);
 
-		LogicalPlan plan = new LogicalPlan(getFlinkRelBuilder());
+		LogicalPlan plan = new LogicalPlan(getFlinkRelBuilder(), this.catalogManager);
 		RelRoot relRoot = RelRoot.of(plan.visit(andOrTreeRootNode), SqlKind.SELECT);
 		return List.of(new PlannerQueryOperation(relRoot.project()));
 	}

@@ -12,7 +12,7 @@ String inputProgram =
         "tc(X,Y) :- graph(X, Y).\n" +
 		"tc(X,Y) :- tc(X,Z),graph(Z,Y).";
 String query = "tc(X,Y)?";
-Table queryResult = datalogEnv.datalogQuery(inputProgram, "abc(X,Y)?");
+Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 try {
 	datalogEnv.toDataSet(queryResult, dataSet.getType()).collect();
 } catch (Exception e) {

@@ -12,31 +12,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AndOrTree extends DatalogBaseVisitor<Node> {
-	private static OrNode rootNode = null;
 
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
 		OrNode rootNode = new QueryBuilder().visitQuery(ctx.query());
-		rootNode.setChildren(new RulesBuilder(rootNode).visitRules(ctx.rules()));
-		System.out.println(rootNode);
-		AndOrTree.rootNode = rootNode;
+		rootNode.setChildren(new RulesBuilder(rootNode, null).visitRules(ctx.rules()));
 		return rootNode;
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
-		private OrNode topLevelNode;
+		private OrNode currentNode;
+		private AndNode parentNode; //in case of root node, this is null
 
-		RulesBuilder(OrNode topLevelNode) {
-			this.topLevelNode = topLevelNode;
+		RulesBuilder(OrNode currentNode, AndNode parentNode) {
+			this.currentNode = currentNode;
+			this.parentNode = parentNode;
 		}
 
 		@Override
 		public List<AndNode> visitRules(DatalogParser.RulesContext ctx) {
-			String queryPredicateName = topLevelNode.getPredicateData().getPredicateName();
+			String queryPredicateName = currentNode.getPredicateData().getPredicateName();
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
-				if (headPredicateName.equals(queryPredicateName) ) { //&& !topLevelNode.isRecursive()   //todo: fix this with isrecursive in AndNode...
+				if (headPredicateName.equals(queryPredicateName)) {
+					if (parentNode != null) {
+						if (parentNode.getPredicateData().getPredicateName().equals(queryPredicateName))
+							continue;
+					}
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
 				}
 			}
@@ -76,12 +79,11 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			for (int i = 0; i < ctx.predicate().size(); i++) {
 				OrNode bodyNode = null;
 
-
 				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
 				if (bodyNode.getPredicateData().getPredicateName().equals(headPredicateNode.getPredicateData().getPredicateName())) {
 					headPredicateNode.setRecursive(true);
 				}
-				List<AndNode> subNodes = new RulesBuilder(bodyNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
+				List<AndNode> subNodes = new RulesBuilder(bodyNode, this.headPredicateNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
 				if (subNodes.size() > 0) {
 					bodyNode.setChildren(subNodes);
 				}
@@ -93,7 +95,6 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 
 				bodyNode = new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate(i));
 				ruleBodyNodes.add(bodyNode);
-
 			}
 			for (int i = 0; i < ctx.notPredicate().size(); i++) {
 				throw new UnsupportedOperationException("Not operator is not supported yet.");
@@ -119,7 +120,24 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class PrimitivePredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
-			return new OrNode(new PrimitivePredicateData(ctx.getText()));
+			TermData leftTerm = null, rightTerm = null;
+			if (ctx.CONSTANT(0) != null) {
+				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+			} else if (ctx.VARIABLE(0) != null) {
+				leftTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+			} else if (ctx.DECIMAL(0) != null) {
+				leftTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
+			}
+
+			if (ctx.CONSTANT(1) != null) {
+				rightTerm = new TermData(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
+			} else if (ctx.VARIABLE(1) != null) {
+				rightTerm = new TermData(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
+			} else if (ctx.DECIMAL(1) != null) {
+				rightTerm = new TermData(ctx.DECIMAL(1).getText(), TermData.Adornment.BOUND);
+			}
+
+			return new OrNode(new PrimitivePredicateData(leftTerm, ctx.COMPARISON_OPERATOR().getText(), rightTerm));
 		}
 	}
 
