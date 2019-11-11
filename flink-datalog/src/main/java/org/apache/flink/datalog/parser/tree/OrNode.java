@@ -23,8 +23,13 @@ public class OrNode extends Node {
 	}
 
 	@Override
-	public int getChildrenCount() {
+	public int getChildCount() {
 		return this.children.size();
+	}
+
+	@Override
+	public Node getChild(int i) {
+		return this.children.get(i);
 	}
 
 	@Override

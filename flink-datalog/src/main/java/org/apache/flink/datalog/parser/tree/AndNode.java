@@ -42,7 +42,7 @@ public class AndNode extends Node {
 	}
 
 	@Override
-	public int getChildrenCount() {
+	public int getChildCount() {
 		return this.children.size();
 	}
 
@@ -52,6 +52,11 @@ public class AndNode extends Node {
 		if (o == null || getClass() != o.getClass()) return false;
 		AndNode andNode = (AndNode) o;
 		return predicateData.equals(andNode.predicateData);
+	}
+
+	@Override
+	public Node getChild(int i) {
+		return this.children.get(i);
 	}
 
 	@Override

@@ -1,5 +1,7 @@
 package org.apache.flink.datalog.parser.tree;
 
+import org.antlr.v4.runtime.tree.RuleNode;
+
 public abstract class AbstractTreeVisitor<T> implements TreeVisitor<T> {
 	public AbstractTreeVisitor() {
 	}
@@ -11,23 +13,15 @@ public abstract class AbstractTreeVisitor<T> implements TreeVisitor<T> {
 
 	@Override
 	public T visitChildren(Node node) {
+		T result = this.defaultResult();
+		for(int i = 0; i < node.getChildCount(); i++) {
+			Node c = node.getChild(i);
+			result = c.accept(this);
+		}
+		return result;
+	}
+
+	protected T defaultResult() {
 		return null;
 	}
-//	@Override
-//	public T visitChildren(Node node) {
-//		T result = this.defaultResult();
-//		int n = node.getChildCount();
-//
-//		for(int i = 0; i < n && this.shouldVisitNextChild(node, result); ++i) {
-//			ParseTree c = node.getChild(i);
-//			T childResult = c.accept(this);
-//			result = this.aggregateResult(result, childResult);
-//		}
-//
-//		return result;
-//	}
-//
-//	protected T defaultResult() {
-//		return null;
-//	}
 }

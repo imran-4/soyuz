@@ -35,7 +35,11 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
 				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
+
 				if (headPredicateName.equals(queryPredicateName)) {
+					if (currentNode.getPredicateData() instanceof SimplePredicateData) {
+						((SimplePredicateData) currentNode.getPredicateData()).setIdb(true);
+					}
 					if (parentNode != null) {
 						if (parentNode.getPredicateData().getPredicateName().equals(queryPredicateName))
 							continue;
@@ -106,7 +110,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class HeadPredicateBuilder extends DatalogBaseVisitor<AndNode> {
 		@Override
 		public AndNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-			return new AndNode(new SimplePredicateData(ctx.predicate().predicateName().getText(), new TermListBuilder().visitTermList(ctx.predicate().termList())));
+			return new AndNode(new SimplePredicateData(ctx.predicate().predicateName().getText(), new TermListBuilder().visitTermList(ctx.predicate().termList()), true));
 		}
 	}
 

@@ -10,6 +10,8 @@ public abstract class Node implements Tree {
 
 	public abstract PredicateData getPredicateData();
 
-	public abstract int getChildrenCount();
+	public abstract int getChildCount();
+
+	public abstract Node getChild(int i);
 
 }
