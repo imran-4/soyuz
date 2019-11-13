@@ -69,8 +69,8 @@ public class AndNode extends Node {
 	}
 
 	@Override
-	public <T> T accept(TreeVisitor<? extends T> visitor) {
-		if (visitor instanceof AndOrTreeVisitor) return ((AndOrTreeVisitor<? extends T>) visitor).visitAndNode(this);
-		else return visitor.visitChildren(this);
+	public <T> void accept(TreeVisitor<? extends T> visitor) {
+		if (visitor instanceof AndOrTreeVisitor) ((AndOrTreeVisitor) visitor).visitAndNode(this);
+		else visitor.visitChildren(this);
 	}
 }

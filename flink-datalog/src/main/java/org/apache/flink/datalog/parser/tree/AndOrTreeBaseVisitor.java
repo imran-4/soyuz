@@ -1,13 +1,13 @@
 package org.apache.flink.datalog.parser.tree;
 
-public class AndOrTreeBaseVisitor<T> extends AbstractTreeVisitor<T> implements AndOrTreeVisitor<T> {
+public class AndOrTreeBaseVisitor<T> extends AbstractTreeVisitor<T> implements AndOrTreeVisitor {
 	@Override
-	public T visitOrNode(OrNode orNode) {
-		return null;
+	public void visitOrNode(OrNode orNode) {
+
 	}
 
 	@Override
-	public T visitAndNode(AndNode andNode) {
-		return null;
+	public void visitAndNode(AndNode andNode) {
+
 	}
 }

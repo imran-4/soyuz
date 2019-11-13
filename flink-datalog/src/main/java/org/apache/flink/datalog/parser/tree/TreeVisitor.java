@@ -6,8 +6,8 @@ import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.parser.tree.Tree;
 
 public interface TreeVisitor<T> {
-	T visit(Tree t);
+	void visit(Tree t);
 
-	T visitChildren(Node node);
+	void visitChildren(Node node);
 
 }

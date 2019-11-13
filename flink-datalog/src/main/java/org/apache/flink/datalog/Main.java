@@ -47,6 +47,7 @@ public class Main {
 		String query2 = "sg(X,Y)?";
 
 		datalogEnv.registerDataSet("arc", dataSet1, "v1,v2");
+
 		String inputProgram3 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n" +
 			"sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
 		String query3 = "sg(X,Y)?";

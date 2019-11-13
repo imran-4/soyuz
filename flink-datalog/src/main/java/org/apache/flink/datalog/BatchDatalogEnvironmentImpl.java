@@ -174,7 +174,8 @@ public class BatchDatalogEnvironmentImpl implements BatchDatalogEnvironment {
 
 		//todo: update catalog here, because the updated catalog will be needed in creating logical algebra (if we use scan() but may be it is not needed in transientScan()).
 		LogicalPlan plan = new LogicalPlan(this.getRelBuilder(), this.catalogManager);
-		RelNode relataionalAlgebra = plan.visit(andOrTreeNode);
+		plan.visit(andOrTreeNode);
+		RelNode relataionalAlgebra = plan.getLogicalPlan();
 		System.out.println(relataionalAlgebra);
 
 		DataSetRel dataSetRel = null;

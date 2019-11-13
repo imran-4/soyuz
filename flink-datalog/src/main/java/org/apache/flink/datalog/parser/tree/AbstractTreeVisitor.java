@@ -7,18 +7,17 @@ public abstract class AbstractTreeVisitor<T> implements TreeVisitor<T> {
 	}
 
 	@Override
-	public T visit(Tree tree) {
-		return tree.accept(this);
+	public void visit(Tree tree) {
+		tree.accept(this);
 	}
 
 	@Override
-	public T visitChildren(Node node) {
+	public void visitChildren(Node node) {
 		T result = this.defaultResult();
 		for(int i = 0; i < node.getChildCount(); i++) {
 			Node c = node.getChild(i);
-			result = c.accept(this);
+			c.accept(this);
 		}
-		return result;
 	}
 
 	protected T defaultResult() {
