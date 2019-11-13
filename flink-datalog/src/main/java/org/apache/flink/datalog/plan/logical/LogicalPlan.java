@@ -20,7 +20,6 @@ import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.catalog.exceptions.TableNotExistException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -67,56 +66,54 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 		}
 	}
 
-	private RelNode getIDBNode(PredicateData predicateData) {
-		String[] outputProjection = predicateData
-			.getPredicateParameters()
-			.stream()
-			.map(TermData::getTermName)
-			.toArray(String[]::new);
-		String[] objects = Arrays.stream(outputProjection).map(x -> "").toArray(String[]::new); //todo: fix datatypes based on input data
-		relBuilder
-			.values(outputProjection, objects)
-			.transientScan(predicateData.getPredicateName());
-
+	private List<RexNode> getIDBProjectionParameters(PredicateData predicateData) {
 		List<RexNode> projectionParameters = new ArrayList<>();
+		int i = 0;
 		for (TermData termData : predicateData.getPredicateParameters()) {
-			projectionParameters.add(relBuilder.field(termData.getTermName())); //not sure whether to use ordinals, or variables as names.... // also not sure whether relBuilder.field() would push elements on relBuilder stack......
-
 			if (termData.getAdornment() == TermData.Adornment.BOUND) {
-				relBuilder.filter(
-					relBuilder.call(
-						SqlStdOperatorTable.EQUALS,
-						relBuilder.field(termData.getTermName()),
-						relBuilder.literal(termData.getTermName())));
+				projectionParameters.add(relBuilder.literal(termData.getTermName()));
+			} else {
+				projectionParameters.add(
+					relBuilder
+						.field(termData.getTermName()));
 			}
+			i++;
 		}
-		relBuilder.project(projectionParameters);
-		return relBuilder.build(); //will also clear the stack
+		return projectionParameters;
 	}
+
+//	private RelNode getIDBNode(PredicateData predicateData) {
+//		String[] outputProjection = predicateData
+//			.getPredicateParameters()
+//			.stream()
+//			.map(TermData::getTermName)
+//			.toArray(String[]::new);
+//		String[] objects = Arrays.stream(outputProjection).map(x -> "").toArray(String[]::new); //todo: fix datatypes based on input data
+//		relBuilder
+//			.values(outputProjection, objects)
+//			.transientScan(predicateData.getPredicateName());
+//
+//		List<RexNode> projectionParameters = new ArrayList<>();
+//		for (TermData termData : predicateData.getPredicateParameters()) {
+//			projectionParameters.add(relBuilder.field(termData.getTermName())); //not sure whether to use ordinals, or variables as names.... // also not sure whether relBuilder.field() would push elements on relBuilder stack......
+//
+//			if (termData.getAdornment() == TermData.Adornment.BOUND) {
+//				relBuilder.filter(
+//					relBuilder.call(
+//						SqlStdOperatorTable.EQUALS,
+//						relBuilder.field(termData.getTermName()),
+//						relBuilder.literal(termData.getTermName())));
+//			}
+//		}
+//		relBuilder.project(projectionParameters);
+//		return relBuilder.build();
+//	}
 
 	private RelNode getLeafNode(PredicateData predicateData) {
 		if (predicateData instanceof SimplePredicateData) { //this should also return correct logical plan if there is only query and no program rules are provided (i.e., there is only one node in the And-Or tree.)
 			String tableName = predicateData.getPredicateName();
-			System.out.println();
 			if (((SimplePredicateData) predicateData).isIdb()) {
-				relBuilder.scan(tableName);
-				List<RexNode> projectionParameters = new ArrayList<>();
-				List<String> newNames = new ArrayList<>();
-				int i = 0;
-				for (TermData termData : predicateData.getPredicateParameters()) {
-					projectionParameters.add(relBuilder.field(termData.getTermName())); //not sure whether to use ordinals, or variables as names.... // also not sure whether relBuilder.field() would push elements on relBuilder stack......
-					if (termData.getAdornment() == TermData.Adornment.BOUND) {
-						relBuilder.filter(
-							relBuilder.call(
-								SqlStdOperatorTable.EQUALS,
-								relBuilder.field(termData.getTermName()),
-								relBuilder.literal(termData.getTermName())));
-					}
-					newNames.add(termData.getTermName());
-					i++;
-				}
-				relBuilder.project(projectionParameters).rename(newNames);
-				return relBuilder.build();
+				return relBuilder.join(JoinRelType.INNER, "").build();
 			} else {
 				relBuilder.scan(this.currentCatalogName, this.currentDatabaseName, tableName);
 				String[] tableFields = new String[0];
@@ -125,23 +122,29 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 				} catch (TableNotExistException e) {
 					e.printStackTrace();
 				}
+				int i = 0;
 				List<RexNode> projectionParameters = new ArrayList<>();
 				List<String> newNames = new ArrayList<>();
-				int i = 0;
 				for (TermData termData : predicateData.getPredicateParameters()) {
-					projectionParameters.add(relBuilder.alias(relBuilder.field(tableFields[i]), termData.getTermName())); //not sure whether to use ordinals, or variables as names.... // also not sure whether relBuilder.field() would push elements on relBuilder stack......
+					projectionParameters.add(relBuilder.alias(
+						relBuilder.field(predicateData.getPredicateName(), tableFields[i]), termData.getTermName()));
 					if (termData.getAdornment() == TermData.Adornment.BOUND) {
+						if (!((SimplePredicateData) predicateData).isIdb()) {
+							System.err.println("Unsafe rule!");
+						}
 						relBuilder.filter(
 							relBuilder.call(
 								SqlStdOperatorTable.EQUALS,
-								relBuilder.field(tableFields[i]),
+								relBuilder.field(i),
 								relBuilder.literal(termData.getTermName())));
 					}
 					newNames.add(termData.getTermName());
 					i++;
 				}
-				relBuilder.project(projectionParameters).rename(newNames);
-				RelNode leafNodes = relBuilder.build(); //will also clear the stack
+				relBuilder
+					.project(projectionParameters)
+					.rename(newNames);
+				RelNode leafNodes = relBuilder.build();
 				System.out.println(RelOptUtil.toString(leafNodes));
 				return leafNodes;
 			}
@@ -158,7 +161,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 					getBinaryOperator(((PrimitivePredicateData) predicateData).getOperator()),
 					leftExpression,
 					rightExpression
-				)).build(); //will also clear the stack
+				)).build();
 		} else {
 			return null;
 		}
@@ -168,29 +171,29 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	public RelNode visitOrNode(OrNode node) {
 		PredicateData predicateData = node.getPredicateData();
 		List<AndNode> childNodes = node.getChildren();
-
 		if (childNodes.size() > 0) {
-//			RelNode idbNode = getIDBNode(predicateData);
-//			relBuilder.push(idbNode);
-			AndNode preivousSiblingNode = null;
+			boolean hasRecursiveNode = false;
 			for (AndNode childNode : childNodes) { //todo: handle a case where root node has more than two children e.g. two or more non recursive and one or more recursive.. use union bw non-recursive tables and in this case... dont know what to do if we have two recursive rules in the same program...???????
-
-
-				if (preivousSiblingNode != null) {
-					if (!preivousSiblingNode.isRecursive() && childNode.isRecursive()) {//todo: dont know if vice versa is also true. //if the previous rule wasnt recursive and the current one is recursive.
-						relBuilder.transientScan(predicateData.getPredicateName());
-						relBuilder.repeatUnion(predicateData.getPredicateName(), true); //create repeat union between top two expressions on the stack
-					} else { //if ((!preivousSiblingNode.isRecursive() && !andNode.isRecursive()) || (preivousSiblingNode.isRecursive() && andNode.isRecursive())) { //if both are not recursive or if both are recursive.. //todo: not sure what to do  if both are recursive
-						relBuilder.union(true);
-					}
+				if (childNode.isRecursive()) {
+					relBuilder
+						.transientScan(childNode.getPredicateData().getPredicateName());
+					hasRecursiveNode = true;
 				}
-				preivousSiblingNode = childNode;
-
-				RelNode childRelNode = visit(childNode); //child node is AND node
-				relBuilder.push(childRelNode); //not sure whether to put in relbuilder stack or create our own stack....
+				RelNode childRelNode = visit(childNode);
+				relBuilder
+					.push(childRelNode);
 			}
-
-			RelNode topNodeRelAlgebra = relBuilder.build();
+			if (hasRecursiveNode) {
+				relBuilder
+					.repeatUnion(predicateData.getPredicateName(), true); //create repeat union between top two expressions on the stack
+			} else {
+				relBuilder
+					.union(true);
+			}
+			relBuilder
+				.project(this.getIDBProjectionParameters(predicateData));
+			RelNode topNodeRelAlgebra = relBuilder
+				.build();
 			System.out.println(RelOptUtil.toString(topNodeRelAlgebra));
 			return topNodeRelAlgebra;
 		} else {
@@ -202,30 +205,57 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	public RelNode visitAndNode(AndNode node) {
 		PredicateData predicateData = node.getPredicateData();
 		List<OrNode> childNodes = node.getChildren();
-		if (childNodes.size() > 0) { //this case will be always true. but checking  it anyway....
-			RelNode previousRelNode = null;
-			for (OrNode childNode : node.getChildren()) {
-				RelNode childRelNode = visit(childNode); //child node is OR node
-
+		if (childNodes.size() > 0) {
+			RelNode previousRelNode = null; OrNode previousChildNode = null;
+			for (int i = 0; i < node.getChildren().size(); i++) {
+				OrNode childNode = (OrNode) node.getChild(i);
 				PredicateData bodyPredicateData = childNode.getPredicateData();
 				if (bodyPredicateData instanceof PrimitivePredicateData) {
-					relBuilder.push(childRelNode);// it is a filter
+					relBuilder
+						.push(visit(childNode));
 				} else if (bodyPredicateData instanceof SimplePredicateData) { // use joins, or cartesian products, etc...
+					System.out.println();
+					if (((SimplePredicateData) bodyPredicateData).isIdb()) {
+						//todo: currently the fields are hardcoded.... remove this later
+						previousRelNode = relBuilder.join(JoinRelType.INNER, relBuilder.equals(relBuilder.field(1), relBuilder.field(0))).build();
+						relBuilder
+							.push(previousRelNode);
+						continue;
+					}
+					RelNode childRelNode = visit(childNode);
 					if (previousRelNode != null) {
-						relBuilder.push(childRelNode);
-						List<String> matchingColumns = getMatchingColumns(previousRelNode.getRowType().getFieldNames(), childRelNode.getRowType().getFieldNames());
-						previousRelNode = relBuilder.join(JoinRelType.INNER, matchingColumns.toArray(new String[0])).build(); //todo:  check what to do if there is no matching parameter.....
+						relBuilder
+							.push(childRelNode);
+
+						//find the matching variables in predicate parameters, and then get the corresponding actual column names, form fields and conditions....
+						List<String> currentNodeChuldren = childNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+						List<String> previousNodeChildren = previousChildNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+						List<RexNode> conditions = new ArrayList<>();
+						for (int c = 0; c < currentNodeChuldren.size(); c++) {
+							for (int p = 0; p < previousNodeChildren.size(); p++) {
+								if (currentNodeChuldren.get(c).equals(previousNodeChildren.get(p))) {
+									conditions.add(relBuilder.equals(
+										relBuilder.field(childNode.getPredicateData().getPredicateParameters().get(c).getTermName()),
+										relBuilder.field(previousChildNode.getPredicateData().getPredicateParameters().get(c).getTermName())
+									));
+								}
+							}
+						}
+						previousRelNode = relBuilder.join(JoinRelType.INNER, conditions).build();
 					} else {
 						previousRelNode = childRelNode;
 					}
-					relBuilder.push(previousRelNode);
+					relBuilder
+						.push(previousRelNode);
+					previousChildNode = childNode;
 				}
 			}
-			relBuilder.project(relBuilder.fields(predicateData.getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList()))).as(predicateData.getPredicateName());
-
-			RelNode ruleHeadRelAlgebra = relBuilder.build();
+			relBuilder
+				.project(this.getIDBProjectionParameters(predicateData));
+			RelNode ruleHeadRelAlgebra = relBuilder
+				.build();
 			System.out.println(RelOptUtil.toString(ruleHeadRelAlgebra));
-			return ruleHeadRelAlgebra; //since it's a transient scan, it means it's not stored in the catalog, and hence we don't need catalog name and database name
+			return ruleHeadRelAlgebra;
 		} else {
 			System.err.println("AND node must have children.");
 			return null;
