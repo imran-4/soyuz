@@ -31,6 +31,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	private String currentCatalogName;
 	private String currentDatabaseName;
 
+
 	public LogicalPlan(FlinkRelBuilder relBuilder, CatalogManager catalogManager) {
 		this.relBuilder = relBuilder;
 		this.catalogManager = catalogManager;
@@ -125,7 +126,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	}
 
 	public RelNode getLogicalPlan() {
-		RelNode relNode =  this.relBuilder.build();
+		RelNode relNode = this.relBuilder.build();
 		System.out.println(RelOptUtil.toString(relNode));
 		return relNode;
 	}
@@ -138,7 +139,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			boolean hasRecursiveNode = false;
 			for (AndNode childNode : childNodes) { //todo: handle a case where root node has more than two children e.g. two or more non recursive and one or more recursive.. use union bw non-recursive tables and in this case... dont know what to do if we have two recursive rules in the same program...???????
 				if (childNode.isRecursive()) {
-
 					relBuilder
 						.transientScan(childNode.getPredicateData().getPredicateName());
 					hasRecursiveNode = true;
@@ -165,52 +165,30 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 		PredicateData predicateData = node.getPredicateData();
 		List<OrNode> childNodes = node.getChildren();
 		if (childNodes.size() > 0) {
-			OrNode previousChildNode = null;
 			for (int i = 0; i < node.getChildren().size(); i++) {
 				OrNode childNode = (OrNode) node.getChild(i);
 				PredicateData bodyPredicateData = childNode.getPredicateData();
 				if (bodyPredicateData instanceof PrimitivePredicateData) {
 					visit(childNode);
 				} else if (bodyPredicateData instanceof SimplePredicateData) { // use joins, or cartesian products, etc...
-					if (((SimplePredicateData) bodyPredicateData).isIdb()) {
-						if (previousChildNode != null) {
-							//find the matching variables in predicate parameters, and then get the corresponding actual column names, form fields and conditions....
-							List<String> currentNodeChuldren = childNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
-							List<String> previousNodeChildren = previousChildNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
-							List<RexNode> conditions = new ArrayList<>();
-							for (int c = 0; c < currentNodeChuldren.size(); c++) {
-								for (int p = 0; p < previousNodeChildren.size(); p++) {
-									if (currentNodeChuldren.get(c).equals(previousNodeChildren.get(p))) {
-										conditions.add(relBuilder.equals(
-											relBuilder.field(previousChildNode.getPredicateData().getPredicateName(), previousChildNode.getPredicateData().getPredicateParameters().get(p).getTermName()),
-											relBuilder.field(2, childNode.getPredicateData().getPredicateName(), "X")  //todo: remove hardcoding
-										));
-									}
-								}
-							}
-							relBuilder.join(JoinRelType.INNER, conditions);
-						}
-						continue;
+					if (!((SimplePredicateData) bodyPredicateData).isIdb()) {
+						visit(childNode);
 					}
-					visit(childNode);
-					if (previousChildNode != null) {
+					if (i > 0) {
+						OrNode previousChildNode = node.getChildren().get(i - 1);
 						//find the matching variables in predicate parameters, and then get the corresponding actual column names, form fields and conditions....
-						List<String> currentNodeChuldren = childNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
-						List<String> previousNodeChildren = previousChildNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
-						List<RexNode> conditions = new ArrayList<>();
-						for (int c = 0; c < currentNodeChuldren.size(); c++) {
-							for (int p = 0; p < previousNodeChildren.size(); p++) {
-								if (currentNodeChuldren.get(c).equals(previousNodeChildren.get(p))) {
-									conditions.add(relBuilder.equals(
-										relBuilder.field(childNode.getPredicateData().getPredicateName(), childNode.getPredicateData().getPredicateParameters().get(c).getTermName()),
-										relBuilder.field(previousChildNode.getPredicateData().getPredicateName(), previousChildNode.getPredicateData().getPredicateParameters().get(p).getTermName())
-									));
-								}
+						createJoin(previousChildNode, childNode);
+					} else if (i == 0 && ((SimplePredicateData) bodyPredicateData).isIdb()) { //the case where first node is an IDB
+						if (i + 1 < node.getChildren().size()) { //take its next sibling and if that's also a simple predicate, then visit it and create a join between the two predicates...
+							OrNode nextChildNode = (OrNode) node.getChild(i + 1);
+							visit(nextChildNode);
+							if (nextChildNode.getPredicateData() instanceof SimplePredicateData) { //else it would be a primitive predicate, which would already be added upon visit.
+								//create join here
+								createJoin(childNode, nextChildNode);
 							}
+							i++;
 						}
-						relBuilder.join(JoinRelType.INNER, conditions);
 					}
-					previousChildNode = childNode;
 				}
 			}
 			relBuilder
@@ -219,4 +197,50 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			System.err.println("AND node must have children.");
 		}
 	}
+
+	private void createJoin(OrNode leftNode, OrNode rightNode) {
+		List<String> leftNodeChildren = leftNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+		List<String> rightNodeChildren = rightNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+		List<RexNode> conditions = new ArrayList<>();
+		for (int c = 0; c < leftNodeChildren.size(); c++) {
+			for (int p = 0; p < rightNodeChildren.size(); p++) {
+				if (leftNodeChildren.get(c).equals(rightNodeChildren.get(p))) {
+					RexNode leftRexNode = null;
+					if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
+						leftRexNode = relBuilder.alias(
+							relBuilder.field(2, 0, p),
+							leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()
+						);
+					} else {
+						leftRexNode = relBuilder.alias(
+							relBuilder.field(leftNode.getPredicateData().getPredicateName(), leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()),
+							leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()
+						);
+					}
+
+					RexNode rightRexNode = null;
+					if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
+						rightRexNode = relBuilder.alias(
+							relBuilder.field(2, 0, "X"),
+							rightNode.getPredicateData().getPredicateParameters().get(c).getTermName());
+					} else {
+						rightRexNode = relBuilder.alias(
+							relBuilder
+								.field(rightNode.getPredicateData().getPredicateName(), rightNode.getPredicateData().getPredicateParameters().get(c).getTermName()),
+							rightNode.getPredicateData().getPredicateParameters().get(c).getTermName());
+					}
+					conditions.add(relBuilder.equals(leftRexNode, rightRexNode));
+				}
+			}
+		}
+		relBuilder.join(JoinRelType.INNER, conditions);
+	}
+
+//	private int getInputCount() {
+//		int peekIndex = 0;
+//
+//		relBuilder.peek(1).getTable().getQualifiedName().get(relBuilder.peek(1).getTable().getQualifiedName().size() - 1);
+//
+//		return 0;
+//	}
 }
