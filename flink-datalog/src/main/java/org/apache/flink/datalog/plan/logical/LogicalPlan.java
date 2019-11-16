@@ -20,10 +20,11 @@ import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.catalog.exceptions.TableNotExistException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-//IN progress
 public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates logical plan from And-Or Tree
 	private FlinkRelBuilder relBuilder;
 	private CatalogManager catalogManager;
@@ -78,7 +79,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 	}
 
 	private void getLeafNode(PredicateData predicateData) {
-		if (predicateData instanceof SimplePredicateData) { //this should also return correct logical plan if there is only query and no program rules are provided (i.e., there is only one node in the And-Or tree.)
+		if (predicateData instanceof SimplePredicateData) {
 			String tableName = predicateData.getPredicateName();
 
 			relBuilder.scan(this.currentCatalogName, this.currentDatabaseName, tableName);
@@ -137,14 +138,21 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 		List<AndNode> childNodes = node.getChildren();
 		if (childNodes.size() > 0) {
 			boolean hasRecursiveNode = false;
-			for (AndNode childNode : childNodes) { //todo: handle a case where root node has more than two children e.g. two or more non recursive and one or more recursive.. use union bw non-recursive tables and in this case... dont know what to do if we have two recursive rules in the same program...???????
+			int recursiveNodesCount = 0;
+			for (int i = 0; i < childNodes.size(); i++) { //todo: handle a case where root node has more than two children e.g. two or more non recursive and one or more recursive.. use union bw non-recursive tables and in this case... dont know what to do if we have two recursive rules in the same program...???????
+				AndNode childNode = childNodes.get(i);
 				if (childNode.isRecursive()) {
 					relBuilder
 						.transientScan(childNode.getPredicateData().getPredicateName());
 					hasRecursiveNode = true;
+					recursiveNodesCount++; //not sure whether we need to union multiple recursuve nodes
+				} else if (i >= 1 && !childNode.isRecursive()) { //if there are multiple rules without recursion seen so far. then union their results.. i hope it would be ok..not sure whether repeatunion will create a simple "union" among multiple non recursive nodes..
+					relBuilder.union(true);
 				}
 				visit(childNode);
 			}
+			relBuilder
+				.project(this.getIDBProjectionParameters(predicateData));
 			if (hasRecursiveNode) {
 				relBuilder
 					.repeatUnion(predicateData.getPredicateName(), true); //create repeat union between top two expressions on the stack
@@ -152,9 +160,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 				relBuilder
 					.union(true);
 			}
-			relBuilder
-				.project(this.getIDBProjectionParameters(predicateData));
-
 		} else {
 			getLeafNode(predicateData);
 		}
@@ -174,10 +179,13 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 					if (!((SimplePredicateData) bodyPredicateData).isIdb()) {
 						visit(childNode);
 					}
-					if (i > 0) {
+					if (i == 1) {
 						OrNode previousChildNode = node.getChildren().get(i - 1);
 						//find the matching variables in predicate parameters, and then get the corresponding actual column names, form fields and conditions....
 						createJoin(previousChildNode, childNode);
+					} else if (i > 1) { // join is required with previous join
+						createJoinWithJoin(childNode);
+
 					} else if (i == 0 && ((SimplePredicateData) bodyPredicateData).isIdb()) { //the case where first node is an IDB
 						if (i + 1 < node.getChildren().size()) { //take its next sibling and if that's also a simple predicate, then visit it and create a join between the two predicates...
 							OrNode nextChildNode = (OrNode) node.getChild(i + 1);
@@ -198,49 +206,100 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 		}
 	}
 
-	private void createJoin(OrNode leftNode, OrNode rightNode) {
-		List<String> leftNodeChildren = leftNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
-		List<String> rightNodeChildren = rightNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+	private void createJoinWithJoin(OrNode currentNode) {
+		//todo::: fix this.....
+		List<String> newNames = new ArrayList<>();
 		List<RexNode> conditions = new ArrayList<>();
-		for (int c = 0; c < leftNodeChildren.size(); c++) {
-			for (int p = 0; p < rightNodeChildren.size(); p++) {
-				if (leftNodeChildren.get(c).equals(rightNodeChildren.get(p))) {
-					RexNode leftRexNode = null;
-					if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
-						leftRexNode = relBuilder.alias(
-							relBuilder.field(2, 0, p),
-							leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()
-						);
-					} else {
-						leftRexNode = relBuilder.alias(
-							relBuilder.field(leftNode.getPredicateData().getPredicateName(), leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()),
-							leftNode.getPredicateData().getPredicateParameters().get(p).getTermName()
-						);
-					}
+
+		List<String> currentNodeFields = currentNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+		List<String> joinedNodeFields = relBuilder.peek(1).getRowType().getFieldNames().stream().distinct().collect(Collectors.toList());
+		String previousJoinTableName = "join";
+		newNames.addAll(currentNodeFields);
+		newNames.addAll(joinedNodeFields);
+
+		for (int l = 0; l < joinedNodeFields.size(); l++) {
+			for (int r = 0; r < currentNodeFields.size(); r++) {
+				if (joinedNodeFields.get(l).equals(currentNodeFields.get(r))) {
+					RexNode leftRexNode = null;  //left node cant be IDB in this case..that case has been handeled before
+					leftRexNode = relBuilder
+						.field(2, previousJoinTableName, joinedNodeFields.get(l));
 
 					RexNode rightRexNode = null;
-					if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
-						rightRexNode = relBuilder.alias(
-							relBuilder.field(2, 0, "X"),
-							rightNode.getPredicateData().getPredicateParameters().get(c).getTermName());
+					if (((SimplePredicateData) currentNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
+						Map<String, Integer> inputOrdinal = getInputCountAndOrdinal(currentNode.getPredicateData().getPredicateName());
+						rightRexNode = relBuilder.field(inputOrdinal.get("count"), inputOrdinal.get("ordinal"), r);
 					} else {
-						rightRexNode = relBuilder.alias(
-							relBuilder
-								.field(rightNode.getPredicateData().getPredicateName(), rightNode.getPredicateData().getPredicateParameters().get(c).getTermName()),
-							rightNode.getPredicateData().getPredicateParameters().get(c).getTermName());
+						rightRexNode = relBuilder
+							.field(currentNode.getPredicateData().getPredicateName(), currentNodeFields.get(r));
 					}
 					conditions.add(relBuilder.equals(leftRexNode, rightRexNode));
 				}
 			}
 		}
-		relBuilder.join(JoinRelType.INNER, conditions);
+		relBuilder.join(JoinRelType.INNER, conditions).rename(newNames).as("join");
 	}
 
-//	private int getInputCount() {
-//		int peekIndex = 0;
-//
-//		relBuilder.peek(1).getTable().getQualifiedName().get(relBuilder.peek(1).getTable().getQualifiedName().size() - 1);
-//
-//		return 0;
-//	}
+	private void createJoin(OrNode leftNode, OrNode rightNode) {
+		List<String> leftNodeFields = leftNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+		List<String> rightNodeFields = rightNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+		List<RexNode> conditions = new ArrayList<>();
+		List<String> newNames = new ArrayList<>();
+		newNames.addAll(leftNodeFields);
+		newNames.addAll(rightNodeFields);
+
+		for (int l = 0; l < leftNodeFields.size(); l++) {
+			for (int r = 0; r < rightNodeFields.size(); r++) {
+				if (leftNodeFields.get(l).equals(rightNodeFields.get(r))) {
+					RexNode leftRexNode = null;
+					if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
+						Map<String, Integer> inputOrdinal = getInputCountAndOrdinal(leftNode.getPredicateData().getPredicateName());
+						leftRexNode = relBuilder
+							.field(2, 0, l);
+					} else {
+						leftRexNode = relBuilder
+							.field(leftNode.getPredicateData().getPredicateName(), leftNodeFields.get(l));
+					}
+					RexNode rightRexNode = null;
+					if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
+						Map<String, Integer> inputOrdinal = getInputCountAndOrdinal(rightNode.getPredicateData().getPredicateName());
+						rightRexNode = relBuilder.field(inputOrdinal.get("count"), inputOrdinal.get("ordinal"), r);
+					} else {
+						rightRexNode = relBuilder
+							.field(rightNode.getPredicateData().getPredicateName(), rightNodeFields.get(r));
+					}
+					conditions.add(relBuilder.equals(leftRexNode, rightRexNode));
+				}
+			}
+		}
+		relBuilder.join(JoinRelType.INNER, conditions).rename(newNames).as("join");
+	}
+
+	private Map<String, Integer> getInputCountAndOrdinal(String transientTableName) {
+		Map<String, Integer> countAndOrdinal = new HashMap<>();
+		int peekIndex = 0;
+		int inputCount = 0;
+		int inputOrdinal = 0;
+		while (true) {
+			inputCount++;
+			try {
+				RelNode peekNode = relBuilder.peek(peekIndex);
+				List<String> tableFullyQualifiedName = peekNode.getTable().getQualifiedName();
+				String tableName = tableFullyQualifiedName.get(tableFullyQualifiedName.size() - 1);
+				if (transientTableName.equals(tableName)) {
+					inputOrdinal = peekIndex;
+					break;
+				}
+				peekIndex++;
+			} catch (IndexOutOfBoundsException e) {
+				break;
+			} catch (Exception ignored) {
+				peekIndex++;
+				ignored.printStackTrace();
+			}
+		}
+		countAndOrdinal.put("count", inputCount);
+		countAndOrdinal.put("ordinal", inputOrdinal);
+
+		return countAndOrdinal;
+	}
 }
