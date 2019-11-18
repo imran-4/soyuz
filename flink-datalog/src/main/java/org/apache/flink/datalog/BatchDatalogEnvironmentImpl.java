@@ -14,6 +14,7 @@ import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.BatchTableEnvImpl;
 import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
@@ -31,6 +32,7 @@ import org.apache.flink.table.module.Module;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
+import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -523,12 +525,12 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		String currentDatabase = catalogManager.getCurrentDatabase();
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
 	}
-
-	public FlinkRelBuilder getRelBuilder() {
-		String currentCatalogName = catalogManager.getCurrentCatalog();
-		String currentDatabase = catalogManager.getCurrentDatabase();
-		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
-	}
+//
+//	public FlinkDatalogPlannerImpl getFlinkPlanner() {
+//		String currentCatalogName = catalogManager.getCurrentCatalog();
+//		String currentDatabase = catalogManager.getCurrentDatabase();
+//		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
+//	}
 
 //	public <T> DataSet<T> translate(Table table, TypeInformation<T> tpe) {
 //		QueryOperation queryOperation = table.getQueryOperation();

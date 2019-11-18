@@ -59,9 +59,9 @@ public class DatalogPlanningConfigurationBuilder extends PlanningConfigurationBu
 		// the converter is needed when calling temporal table functions from SQL, because
 		// they reference a history table represented with a tree of table operations
 		this.context = Contexts.of(expressionBridge, datalogEnvironment);
-		this.planner = new VolcanoPlanner(costFactory, context);
-		planner.setExecutor(new ExpressionReducer(tableConfig));
-		planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+		this.planner = super.getPlanner(); //new VolcanoPlanner(costFactory, context);
+//		planner.setExecutor(new ExpressionReducer(tableConfig));
+//		planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 		this.expressionBridge = expressionBridge;
 		this.rootSchema = rootSchema;
 		this.datalogEnvironment = datalogEnvironment;
@@ -97,7 +97,7 @@ public class DatalogPlanningConfigurationBuilder extends PlanningConfigurationBu
 	 * Returns the Calcite {@link org.apache.calcite.plan.RelOptPlanner} that will be used.
 	 */
 	public RelOptPlanner getPlanner() {
-		return planner;
+		return super.getPlanner();
 	}
 
 	/**

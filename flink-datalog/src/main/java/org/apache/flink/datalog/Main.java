@@ -7,6 +7,8 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 
+import java.util.List;
+
 public class Main {
 	public static void main(String[] args) {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -53,15 +55,18 @@ public class Main {
 		String query3 = "sg(X,Y)?";
 
 
-		String inputProgram4 = "";
-		String query4 = "arc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
+		String inputProgram4 = "tc(X,Y):-graph(X,Y).";
+		String query4 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
 		Table queryResult = datalogEnv.datalogQuery(inputProgram4, query4);
+		List<Tuple2<String, String>> collectedData = null;
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
-			dataSet2.print();
+			collectedData = dataSet2.collect();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println("-------------------");
+		collectedData.forEach(System.out::println);
 	}
 }

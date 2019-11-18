@@ -156,7 +156,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			if (hasRecursiveNode) {
 				relBuilder
 					.repeatUnion(predicateData.getPredicateName(), true); //create repeat union between top two expressions on the stack
-			} else {
+			} else if (childNodes.size() > 1){
 				relBuilder
 					.union(true);
 			}
