@@ -110,7 +110,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			relBuilder
 				.project(projectionParameters);
 		} else if (predicateData instanceof PrimitivePredicateData) {
-			RexNode leftExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
+			RexNode leftExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName()); //fix this for literals
 			RexNode rightExpression = null;
 			if (((PrimitivePredicateData) predicateData).getRightTerm().getAdornment() == TermData.Adornment.BOUND) {
 				rightExpression = relBuilder.literal(((PrimitivePredicateData) predicateData).getRightTerm().getTermName());
@@ -257,7 +257,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 							.field(2, 0, l);
 					} else {
 						leftRexNode = relBuilder
-							.field(leftNode.getPredicateData().getPredicateName(), leftNodeFields.get(l));
+							.field(2, leftNode.getPredicateData().getPredicateName(), leftNodeFields.get(l));
 					}
 					RexNode rightRexNode = null;
 					if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
@@ -265,7 +265,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 						rightRexNode = relBuilder.field(inputOrdinal.get("count"), inputOrdinal.get("ordinal"), r);
 					} else {
 						rightRexNode = relBuilder
-							.field(rightNode.getPredicateData().getPredicateName(), rightNodeFields.get(r));
+							.field(1, rightNode.getPredicateData().getPredicateName(), rightNodeFields.get(r));
 					}
 					conditions.add(relBuilder.equals(leftRexNode, rightRexNode));
 				}

@@ -55,7 +55,7 @@ public class Main {
 		String query3 = "sg(X,Y)?";
 
 
-		String inputProgram4 = "tc(X,Y):-graph(X,Y).";
+		String inputProgram4 = "tc(X,Y):-graph(X,Z), graph(Z,Y), Y!=X.";
 		String query4 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
 		Table queryResult = datalogEnv.datalogQuery(inputProgram4, query4);
