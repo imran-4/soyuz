@@ -27,7 +27,7 @@ compileUnit
     : rules query EOF
     ;
 rules
-    : ruleClause+
+    : ruleClause*
     ;
 ruleClause
     : headPredicate COLON_HYPGHEN predicateList DOT

@@ -35,7 +35,7 @@ import org.apache.flink.table.util.JavaScalaConversionUtil;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
-public class DatalogPlanningConfigurationBuilder {
+public class DatalogPlanningConfigurationBuilder extends PlanningConfigurationBuilder{
 	private final RelOptCostFactory costFactory = new DataSetCostFactory();
 	private final RelDataTypeSystem typeSystem = new FlinkTypeSystem();
 	private final FlinkTypeFactory typeFactory = new FlinkTypeFactory(typeSystem);
@@ -52,6 +52,7 @@ public class DatalogPlanningConfigurationBuilder {
 		FunctionCatalog functionCatalog,
 		CalciteSchema rootSchema,
 		ExpressionBridge<PlannerExpression> expressionBridge, DatalogEnvironment datalogEnvironment) {
+		super(tableConfig, functionCatalog, rootSchema, expressionBridge);
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 

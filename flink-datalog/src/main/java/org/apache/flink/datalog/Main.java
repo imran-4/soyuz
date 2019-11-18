@@ -49,12 +49,17 @@ public class Main {
 		datalogEnv.registerDataSet("arc", dataSet1, "v1,v2");
 
 		String inputProgram3 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n" +
-			"sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
+			"sg(X,Y):-arc(A,X),sg(A,B),arc(X,Y).\n";
 		String query3 = "sg(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram3, query3);
+
+
+		String inputProgram4 = "";
+		String query4 = "arc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
+
+		Table queryResult = datalogEnv.datalogQuery(inputProgram4, query4);
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
-			dataSet2.collect();
+			dataSet2.print();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

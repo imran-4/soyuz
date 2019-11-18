@@ -21,7 +21,7 @@ import org.apache.flink.table.catalog.CatalogReader;
 
 import java.util.function.Function;
 
-public class FlinkDatalogPlannerImpl {
+public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl{
 	private SqlOperatorTable operatorTable;
 	private ImmutableList<RelTraitDef> traitDefs;
 	private FrameworkConfig frameworkConfig;
@@ -31,11 +31,11 @@ public class FlinkDatalogPlannerImpl {
 	private FlinkRelBuilder flinkRelBuilder;
 	public FlinkDatalogPlannerImpl(
 		FrameworkConfig frameworkConfig,
-		Function<Boolean, CalciteCatalogReader> catalogReaderSupplier,
+		Function<Boolean, CatalogReader> catalogReaderSupplier,
 		RelOptPlanner planner,
 		FlinkTypeFactory typeFactory,
 		FlinkRelBuilder flinkRelBuilder) {
-		super();
+		super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
 		this.frameworkConfig = frameworkConfig;
 		this.catalogReaderSupplier = catalogReaderSupplier;
 		this.typeFactory = typeFactory;
