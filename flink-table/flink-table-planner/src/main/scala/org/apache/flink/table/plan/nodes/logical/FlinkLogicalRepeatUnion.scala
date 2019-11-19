@@ -31,6 +31,7 @@ class FlinkLogicalRepeatUnion(
   override def computeSelfCost(planner: RelOptPlanner, mq: RelMetadataQuery): RelOptCost = super.computeSelfCost(planner, mq)
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = super.copy(traitSet, inputs)
+}
 
   private class FlinkLogicalRepeatUnionConverter
     extends ConverterRule(
@@ -59,7 +60,7 @@ class FlinkLogicalRepeatUnion(
 
   object FlinkLogicalRepeatUnion {
 
-    val CONVERTER: ConverterRule = new FlinkLogicalUnionConverter()
+    val CONVERTER: ConverterRule = new FlinkLogicalRepeatUnionConverter()
 
     def create(seed: RelNode, iterative: RelNode, all: Boolean): FlinkLogicalRepeatUnion = {
       val cluster: RelOptCluster = seed.getCluster
@@ -68,4 +69,4 @@ class FlinkLogicalRepeatUnion(
     }
   }
 
-}
+

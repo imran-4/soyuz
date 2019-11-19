@@ -18,6 +18,7 @@
 
 package org.apache.flink.table.plan.rules
 
+import org.apache.calcite.adapter.enumerable.EnumerableRepeatUnion
 import org.apache.calcite.rel.core.RelFactories
 import org.apache.calcite.rel.rules._
 import org.apache.calcite.tools.{RuleSet, RuleSets}
@@ -140,7 +141,9 @@ object FlinkRuleSets {
     FlinkLogicalTableFunctionScan.CONVERTER,
     FlinkLogicalMatch.CONVERTER,
     FlinkLogicalTableAggregate.CONVERTER,
-    FlinkLogicalWindowTableAggregate.CONVERTER
+    FlinkLogicalWindowTableAggregate.CONVERTER,
+    FlinkLogicalRepeatUnion.CONVERTER,
+    FlinkLogicalTableSpoolScan.CONVERTER
   )
 
   /**
