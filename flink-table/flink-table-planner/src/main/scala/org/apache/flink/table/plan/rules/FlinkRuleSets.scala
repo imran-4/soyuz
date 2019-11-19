@@ -20,6 +20,7 @@ package org.apache.flink.table.plan.rules
 
 import org.apache.calcite.adapter.enumerable.EnumerableRepeatUnion
 import org.apache.calcite.rel.core.RelFactories
+import org.apache.calcite.rel.logical.LogicalProject
 import org.apache.calcite.rel.rules._
 import org.apache.calcite.tools.{RuleSet, RuleSets}
 import org.apache.flink.table.plan.nodes.logical._
@@ -202,7 +203,9 @@ object FlinkRuleSets {
     DataSetSortRule.INSTANCE,
     DataSetValuesRule.INSTANCE,
     DataSetCorrelateRule.INSTANCE,
-    BatchTableSourceScanRule.INSTANCE
+    BatchTableSourceScanRule.INSTANCE,
+    DataSetRepeatUnionRule.INSTANCE,
+    DataSetTableSpoolRule.INSTANCE
   )
 
   /**
