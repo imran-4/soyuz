@@ -9,6 +9,7 @@ import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.logical.LogicalRepeatUnion
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.flink.table.plan.nodes.FlinkConventions
+import scala.collection.JavaConverters._
 
 
 class FlinkLogicalRepeatUnion(
@@ -26,9 +27,30 @@ class FlinkLogicalRepeatUnion(
     all,
     iterationLimit)
     with FlinkLogicalRel {
-  override def computeSelfCost(planner: RelOptPlanner, mq: RelMetadataQuery): RelOptCost = super.computeSelfCost(planner, mq)
 
-  override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = super.copy(traitSet, inputs)
+  override def computeSelfCost(planner: RelOptPlanner, mq: RelMetadataQuery): RelOptCost = {
+
+    val leftRowCnt = mq.getRowCount(getLeft)
+    val leftRowSize = estimateRowSize(getLeft.getRowType)
+
+    val rightRowCnt = mq.getRowCount(getRight)
+    val rightRowSize = estimateRowSize(getRight.getRowType)
+
+    val ioCost = (leftRowCnt * leftRowSize) + (rightRowCnt * rightRowSize)
+    val cpuCost = leftRowCnt + rightRowCnt
+    val rowCnt = leftRowCnt + rightRowCnt
+
+    planner.getCostFactory.makeCost(1000000, 1000000, 100000)
+//    val children = this.getInputs.asScala
+//    val rowCnt = children.foldLeft(0D) { (rows, child) =>
+//      rows + mq.getRowCount(child)
+//    }
+//    planner.getCostFactory.makeCost(rowCnt, 0, 0)
+  }
+
+  override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
+    new FlinkLogicalRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1)
+  }
 }
 
 private class FlinkLogicalRepeatUnionConverter
@@ -47,14 +69,9 @@ private class FlinkLogicalRepeatUnionConverter
     val repeatUnion = rel.asInstanceOf[LogicalRepeatUnion]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
     val seedInput = RelOptRule.convert(repeatUnion.getLeft, FlinkConventions.LOGICAL)
-    //        .asScala
-    //        .map(input => RelOptRule.convert(input, FlinkConventions.LOGICAL)).asJava
+    val iterativeInput = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.LOGICAL)
 
-    val iterativeInputs = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.LOGICAL)
-    //        .asScala
-    //        .map(input => RelOptRule.convert(input, FlinkConventions.LOGICAL)).asJava
-
-    new FlinkLogicalRepeatUnion(rel.getCluster, traitSet, seedInput, iterativeInputs, repeatUnion.all, -1)
+    new FlinkLogicalRepeatUnion(rel.getCluster, traitSet, seedInput, iterativeInput, repeatUnion.all, -1)
   }
 }
 

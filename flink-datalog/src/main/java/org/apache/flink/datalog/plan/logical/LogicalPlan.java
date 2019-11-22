@@ -43,7 +43,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 
 	private static SqlBinaryOperator getBinaryOperator(String operator) {
 		switch (operator) {
-			case "==":
+			case "=":
 				return SqlStdOperatorTable.EQUALS;
 			case "!=":
 				return SqlStdOperatorTable.NOT_EQUALS;
@@ -91,7 +91,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 			}
 			int i = 0;
 			List<RexNode> projectionParameters = new ArrayList<>();
-
+			List<String> newNames = new ArrayList<>();
 			for (TermData termData : predicateData.getPredicateParameters()) {
 				projectionParameters.add(relBuilder.alias(relBuilder.field(tableFields[i]), termData.getTermName()));
 
@@ -105,12 +105,18 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 							relBuilder.field(i),
 							relBuilder.literal(termData.getTermName())));
 				}
+				newNames.add(termData.getTermName());
 				i++;
 			}
 			relBuilder
-				.project(projectionParameters);
+				.project(projectionParameters).rename(newNames);
 		} else if (predicateData instanceof PrimitivePredicateData) {
-			RexNode leftExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName()); //fix this for literals
+			RexNode leftExpression = null;
+			if (((PrimitivePredicateData) predicateData).getLeftTerm().getAdornment() == TermData.Adornment.BOUND) {
+				leftExpression = relBuilder.literal(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
+			} else if (((PrimitivePredicateData) predicateData).getLeftTerm().getAdornment() == TermData.Adornment.FREE) {
+				leftExpression = relBuilder.field(((PrimitivePredicateData) predicateData).getLeftTerm().getTermName());
+			}
 			RexNode rightExpression = null;
 			if (((PrimitivePredicateData) predicateData).getRightTerm().getAdornment() == TermData.Adornment.BOUND) {
 				rightExpression = relBuilder.literal(((PrimitivePredicateData) predicateData).getRightTerm().getTermName());
@@ -185,7 +191,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 						createJoin(previousChildNode, childNode);
 					} else if (i > 1) { // join is required with previous join
 						createJoinWithJoin(childNode);
-
 					} else if (i == 0 && ((SimplePredicateData) bodyPredicateData).isIdb()) { //the case where first node is an IDB
 						if (i + 1 < node.getChildren().size()) { //take its next sibling and if that's also a simple predicate, then visit it and create a join between the two predicates...
 							OrNode nextChildNode = (OrNode) node.getChild(i + 1);
