@@ -33,18 +33,18 @@ import org.apache.flink.table.sources.{FilterableTableSource, TableSource, Table
 import scala.collection.JavaConverters._
 
 class FlinkLogicalTableSourceScan(
-    cluster: RelOptCluster,
-    traitSet: RelTraitSet,
-    table: RelOptTable,
-    val tableSource: TableSource[_],
-    val selectedFields: Option[Array[Int]])
+                                   cluster: RelOptCluster,
+                                   traitSet: RelTraitSet,
+                                   table: RelOptTable,
+                                   val tableSource: TableSource[_],
+                                   val selectedFields: Option[Array[Int]])
   extends TableScan(cluster, traitSet, table)
-  with FlinkLogicalRel {
+    with FlinkLogicalRel {
 
   def copy(
-      traitSet: RelTraitSet,
-      tableSource: TableSource[_],
-      selectedFields: Option[Array[Int]]): FlinkLogicalTableSourceScan = {
+            traitSet: RelTraitSet,
+            tableSource: TableSource[_],
+            selectedFields: Option[Array[Int]]): FlinkLogicalTableSourceScan = {
     new FlinkLogicalTableSourceScan(cluster, traitSet, getTable, tableSource, selectedFields)
   }
 
@@ -74,7 +74,7 @@ class FlinkLogicalTableSourceScan(
 
   override def explainTerms(pw: RelWriter): RelWriter = {
     val terms = super.explainTerms(pw)
-        .item("fields", tableSource.getTableSchema.getFieldNames.mkString(", "))
+      .item("fields", tableSource.getTableSchema.getFieldNames.mkString(", "))
 
     val sourceDesc = tableSource.explainSource()
     if (sourceDesc.nonEmpty) {
