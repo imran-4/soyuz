@@ -152,8 +152,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {   //creates log
 						.transientScan(childNode.getPredicateData().getPredicateName());
 					hasRecursiveNode = true;
 					recursiveNodesCount++; //not sure whether we need to union multiple recursuve nodes
-				} else if (i >= 1 && !childNode.isRecursive()) { //if there are multiple rules without recursion seen so far. then union their results.. i hope it would be ok..not sure whether repeatunion will create a simple "union" among multiple non recursive nodes..
-					relBuilder.union(true);
 				}
 				visit(childNode);
 			}

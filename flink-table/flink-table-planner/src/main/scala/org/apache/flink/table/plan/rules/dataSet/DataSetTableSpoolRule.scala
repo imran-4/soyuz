@@ -10,7 +10,7 @@ import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalTableSpool, FlinkL
 
 class DataSetTableSpoolRule
   extends ConverterRule(
-    classOf[FlinkLogicalUnion],
+    classOf[FlinkLogicalTableSpool],
     FlinkConventions.LOGICAL,
     FlinkConventions.DATASET,
     "DataSetTableSpoolRule") {
@@ -18,7 +18,7 @@ class DataSetTableSpoolRule
   def convert(rel: RelNode): RelNode = {
     val tableSpool: FlinkLogicalTableSpool = rel.asInstanceOf[FlinkLogicalTableSpool]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
-    val input = RelOptRule.convert(tableSpool, FlinkConventions.LOGICAL)
+    val input = RelOptRule.convert(tableSpool, FlinkConventions.DATASET)
 
     new DataSetTableSpool(
       rel.getCluster,

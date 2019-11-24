@@ -7,6 +7,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.api.scala.internal.StreamTableEnvironmentImpl;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
@@ -19,8 +20,6 @@ import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableAggregateFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.module.Module;
-import org.apache.flink.table.module.exceptions.ModuleAlreadyExistException;
-import org.apache.flink.table.module.exceptions.ModuleNotFoundException;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
@@ -32,7 +31,9 @@ import org.apache.flink.table.sources.TableSourceValidation;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
+public class StreamDatalogEnvironmentImpl
+//	extends StreamTableEnvironmentImpl
+	implements StreamDatalogEnvironment {
 	private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
 	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
@@ -42,6 +43,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	private Planner planner;
 
 	public StreamDatalogEnvironmentImpl(Executor executor, TableConfig tableConfig, CatalogManager catalogManager, FunctionCatalog functionCatalog, Planner planner) {
+		super();
 		this.executor = executor;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
@@ -94,7 +96,17 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
+	public <T> void createTemporaryView(String path, DataStream<T> dataStream) {
+
+	}
+
+	@Override
 	public <T> void registerDataStream(String name, DataStream<T> dataStream, String fields) {
+
+	}
+
+	@Override
+	public <T> void createTemporaryView(String path, DataStream<T> dataStream, String fields) {
 
 	}
 
@@ -107,6 +119,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	public <T> DataStream<T> toAppendStream(Table table, TypeInformation<T> typeInfo) {
 		return null;
 	}
+
 
 	@Override
 	public <T> DataStream<T> toAppendStream(Table table, Class<T> clazz, StreamQueryConfig queryConfig) {
@@ -127,6 +140,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	public <T> DataStream<Tuple2<Boolean, T>> toRetractStream(Table table, TypeInformation<T> typeInfo) {
 		return null;
 	}
+
 
 	@Override
 	public <T> DataStream<Tuple2<Boolean, T>> toRetractStream(Table table, Class<T> clazz, StreamQueryConfig queryConfig) {
@@ -154,12 +168,12 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public void loadModule(String moduleName, Module module) throws ModuleAlreadyExistException {
+	public void loadModule(String moduleName, Module module) {
 
 	}
 
 	@Override
-	public void unloadModule(String moduleName) throws ModuleNotFoundException {
+	public void unloadModule(String moduleName) {
 
 	}
 
@@ -175,11 +189,16 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 				"Only tables that belong to this TableEnvironment can be registered.");
 		}
 		QueryOperationCatalogView view = new QueryOperationCatalogView(table.getQueryOperation());
-		catalogManager.createTable(view, catalogManager.qualifyIdentifier(
+		catalogManager.createTable(view, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
 			catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
-			name
+			name)
 		), false);
+	}
+
+	@Override
+	public void createTemporaryView(String path, Table view) {
+
 	}
 
 	@Override
@@ -191,10 +210,10 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 			throw new TableException("Only BatchTableSource or InputFormatTableSource are allowed here.");
 		}
 		//---------------------------------------------------------------------
-		Optional<CatalogBaseTable> table = catalogManager.getTable(catalogManager.qualifyIdentifier(name));
+		Optional<CatalogManager.TableLookupResult> table = catalogManager.getTable(catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(name)));
 		if (table.isPresent()) {
-			if (table.get() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get();
+			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
+				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get().getTable();
 				if (sourceSinkTable.getTableSource().isPresent()) {
 					throw new ValidationException(String.format("Table '%s' already exists. Please choose a different name.", name));
 				} else {
@@ -202,10 +221,10 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 						tableSource,
 						sourceSinkTable.getTableSink().get(),
 						false);
-					catalogManager.alterTable(sourceAndSink, catalogManager.qualifyIdentifier(
+					catalogManager.alterTable(sourceAndSink, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
 						catalogManager.getBuiltInCatalogName(),
 						catalogManager.getBuiltInDatabaseName(),
-						name), false);
+						name)), false);
 				}
 			} else {
 				throw new ValidationException(String.format(
@@ -213,10 +232,10 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 			}
 		} else {
 			ConnectorCatalogTable source = ConnectorCatalogTable.source(tableSource, false);
-			catalogManager.createTable(source, catalogManager.qualifyIdentifier(
+			catalogManager.createTable(source, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
 				catalogManager.getBuiltInCatalogName(),
 				catalogManager.getBuiltInDatabaseName(),
-				name), false);
+				name)), false);
 		}
 	}
 
@@ -242,18 +261,28 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
+	public Table from(String path) {
+		return null;
+	}
+
+	@Override
 	public void insertInto(Table table, String sinkPath, String... sinkPathContinued) {
 
 	}
 
 	@Override
+	public void insertInto(String targetPath, Table table) {
+
+	}
+
+	@Override
 	public StreamTableDescriptor connect(ConnectorDescriptor connectorDescriptor) {
-		return new StreamTableDescriptor(this, connectorDescriptor);
+		return new StreamTableDescriptor(null, connectorDescriptor);
 	}
 
 	@Override
 	public String[] listCatalogs() {
-		return this.catalogManager.getCatalogs().toArray(new String[0]);
+		return this.catalogManager.listCatalogs().toArray(new String[0]);
 	}
 
 	@Override
@@ -264,7 +293,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	@Override
 	public String[] listDatabases() {
 		List<String> databases = new ArrayList<>();
-		for (String c : this.catalogManager.getCatalogs()) {
+		for (String c : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(c).isPresent();
 			if (isCatalogPresent)
 				databases.addAll(this.catalogManager.getCatalog(c).get().listDatabases());
@@ -275,7 +304,7 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	@Override
 	public String[] listTables() {
 		List<String> tables = new ArrayList<>();
-		for (String catalog : this.catalogManager.getCatalogs()) {
+		for (String catalog : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(catalog).isPresent();
 			if (isCatalogPresent) {
 				for (String database : this.catalogManager.getCatalog(catalog).get().listDatabases()) {
@@ -291,6 +320,16 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
+	public String[] listTemporaryTables() {
+		return new String[0];
+	}
+
+	@Override
+	public String[] listTemporaryViews() {
+		return new String[0];
+	}
+
+	@Override
 	public String[] listUserDefinedFunctions() {
 		throw new UnsupportedOperationException("Not supported.");
 	}
@@ -298,6 +337,16 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	@Override
 	public String[] listFunctions() {
 		throw new UnsupportedOperationException("Not supported.");
+	}
+
+	@Override
+	public boolean dropTemporaryTable(String path) {
+		return false;
+	}
+
+	@Override
+	public boolean dropTemporaryView(String path) {
+		return false;
 	}
 
 	@Override
@@ -367,9 +416,9 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 		List<String> fullPath = new ArrayList<>(Arrays.asList(sinkPathContinued));
 		fullPath.add(0, sinkPath);
 
+		//ObjectIdentifier tableIdentifier, QueryOperation child
 		List<ModifyOperation> modifyOperations = Collections.singletonList(
-			new CatalogSinkModifyOperation(
-				fullPath,
+			new CatalogSinkModifyOperation(ObjectIdentifier.of(fullPath.get(0), fullPath.get(1), fullPath.get(2)),
 				table.getQueryOperation()));
 
 		if (isEagerOperationTranslation()) {
@@ -380,28 +429,28 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	@Override
-	public JobExecutionResult execute(String jobName) throws Exception {
+	public JobExecutionResult execute(String jobName) {
 		return null;
 	}
 
 	private ObjectIdentifier getTemporaryObjectIdentifier(String name) {
-		return catalogManager.qualifyIdentifier(
+		return catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
 			catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
-			name
+			name)
 		);
 	}
 
 	private void registerTableSinkInternal(String name, TableSink<?> tableSink) {
 		// for now, similar to the one of TableEnvironmentImpl
-		Optional<CatalogBaseTable> table = getCatalogTable(
+		Optional<CatalogManager.TableLookupResult> table = getCatalogTable(UnresolvedIdentifier.of(
 			catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
-			name);
+			name));
 
 		if (table.isPresent()) {
-			if (table.get() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get();
+			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
+				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get().getTable();
 				if (sourceSinkTable.getTableSink().isPresent()) {
 					throw new ValidationException(String.format(
 						"Table '%s' already exists. Please choose a different name.", name));
@@ -420,12 +469,12 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 		}
 	}
 
-	Optional<CatalogBaseTable> getCatalogTable(String... name) {
+	private Optional<CatalogManager.TableLookupResult> getCatalogTable(UnresolvedIdentifier name) {
 		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(name);
 		return catalogManager.getTable(objectIdentifier);
 	}
 
-	TableImpl createTable(QueryOperation tableOperation) {
+	public TableImpl createTable(QueryOperation tableOperation) {
 		return TableImpl.createTable(
 			this,
 			tableOperation,
@@ -434,12 +483,12 @@ public class StreamDatalogEnvironmentImpl implements StreamDatalogEnvironment {
 	}
 
 	private Optional<CatalogQueryOperation> scanInternal(String... tablePath) {
-		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(tablePath);
+		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(tablePath));
 		return catalogManager.getTable(objectIdentifier)
-			.map(t -> new CatalogQueryOperation(objectIdentifier, t.getSchema()));
+			.map(t -> new CatalogQueryOperation(objectIdentifier, t.getTable().getSchema()));
 	}
 
-	private boolean isEagerOperationTranslation() {
+	public boolean isEagerOperationTranslation() {
 		return false;
 	}
 

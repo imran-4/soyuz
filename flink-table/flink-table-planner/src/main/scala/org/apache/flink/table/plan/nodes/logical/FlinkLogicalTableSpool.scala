@@ -15,7 +15,7 @@ class FlinkLogicalTableSpool(cluster: RelOptCluster,
                              input: RelNode,
                              readType: Spool.Type,
                              writeType: Spool.Type,
-                             table: RelOptTable) extends Spool(cluster, traitSet, input, readType, writeType) with FlinkLogicalRel {
+                             table: RelOptTable) extends TableSpool(cluster, traitSet, input, readType, writeType, table) with FlinkLogicalRel {
   override def computeSelfCost(planner: RelOptPlanner, mq: RelMetadataQuery): RelOptCost = {
     val leftRowCnt = mq.getRowCount(input)
     val leftRowSize = estimateRowSize(input.getRowType)
@@ -27,7 +27,6 @@ class FlinkLogicalTableSpool(cluster: RelOptCluster,
     planner.getCostFactory.makeCost(rowCnt, cpuCost, ioCost)
   }
 
-
   override def copy(relTraitSet: RelTraitSet, relNode: RelNode, `type`: Spool.Type, type1: Spool.Type): Spool = {
     new FlinkLogicalTableSpool(cluster, traitSet, input, readType, writeType, table)
   }
@@ -35,19 +34,16 @@ class FlinkLogicalTableSpool(cluster: RelOptCluster,
 
 private class FlinkLogicalTableSpoolConverter
   extends ConverterRule(
-    classOf[FlinkLogicalTableSpool],
+    classOf[TableSpool],
     Convention.NONE,
     FlinkConventions.LOGICAL,
     "FlinkLogicalTableSpoolConverter") {
 
   override def convert(rel: RelNode): RelNode = {
-    val tableSpool = rel.asInstanceOf[FlinkLogicalTableSpool]
+    val tableSpool = rel.asInstanceOf[TableSpool]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
-    val seedInputs = tableSpool.getInputs.asScala
-      .map(input => RelOptRule.convert(input, FlinkConventions.LOGICAL)).asJava
-
-
-    new FlinkLogicalTableSpool(rel.getCluster, traitSet, seedInputs.get(0), Spool.Type.LAZY, Spool.Type.LAZY, rel.getTable)
+    val inputTable = RelOptRule.convert(tableSpool.getInput, FlinkConventions.LOGICAL)
+    new FlinkLogicalTableSpool(rel.getCluster, traitSet, inputTable, Spool.Type.LAZY, Spool.Type.LAZY, rel.getTable)
   }
 }
 

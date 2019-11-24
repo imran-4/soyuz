@@ -3,7 +3,8 @@ package org.apache.flink.table.plan.nodes.logical
 import java.util
 
 import org.apache.calcite.plan._
-import org.apache.calcite.rel.RelNode
+import org.apache.calcite.plan.volcano.RelSubset
+import org.apache.calcite.rel.{RelNode, SingleRel}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.convert.ConverterRule
 import org.apache.calcite.rel.core.Project
@@ -11,6 +12,7 @@ import org.apache.calcite.rel.logical.LogicalProject
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.calcite.rex.RexNode
 import org.apache.flink.table.plan.nodes.FlinkConventions
+import java.util.{List => JList}
 
 class FlinkLogicalProject(
                            cluster: RelOptCluster,
@@ -23,7 +25,7 @@ class FlinkLogicalProject(
 
   override def computeSelfCost(planner: RelOptPlanner, metadata: RelMetadataQuery): RelOptCost = {
     val rowCnt = metadata.getRowCount(this)
-    planner.getCostFactory.makeCost(rowCnt, rowCnt, rowCnt * estimateRowSize(getRowType))
+    planner.getCostFactory.makeCost(rowCnt, rowCnt, rowCnt)
   }
 
   override def copy(relTraitSet: RelTraitSet, relNode: RelNode, list: util.List[RexNode], relDataType: RelDataType): Project = {
@@ -47,10 +49,12 @@ class FlinkLogicalProjectConverter
     val scan = rel.asInstanceOf[LogicalProject]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
 
+    val input = RelOptRule.convert(rel, FlinkConventions.LOGICAL)
+
     new FlinkLogicalProject(
       rel.getCluster,
       traitSet,
-      rel,
+      input,
       scan.getProjects,
       rel.getRowType
     )
@@ -59,4 +63,5 @@ class FlinkLogicalProjectConverter
 
 object FlinkLogicalProject {
   val CONVERTER = new FlinkLogicalProjectConverter
+
 }

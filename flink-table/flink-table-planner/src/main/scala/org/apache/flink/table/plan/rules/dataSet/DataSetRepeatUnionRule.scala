@@ -9,7 +9,7 @@ import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalRepeatUnion, Flink
 
 class DataSetRepeatUnionRule
   extends ConverterRule(
-    classOf[FlinkLogicalUnion],
+    classOf[FlinkLogicalRepeatUnion],
     FlinkConventions.LOGICAL,
     FlinkConventions.DATASET,
     "DataSetRepeatUnionRule") {
@@ -23,9 +23,9 @@ class DataSetRepeatUnionRule
     val repeatUnion: FlinkLogicalRepeatUnion = rel.asInstanceOf[FlinkLogicalRepeatUnion]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
 
-    val seedInput = RelOptRule.convert(repeatUnion.getLeft, FlinkConventions.LOGICAL)
+    val seedInput = RelOptRule.convert(repeatUnion.getLeft, FlinkConventions.DATASET)
 
-    val iterativeInputs = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.LOGICAL)
+    val iterativeInputs = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.DATASET)
 
     new DataSetRepeatUnion(
       rel.getCluster,

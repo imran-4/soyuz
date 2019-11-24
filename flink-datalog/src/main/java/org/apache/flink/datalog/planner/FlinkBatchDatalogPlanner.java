@@ -21,6 +21,7 @@ import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
 import org.apache.flink.table.catalog.ObjectIdentifier;
 import org.apache.flink.table.delegation.Executor;
+import org.apache.flink.table.delegation.Parser;
 import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.expressions.ExpressionBridge;
 import org.apache.flink.table.expressions.PlannerExpression;
@@ -83,7 +84,6 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		return null;
 	}
 
-	@Override
 	public List<Operation> parse(String text) {
 		FlinkDatalogPlannerImpl planner = createFlinkDatalogPlanner();
 		Node andOrTreeRootNode = planner.parse(text, text);
@@ -92,6 +92,11 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		plan.visit(andOrTreeRootNode);
 		RelRoot relRoot = RelRoot.of(plan.getLogicalPlan(), SqlKind.SELECT);
 		return List.of(new PlannerQueryOperation(relRoot.project()));
+	}
+
+	@Override
+	public Parser getParser() {
+		return null;
 	}
 
 	@Override

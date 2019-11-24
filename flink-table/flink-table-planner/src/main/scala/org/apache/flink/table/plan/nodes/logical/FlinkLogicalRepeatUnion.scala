@@ -15,8 +15,8 @@ import scala.collection.JavaConverters._
 class FlinkLogicalRepeatUnion(
                                cluster: RelOptCluster,
                                traitSet: RelTraitSet,
-                               val seed: RelNode,
-                               val iterative: RelNode,
+                               seed: RelNode,
+                               iterative: RelNode,
                                all: Boolean,
                                iterationLimit: Int)
   extends RepeatUnion(
@@ -29,23 +29,11 @@ class FlinkLogicalRepeatUnion(
     with FlinkLogicalRel {
 
   override def computeSelfCost(planner: RelOptPlanner, mq: RelMetadataQuery): RelOptCost = {
-
-    val leftRowCnt = mq.getRowCount(getLeft)
-    val leftRowSize = estimateRowSize(getLeft.getRowType)
-
-    val rightRowCnt = mq.getRowCount(getRight)
-    val rightRowSize = estimateRowSize(getRight.getRowType)
-
-    val ioCost = (leftRowCnt * leftRowSize) + (rightRowCnt * rightRowSize)
-    val cpuCost = leftRowCnt + rightRowCnt
-    val rowCnt = leftRowCnt + rightRowCnt
-
-    planner.getCostFactory.makeCost(1000000, 1000000, 100000)
-//    val children = this.getInputs.asScala
-//    val rowCnt = children.foldLeft(0D) { (rows, child) =>
-//      rows + mq.getRowCount(child)
-//    }
-//    planner.getCostFactory.makeCost(rowCnt, 0, 0)
+    val children = this.getInputs.asScala
+    val rowCnt = children.foldLeft(0D) { (rows, child) =>
+      rows + mq.getRowCount(child)
+    }
+    planner.getCostFactory.makeCost(rowCnt, 0, 0)
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {

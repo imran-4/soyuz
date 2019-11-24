@@ -209,8 +209,8 @@ object FlinkRuleSets {
     DataSetCorrelateRule.INSTANCE,
     BatchTableSourceScanRule.INSTANCE,
     DataSetRepeatUnionRule.INSTANCE,
-    DataSetTableSpoolRule.INSTANCE,
-    DataSetProjectRule.INSTANCE
+    DataSetTableSpoolRule.INSTANCE//,
+//    DataSetProjectRule.INSTANCE
   )
 
   /**

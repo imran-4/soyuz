@@ -14,8 +14,6 @@ import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.internal.BatchTableEnvImpl;
 import org.apache.flink.table.api.internal.TableImpl;
-import org.apache.flink.table.calcite.FlinkPlannerImpl;
-import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
@@ -32,7 +30,6 @@ import org.apache.flink.table.module.Module;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.table.operations.*;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
-import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -173,8 +170,18 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 	}
 
 	@Override
+	public <T> void createTemporaryView(String path, DataSet<T> dataSet) {
+
+	}
+
+	@Override
 	public <T> void registerDataSet(String name, DataSet<T> dataSet, String fields) {
 		registerTable(name, fromDataSet(dataSet, fields));
+	}
+
+	@Override
+	public <T> void createTemporaryView(String path, DataSet<T> dataSet, String fields) {
+
 	}
 
 	@Override
@@ -244,10 +251,9 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 				"Only tables that belong to this TableEnvironment can be registered.");
 		}
 		CatalogBaseTable view = new QueryOperationCatalogView(table.getQueryOperation());
-		catalogManager.createTable(view, catalogManager.qualifyIdentifier(
-			catalogManager.getBuiltInCatalogName(),
+		catalogManager.createTable(view, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
-			name
+			name)
 		), false);
 	}
 
@@ -260,10 +266,13 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 			throw new TableException("Only BatchTableSource or InputFormatTableSource are allowed here.");
 		}
 		//---------------------------------------------------------------------
-		Optional<CatalogBaseTable> table = catalogManager.getTable(catalogManager.qualifyIdentifier(name));
+		Optional<CatalogManager.TableLookupResult> table =
+			catalogManager.getTable(catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(catalogManager.getBuiltInCatalogName(),
+				catalogManager.getBuiltInDatabaseName(),
+				name)));
 		if (table.isPresent()) {
-			if (table.get() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get();
+			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
+				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get().getTable();
 				if (sourceSinkTable.getTableSource().isPresent()) {
 					throw new ValidationException(String.format("Table '%s' already exists. Please choose a different name.", name));
 				} else {
@@ -271,10 +280,9 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 						tableSource,
 						sourceSinkTable.getTableSink().get(),
 						true);
-					catalogManager.alterTable(sourceAndSink, catalogManager.qualifyIdentifier(
-						catalogManager.getBuiltInCatalogName(),
+					catalogManager.alterTable(sourceAndSink, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(catalogManager.getBuiltInCatalogName(),
 						catalogManager.getBuiltInDatabaseName(),
-						name), false);
+						name)), false);
 				}
 			} else {
 				throw new ValidationException(String.format(
@@ -283,9 +291,9 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		} else {
 			ConnectorCatalogTable source = ConnectorCatalogTable.source(tableSource, true);
 			catalogManager.createTable(source, catalogManager.qualifyIdentifier(
-				catalogManager.getBuiltInCatalogName(),
-				catalogManager.getBuiltInDatabaseName(),
-				name), false);
+				UnresolvedIdentifier.of(catalogManager.getBuiltInCatalogName(),
+					catalogManager.getBuiltInDatabaseName(),
+					name)), false);
 		}
 	}
 
@@ -322,7 +330,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 
 	@Override
 	public String[] listCatalogs() {
-		return this.catalogManager.getCatalogs().toArray(new String[0]);
+		return this.catalogManager.listCatalogs().toArray(new String[0]);
 	}
 
 	@Override
@@ -333,7 +341,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 	@Override
 	public String[] listDatabases() {
 		List<String> databases = new ArrayList<>();
-		for (String c : this.catalogManager.getCatalogs()) {
+		for (String c : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(c).isPresent();
 			if (isCatalogPresent)
 				databases.addAll(this.catalogManager.getCatalog(c).get().listDatabases());
@@ -344,7 +352,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 	@Override
 	public String[] listTables() {
 		List<String> tables = new ArrayList<>();
-		for (String catalog : this.catalogManager.getCatalogs()) {
+		for (String catalog : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(catalog).isPresent();
 			if (isCatalogPresent) {
 				for (String database : this.catalogManager.getCatalog(catalog).get().listDatabases()) {
@@ -440,22 +448,22 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 
 	private ObjectIdentifier getTemporaryObjectIdentifier(String name) {
 		return catalogManager.qualifyIdentifier(
-			catalogManager.getBuiltInCatalogName(),
-			catalogManager.getBuiltInDatabaseName(),
-			name
+			UnresolvedIdentifier.of(catalogManager.getBuiltInCatalogName(),
+				catalogManager.getBuiltInDatabaseName(),
+				name)
 		);
 	}
 
 	private void registerTableSinkInternal(String name, TableSink<?> tableSink) {
 		// for now, similar to the one of TableEnvironmentImpl
-		Optional<CatalogBaseTable> table = getCatalogTable(
+		Optional<CatalogManager.TableLookupResult> table = getCatalogTable(
 			catalogManager.getBuiltInCatalogName(),
 			catalogManager.getBuiltInDatabaseName(),
 			name);
 
 		if (table.isPresent()) {
-			if (table.get() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get();
+			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
+				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table.get().getTable();
 				if (sourceSinkTable.getTableSink().isPresent()) {
 					throw new ValidationException(String.format(
 						"Table '%s' already exists. Please choose a different name.", name));
@@ -474,8 +482,8 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		}
 	}
 
-	private Optional<CatalogBaseTable> getCatalogTable(String... name) {
-		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(name);
+	private Optional<CatalogManager.TableLookupResult> getCatalogTable(String... name) {
+		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(name));
 		return catalogManager.getTable(objectIdentifier);
 	}
 
@@ -500,9 +508,8 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 //		bufferedModifyOperations.addAll(modifyOperations);
 //	}
 
-	@Override
 	public Option<CatalogQueryOperation> scanInternal(String... tablePath) {
-		return super.scanInternal(tablePath);
+		return super.scanInternal(UnresolvedIdentifier.of(tablePath));
 //		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(tablePath);
 //		return catalogManager.getTable(objectIdentifier)
 //			.map((t) -> new CatalogQueryOperation(objectIdentifier, t.getSchema()));

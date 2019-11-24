@@ -10,7 +10,7 @@ import org.apache.flink.datalog.parser.tree.Node;
 
 import java.util.List;
 
-public class ParserManager {
+public class ParserManager {//todo: extend flink Parser interface
 	public ParserManager() {
 
 	}
