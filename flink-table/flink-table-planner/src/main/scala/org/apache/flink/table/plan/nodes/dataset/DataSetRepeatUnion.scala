@@ -7,6 +7,7 @@ import org.apache.calcite.rel.{RelNode, RelWriter}
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.runtime.{CountPartitionFunction, LimitFilterFunction}
 import org.apache.flink.types.Row
 
 class DataSetRepeatUnion(
@@ -35,6 +36,26 @@ class DataSetRepeatUnion(
   override def translateToPlan(
                                 tableEnv: BatchTableEnvImpl,
                                 queryConfig: BatchQueryConfig): DataSet[Row] = {
+
+    val config = tableEnv.getConfig
+
+    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+
+    val currentParallelism = seedDs.getExecutionEnvironment.getParallelism
+
+    /*
+    Implement Iteration somewhere here...
+    IterationState workset = getInitialState();
+    IterationState solution = getInitialSolution();
+
+    while (!terminationCriterion()) {
+      (delta, workset) = step(workset, solution);
+
+      solution.update(delta)
+    }
+    setFinalState(solution);
+     */
 
     //todo:
     null
