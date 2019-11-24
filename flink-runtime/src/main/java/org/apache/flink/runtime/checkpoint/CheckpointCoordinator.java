@@ -20,7 +20,6 @@ package org.apache.flink.runtime.checkpoint;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.JobID;
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.checkpoint.hooks.MasterHooks;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.concurrent.ScheduledExecutor;
@@ -56,10 +55,12 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -502,30 +503,7 @@ public class CheckpointCoordinator {
 
 		// make some eager pre-checks
 		synchronized (lock) {
-			// abort if the coordinator has been shutdown in the meantime
-			if (shutdown) {
-				throw new CheckpointException(CheckpointFailureReason.CHECKPOINT_COORDINATOR_SHUTDOWN);
-			}
-
-			// Don't allow periodic checkpoint if scheduling has been disabled
-			if (isPeriodic && !periodicScheduling) {
-				throw new CheckpointException(CheckpointFailureReason.PERIODIC_SCHEDULER_SHUTDOWN);
-			}
-
-			// validate whether the checkpoint can be triggered, with respect to the limit of
-			// concurrent checkpoints, and the minimum time between checkpoints.
-			// these checks are not relevant for savepoints
-			if (!props.forceCheckpoint()) {
-				// sanity check: there should never be more than one trigger request queued
-				if (triggerRequestQueued) {
-					LOG.warn("Trying to trigger another checkpoint for job {} while one was queued already.", job);
-					throw new CheckpointException(CheckpointFailureReason.ALREADY_QUEUED);
-				}
-
-				checkConcurrentCheckpoints();
-
-				checkMinPauseBetweenCheckpoints();
-			}
+			preCheckBeforeTriggeringCheckpoint(isPeriodic, props.forceCheckpoint());
 		}
 
 		// check if all tasks that we need to trigger are running.
@@ -594,6 +572,7 @@ public class CheckpointCoordinator {
 			checkpointID,
 			timestamp,
 			ackTasks,
+			masterHooks.keySet(),
 			props,
 			checkpointStorageLocation,
 			executor);
@@ -627,21 +606,7 @@ public class CheckpointCoordinator {
 		try {
 			// re-acquire the coordinator-wide lock
 			synchronized (lock) {
-				// since we released the lock in the meantime, we need to re-check
-				// that the conditions still hold.
-				if (shutdown) {
-					throw new CheckpointException(CheckpointFailureReason.CHECKPOINT_COORDINATOR_SHUTDOWN);
-				}
-				else if (!props.forceCheckpoint()) {
-					if (triggerRequestQueued) {
-						LOG.warn("Trying to trigger another checkpoint for job {} while one was queued already.", job);
-						throw new CheckpointException(CheckpointFailureReason.ALREADY_QUEUED);
-					}
-
-					checkConcurrentCheckpoints();
-
-					checkMinPauseBetweenCheckpoints();
-				}
+				preCheckBeforeTriggeringCheckpoint(isPeriodic, props.forceCheckpoint());
 
 				LOG.info("Triggering checkpoint {} @ {} for job {}.", checkpointID, timestamp, job);
 
@@ -656,12 +621,14 @@ public class CheckpointCoordinator {
 					cancellerHandle.cancel(false);
 				}
 
-				// trigger the master hooks for the checkpoint
-				final List<MasterState> masterStates = MasterHooks.triggerMasterHooks(masterHooks.values(),
-						checkpointID, timestamp, executor, Time.milliseconds(checkpointTimeout));
-				for (MasterState s : masterStates) {
-					checkpoint.addMasterState(s);
+				// TODO, asynchronously snapshots master hook without waiting here
+				for (MasterTriggerRestoreHook<?> masterHook : masterHooks.values()) {
+					final MasterState masterState =
+						MasterHooks.triggerHook(masterHook, checkpointID, timestamp, executor)
+							.get(checkpointTimeout, TimeUnit.MILLISECONDS);
+					checkpoint.acknowledgeMasterState(masterHook.getIdentifier(), masterState);
 				}
+				Preconditions.checkState(checkpoint.areMasterStatesFullyAcknowledged());
 			}
 			// end of lock scope
 
@@ -702,6 +669,10 @@ public class CheckpointCoordinator {
 				LOG.warn("Cannot dispose failed checkpoint storage location {}", checkpointStorageLocation, t2);
 			}
 
+			// rethrow the CheckpointException directly.
+			if (t instanceof CheckpointException) {
+				throw (CheckpointException) t;
+			}
 			throw new CheckpointException(CheckpointFailureReason.EXCEPTION, t);
 		}
 	}
@@ -807,7 +778,7 @@ public class CheckpointCoordinator {
 						LOG.debug("Received acknowledge message for checkpoint {} from task {} of job {} at {}.",
 							checkpointId, message.getTaskExecutionId(), message.getJob(), taskManagerLocationInfo);
 
-						if (checkpoint.isFullyAcknowledged()) {
+						if (checkpoint.areTasksFullyAcknowledged()) {
 							completePendingCheckpoint(checkpoint);
 						}
 						break;
@@ -1049,10 +1020,41 @@ public class CheckpointCoordinator {
 	 *                               that restores <i>non-partitioned</i> state from this
 	 *                               checkpoint.
 	 */
+	@Deprecated
 	public boolean restoreLatestCheckpointedState(
 			Map<JobVertexID, ExecutionJobVertex> tasks,
 			boolean errorIfNoCheckpoint,
 			boolean allowNonRestoredState) throws Exception {
+
+		return restoreLatestCheckpointedState(new HashSet<>(tasks.values()), errorIfNoCheckpoint, allowNonRestoredState);
+	}
+
+	/**
+	 * Restores the latest checkpointed state.
+	 *
+	 * @param tasks Set of job vertices to restore. State for these vertices is
+	 * restored via {@link Execution#setInitialState(JobManagerTaskRestore)}.
+	 * @param errorIfNoCheckpoint Fail if no completed checkpoint is available to
+	 * restore from.
+	 * @param allowNonRestoredState Allow checkpoint state that cannot be mapped
+	 * to any job vertex in tasks.
+	 * @return <code>true</code> if state was restored, <code>false</code> otherwise.
+	 * @throws IllegalStateException If the CheckpointCoordinator is shut down.
+	 * @throws IllegalStateException If no completed checkpoint is available and
+	 *                               the <code>failIfNoCheckpoint</code> flag has been set.
+	 * @throws IllegalStateException If the checkpoint contains state that cannot be
+	 *                               mapped to any job vertex in <code>tasks</code> and the
+	 *                               <code>allowNonRestoredState</code> flag has not been set.
+	 * @throws IllegalStateException If the max parallelism changed for an operator
+	 *                               that restores state from this checkpoint.
+	 * @throws IllegalStateException If the parallelism changed for an operator
+	 *                               that restores <i>non-partitioned</i> state from this
+	 *                               checkpoint.
+	 */
+	public boolean restoreLatestCheckpointedState(
+			final Set<ExecutionJobVertex> tasks,
+			final boolean errorIfNoCheckpoint,
+			final boolean allowNonRestoredState) throws Exception {
 
 		synchronized (lock) {
 			if (shutdown) {
@@ -1162,7 +1164,7 @@ public class CheckpointCoordinator {
 
 		LOG.info("Reset the checkpoint ID of job {} to {}.", job, nextCheckpointId);
 
-		return restoreLatestCheckpointedState(tasks, true, allowNonRestored);
+		return restoreLatestCheckpointedState(new HashSet<>(tasks.values()), true, allowNonRestored);
 	}
 
 	// ------------------------------------------------------------------------
@@ -1481,5 +1483,28 @@ public class CheckpointCoordinator {
 
 	private boolean allPendingCheckpointsDiscarded() {
 		return pendingCheckpoints.values().stream().allMatch(PendingCheckpoint::isDiscarded);
+	}
+
+	private void preCheckBeforeTriggeringCheckpoint(boolean isPeriodic, boolean forceCheckpoint) throws CheckpointException {
+		// abort if the coordinator has been shutdown in the meantime
+		if (shutdown) {
+			throw new CheckpointException(CheckpointFailureReason.CHECKPOINT_COORDINATOR_SHUTDOWN);
+		}
+
+		// Don't allow periodic checkpoint if scheduling has been disabled
+		if (isPeriodic && !periodicScheduling) {
+			throw new CheckpointException(CheckpointFailureReason.PERIODIC_SCHEDULER_SHUTDOWN);
+		}
+
+		if (!forceCheckpoint) {
+			if (triggerRequestQueued) {
+				LOG.warn("Trying to trigger another checkpoint for job {} while one was queued already.", job);
+				throw new CheckpointException(CheckpointFailureReason.ALREADY_QUEUED);
+			}
+
+			checkConcurrentCheckpoints();
+
+			checkMinPauseBetweenCheckpoints();
+		}
 	}
 }

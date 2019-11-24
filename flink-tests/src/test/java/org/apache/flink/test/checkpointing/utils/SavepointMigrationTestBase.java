@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.client.program.ClusterClient;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.ConfigConstants;
@@ -134,19 +135,18 @@ public abstract class SavepointMigrationTestBase extends TestBaseUtils {
 		final Deadline deadLine = Deadline.fromNow(Duration.ofMinutes(5));
 
 		ClusterClient<?> client = miniClusterResource.getClusterClient();
-		client.setDetached(true);
 
 		// Submit the job
 		JobGraph jobGraph = env.getStreamGraph().getJobGraph();
 
-		JobSubmissionResult jobSubmissionResult = client.submitJob(jobGraph, SavepointMigrationTestBase.class.getClassLoader());
+		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph);
 
 		LOG.info("Submitted job {} and waiting...", jobSubmissionResult.getJobID());
 
 		boolean done = false;
 		while (deadLine.hasTimeLeft()) {
 			Thread.sleep(100);
-			Map<String, OptionalFailure<Object>> accumulators = client.getAccumulators(jobSubmissionResult.getJobID());
+			Map<String, OptionalFailure<Object>> accumulators = client.getAccumulators(jobSubmissionResult.getJobID()).get();
 
 			boolean allDone = true;
 			for (Tuple2<String, Integer> acc : expectedAccumulators) {
@@ -200,14 +200,13 @@ public abstract class SavepointMigrationTestBase extends TestBaseUtils {
 		final Deadline deadLine = Deadline.fromNow(Duration.ofMinutes(5));
 
 		ClusterClient<?> client = miniClusterResource.getClusterClient();
-		client.setDetached(true);
 
 		// Submit the job
 		JobGraph jobGraph = env.getStreamGraph().getJobGraph();
 
 		jobGraph.setSavepointRestoreSettings(SavepointRestoreSettings.forPath(savepointPath));
 
-		JobSubmissionResult jobSubmissionResult = client.submitJob(jobGraph, SavepointMigrationTestBase.class.getClassLoader());
+		JobSubmissionResult jobSubmissionResult = ClientUtils.submitJob(client, jobGraph);
 
 		boolean done = false;
 		while (deadLine.hasTimeLeft()) {
@@ -227,7 +226,7 @@ public abstract class SavepointMigrationTestBase extends TestBaseUtils {
 			}
 
 			Thread.sleep(100);
-			Map<String, OptionalFailure<Object>> accumulators = client.getAccumulators(jobId);
+			Map<String, OptionalFailure<Object>> accumulators = client.getAccumulators(jobId).get();
 
 			boolean allDone = true;
 			for (Tuple2<String, Integer> acc : expectedAccumulators) {

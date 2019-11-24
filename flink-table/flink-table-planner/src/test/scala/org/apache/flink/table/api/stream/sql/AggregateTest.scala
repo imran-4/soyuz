@@ -26,7 +26,7 @@ import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.scala._
 import org.apache.flink.table.api.scala.internal.StreamTableEnvironmentImpl
 import org.apache.flink.table.api.{TableConfig, Types}
-import org.apache.flink.table.catalog.{CatalogManager, FunctionCatalog, GenericInMemoryCatalog}
+import org.apache.flink.table.catalog.{CatalogManager, FunctionCatalog, GenericInMemoryCatalog, UnresolvedIdentifier}
 import org.apache.flink.table.delegation.{Executor, Planner}
 import org.apache.flink.table.functions.{AggregateFunction, AggregateFunctionDefinition}
 import org.apache.flink.table.module.ModuleManager
@@ -85,7 +85,7 @@ class AggregateTest extends TableTestBase {
 
     tablEnv.registerFunction("udag", new MyAgg)
     val aggFunctionDefinition = functionCatalog
-      .lookupFunction("udag").get()
+      .lookupFunction(UnresolvedIdentifier.of("udag")).get()
       .getFunctionDefinition
       .asInstanceOf[AggregateFunctionDefinition]
 
@@ -98,7 +98,7 @@ class AggregateTest extends TableTestBase {
 
     tablEnv.registerFunction("udag2", new MyAgg2)
     val aggFunctionDefinition2 = functionCatalog
-      .lookupFunction("udag2").get()
+      .lookupFunction(UnresolvedIdentifier.of("udag2")).get()
       .getFunctionDefinition
       .asInstanceOf[AggregateFunctionDefinition]
 

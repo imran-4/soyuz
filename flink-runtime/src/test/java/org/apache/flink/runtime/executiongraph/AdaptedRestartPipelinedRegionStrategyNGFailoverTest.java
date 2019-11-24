@@ -30,8 +30,8 @@ import org.apache.flink.runtime.executiongraph.restart.FixedDelayRestartStrategy
 import org.apache.flink.runtime.executiongraph.restart.NoRestartStrategy;
 import org.apache.flink.runtime.executiongraph.restart.RestartCallback;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
-import org.apache.flink.runtime.io.network.partition.PartitionTracker;
-import org.apache.flink.runtime.io.network.partition.PartitionTrackerImpl;
+import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTracker;
+import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTrackerImpl;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.consumer.PartitionConnectionException;
@@ -385,12 +385,14 @@ public class AdaptedRestartPipelinedRegionStrategyNGFailoverTest extends TestLog
 			final JobGraph jobGraph,
 			final RestartStrategy restartStrategy) throws Exception {
 
-		final PartitionTracker partitionTracker = new PartitionTrackerImpl(
+		final JobMasterPartitionTracker partitionTracker = new JobMasterPartitionTrackerImpl(
 			jobGraph.getJobID(),
 			NettyShuffleMaster.INSTANCE,
 			ignored -> Optional.empty());
 
-		final ExecutionGraph eg = new ExecutionGraphTestUtils.TestingExecutionGraphBuilder(jobGraph)
+		final ExecutionGraph eg = TestingExecutionGraphBuilder
+			.newBuilder()
+			.setJobGraph(jobGraph)
 			.setRestartStrategy(restartStrategy)
 			.setFailoverStrategyFactory(TestAdaptedRestartPipelinedRegionStrategyNG::new)
 			.setPartitionTracker(partitionTracker)

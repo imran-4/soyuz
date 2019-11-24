@@ -95,12 +95,12 @@ public class YarnConfigurationITCase extends YarnTestBase {
 			configuration.setString(NettyShuffleEnvironmentOptions.NETWORK_BUFFERS_MEMORY_MAX, String.valueOf(4L << 20));
 
 			final YarnConfiguration yarnConfiguration = getYarnConfiguration();
-			final YarnClusterDescriptor clusterDescriptor = new YarnClusterDescriptor(
-				configuration,
-				yarnConfiguration,
-				CliFrontend.getConfigurationDirectoryFromEnv(),
-				yarnClient,
-				true);
+			final YarnClusterDescriptor clusterDescriptor = YarnTestUtils.createClusterDescriptorWithLogging(
+					CliFrontend.getConfigurationDirectoryFromEnv(),
+					configuration,
+					yarnConfiguration,
+					yarnClient,
+					true);
 
 			clusterDescriptor.setLocalJarPath(new Path(flinkUberjar.getAbsolutePath()));
 			clusterDescriptor.addShipFiles(Arrays.asList(flinkLibFolder.listFiles()));
@@ -108,7 +108,7 @@ public class YarnConfigurationITCase extends YarnTestBase {
 
 			final File streamingWordCountFile = getTestJarPath("WindowJoin.jar");
 
-			final PackagedProgram packagedProgram = new PackagedProgram(streamingWordCountFile);
+			final PackagedProgram packagedProgram = PackagedProgram.newBuilder().setJarFile(streamingWordCountFile).build();
 			final JobGraph jobGraph = PackagedProgramUtils.createJobGraph(packagedProgram, configuration, 1);
 
 			try {

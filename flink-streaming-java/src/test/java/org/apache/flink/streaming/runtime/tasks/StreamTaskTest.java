@@ -54,7 +54,9 @@ import org.apache.flink.runtime.filecache.FileCache;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
 import org.apache.flink.runtime.io.network.NettyShuffleEnvironmentBuilder;
 import org.apache.flink.runtime.io.network.TaskEventDispatcher;
+import org.apache.flink.runtime.io.network.api.writer.AvailabilityTestResultPartitionWriter;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
+import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.partition.NoOpResultPartitionConsumableNotifier;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionConsumableNotifier;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -106,6 +108,7 @@ import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.InternalTimeServiceManager;
+import org.apache.flink.streaming.api.operators.MailboxExecutor;
 import org.apache.flink.streaming.api.operators.OperatorSnapshotFutures;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamOperator;
@@ -117,7 +120,8 @@ import org.apache.flink.streaming.runtime.io.InputStatus;
 import org.apache.flink.streaming.runtime.io.StreamInputProcessor;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.streamstatus.StreamStatusMaintainer;
-import org.apache.flink.streaming.runtime.tasks.mailbox.execution.DefaultActionContext;
+import org.apache.flink.streaming.runtime.tasks.mailbox.MailboxDefaultAction;
+import org.apache.flink.streaming.util.MockStreamConfig;
 import org.apache.flink.streaming.util.TestSequentialReadingStreamOperator;
 import org.apache.flink.util.CloseableIterable;
 import org.apache.flink.util.ExceptionUtils;
@@ -778,9 +782,9 @@ public class StreamTaskTest extends TestLogger {
 				}
 
 				@Override
-				protected void processInput(DefaultActionContext context) throws Exception {
+				protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
 					mailboxProcessor.getMailboxExecutor(0).execute(latch::trigger, "trigger");
-					context.allActionsCompleted();
+					controller.allActionsCompleted();
 				}
 			});
 			latch.await();
@@ -889,6 +893,57 @@ public class StreamTaskTest extends TestLogger {
 				.noneMatch(thread -> thread.getName().startsWith(RecordWriter.DEFAULT_OUTPUT_FLUSH_THREAD_NAME)));
 	}
 
+	@Test
+	public void testProcessWithAvailableOutput() throws Exception {
+		try (final MockEnvironment environment = setupEnvironment(new boolean[] {true, true})) {
+			final int numberOfProcessCalls = 10;
+			final AvailabilityTestInputProcessor inputProcessor = new AvailabilityTestInputProcessor(numberOfProcessCalls);
+			final AvailabilityTestStreamTask task = new AvailabilityTestStreamTask<>(environment, inputProcessor);
+
+			task.invoke();
+			assertEquals(numberOfProcessCalls, inputProcessor.currentNumProcessCalls);
+		}
+	}
+
+	@Test
+	public void testProcessWithUnAvailableOutput() throws Exception {
+		try (final MockEnvironment environment = setupEnvironment(new boolean[] {true, false})) {
+			final int numberOfProcessCalls = 10;
+			final AvailabilityTestInputProcessor inputProcessor = new AvailabilityTestInputProcessor(numberOfProcessCalls);
+			final AvailabilityTestStreamTask task = new AvailabilityTestStreamTask<>(environment, inputProcessor);
+			final MailboxExecutor executor = task.mailboxProcessor.getMainMailboxExecutor();
+
+			final Runnable completeFutureTask = () -> {
+				assertEquals(1, inputProcessor.currentNumProcessCalls);
+				assertTrue(task.mailboxProcessor.isDefaultActionUnavailable());
+				environment.getWriter(1).getAvailableFuture().complete(null);
+			};
+
+			executor.submit(() -> {
+				executor.submit(completeFutureTask, "This task will complete the future to resume process input action."); },
+				"This task will submit another task to execute after processing input once.");
+
+			task.invoke();
+			assertEquals(numberOfProcessCalls, inputProcessor.currentNumProcessCalls);
+		}
+	}
+
+	private MockEnvironment setupEnvironment(boolean[] outputAvailabilities) {
+		final Configuration configuration = new Configuration();
+		new MockStreamConfig(configuration, outputAvailabilities.length);
+
+		final List<ResultPartitionWriter> writers = new ArrayList<>(outputAvailabilities.length);
+		for (int i = 0; i < outputAvailabilities.length; i++) {
+			writers.add(new AvailabilityTestResultPartitionWriter(outputAvailabilities[i]));
+		}
+
+		final MockEnvironment environment = new MockEnvironmentBuilder()
+			.setTaskConfiguration(configuration)
+			.build();
+		environment.addOutputs(writers);
+		return environment;
+	}
+
 	// ------------------------------------------------------------------------
 	//  Test Utilities
 	// ------------------------------------------------------------------------
@@ -986,6 +1041,49 @@ public class StreamTaskTest extends TestLogger {
 
 		@Override
 		protected void cleanup() throws Exception {}
+	}
+
+	/**
+	 * A stream task implementation used to construct a specific {@link StreamInputProcessor} for tests.
+	 */
+	private static class AvailabilityTestStreamTask<T, OP extends StreamOperator<T>> extends StreamTask<T, OP> {
+
+		AvailabilityTestStreamTask(Environment environment, StreamInputProcessor inputProcessor) {
+			super(environment);
+
+			this.inputProcessor = inputProcessor;
+		}
+
+		@Override
+		protected void init() {
+		}
+	}
+
+	/**
+	 * A stream input processor implementation used to control the returned input status based on
+	 * the total number of processing calls.
+	 */
+	private static class AvailabilityTestInputProcessor implements StreamInputProcessor {
+		private final int totalProcessCalls;
+		private int currentNumProcessCalls;
+
+		AvailabilityTestInputProcessor(int totalProcessCalls) {
+			this.totalProcessCalls = totalProcessCalls;
+		}
+
+		@Override
+		public InputStatus processInput()  {
+			return ++currentNumProcessCalls < totalProcessCalls ? InputStatus.MORE_AVAILABLE : InputStatus.END_OF_INPUT;
+		}
+
+		@Override
+		public void close() throws IOException {
+		}
+
+		@Override
+		public CompletableFuture<?> getAvailableFuture() {
+			return AVAILABLE;
+		}
 	}
 
 	private static class BlockingCloseStreamOperator extends AbstractStreamOperator<Void> {
@@ -1213,7 +1311,7 @@ public class StreamTaskTest extends TestLogger {
 		}
 
 		@Override
-		public CompletableFuture<?> isAvailable() {
+		public CompletableFuture<?> getAvailableFuture() {
 			return AVAILABLE;
 		}
 
@@ -1245,11 +1343,11 @@ public class StreamTaskTest extends TestLogger {
 		}
 
 		@Override
-		protected void processInput(DefaultActionContext context) throws Exception {
+		protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
 			if (fail) {
 				throw new RuntimeException();
 			}
-			context.allActionsCompleted();
+			controller.allActionsCompleted();
 		}
 
 		@Override
@@ -1260,7 +1358,7 @@ public class StreamTaskTest extends TestLogger {
 			final StreamTaskStateInitializer streamTaskStateManager = super.createStreamTaskStateInitializer();
 			return (operatorID, operatorClassName, processingTimeService, keyContext, keySerializer, closeableRegistry, metricGroup) -> {
 
-				final StreamOperatorStateContext context = streamTaskStateManager.streamOperatorStateContext(
+				final StreamOperatorStateContext controller = streamTaskStateManager.streamOperatorStateContext(
 					operatorID,
 					operatorClassName,
 					processingTimeService,
@@ -1272,33 +1370,33 @@ public class StreamTaskTest extends TestLogger {
 				return new StreamOperatorStateContext() {
 					@Override
 					public boolean isRestored() {
-						return context.isRestored();
+						return controller.isRestored();
 					}
 
 					@Override
 					public OperatorStateBackend operatorStateBackend() {
-						return context.operatorStateBackend();
+						return controller.operatorStateBackend();
 					}
 
 					@Override
 					public AbstractKeyedStateBackend<?> keyedStateBackend() {
-						return context.keyedStateBackend();
+						return controller.keyedStateBackend();
 					}
 
 					@Override
 					public InternalTimeServiceManager<?> internalTimerServiceManager() {
-						InternalTimeServiceManager<?> timeServiceManager = context.internalTimerServiceManager();
+						InternalTimeServiceManager<?> timeServiceManager = controller.internalTimerServiceManager();
 						return timeServiceManager != null ? spy(timeServiceManager) : null;
 					}
 
 					@Override
 					public CloseableIterable<StatePartitionStreamProvider> rawOperatorStateInputs() {
-						return replaceWithSpy(context.rawOperatorStateInputs());
+						return replaceWithSpy(controller.rawOperatorStateInputs());
 					}
 
 					@Override
 					public CloseableIterable<KeyGroupStatePartitionStreamProvider> rawKeyedStateInputs() {
-						return replaceWithSpy(context.rawKeyedStateInputs());
+						return replaceWithSpy(controller.rawKeyedStateInputs());
 					}
 
 					public <T extends Closeable> T replaceWithSpy(T closeable) {
@@ -1334,7 +1432,7 @@ public class StreamTaskTest extends TestLogger {
 		protected void init() {}
 
 		@Override
-		protected void processInput(DefaultActionContext context) throws Exception {
+		protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
 			holder = new LockHolder(getCheckpointLock(), latch);
 			holder.start();
 			latch.await();
@@ -1349,7 +1447,7 @@ public class StreamTaskTest extends TestLogger {
 				// restore interruption state
 				Thread.currentThread().interrupt();
 			}
-			context.allActionsCompleted();
+			controller.allActionsCompleted();
 		}
 
 		@Override
@@ -1379,7 +1477,7 @@ public class StreamTaskTest extends TestLogger {
 		protected void init() {}
 
 		@Override
-		protected void processInput(DefaultActionContext context) throws Exception {
+		protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
 			final OneShotLatch latch = new OneShotLatch();
 			final Object lock = new Object();
 
@@ -1405,7 +1503,7 @@ public class StreamTaskTest extends TestLogger {
 			finally {
 				holder.close();
 			}
-			context.allActionsCompleted();
+			controller.allActionsCompleted();
 		}
 
 		@Override
@@ -1453,10 +1551,10 @@ public class StreamTaskTest extends TestLogger {
 		}
 
 		@Override
-		protected void processInput(DefaultActionContext context) throws Exception {
+		protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
 			checkTaskThreadInfo();
 			if (hasTimerTriggered) {
-				context.allActionsCompleted();
+				controller.allActionsCompleted();
 			}
 		}
 
@@ -1472,7 +1570,7 @@ public class StreamTaskTest extends TestLogger {
 				"Task's method was called in non task thread.");
 			Preconditions.checkState(
 				taskClassLoader == currentThread.getContextClassLoader(),
-				"Task's context class loader has been changed during invocation.");
+				"Task's controller class loader has been changed during invocation.");
 		}
 	}
 
@@ -1541,14 +1639,14 @@ public class StreamTaskTest extends TestLogger {
 		}
 
 		@Override
-		public void initializeState(StateInitializationContext context) throws Exception {
+		public void initializeState(StateInitializationContext controller) throws Exception {
 			keyedStateBackend = (AbstractKeyedStateBackend<?>) getKeyedStateBackend();
 			operatorStateBackend = getOperatorStateBackend();
 			rawOperatorStateInputs =
-				(CloseableIterable<StatePartitionStreamProvider>) context.getRawOperatorStateInputs();
+				(CloseableIterable<StatePartitionStreamProvider>) controller.getRawOperatorStateInputs();
 			rawKeyedStateInputs =
-				(CloseableIterable<KeyGroupStatePartitionStreamProvider>) context.getRawKeyedStateInputs();
-			super.initializeState(context);
+				(CloseableIterable<KeyGroupStatePartitionStreamProvider>) controller.getRawKeyedStateInputs();
+			super.initializeState(controller);
 		}
 	}
 
