@@ -22,18 +22,16 @@ class DataSetRepeatUnionRule
   def convert(rel: RelNode): RelNode = {
     val repeatUnion: FlinkLogicalRepeatUnion = rel.asInstanceOf[FlinkLogicalRepeatUnion]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
-
-    val seedInput = RelOptRule.convert(repeatUnion.getLeft, FlinkConventions.DATASET)
-
-    val iterativeInputs = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.DATASET)
+    val seedInput = RelOptRule.convert(repeatUnion.getSeedRel, FlinkConventions.DATASET)
+    val iterativeInput = RelOptRule.convert(repeatUnion.getIterativeRel, FlinkConventions.DATASET)
 
     new DataSetRepeatUnion(
       rel.getCluster,
       traitSet,
       seedInput,
-      iterativeInputs,
-      true,
-      -1, rel.getRowType)
+      iterativeInput,
+      repeatUnion.all,
+      repeatUnion.iterationLimit, repeatUnion.getRowType)
   }
 }
 

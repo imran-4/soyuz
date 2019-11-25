@@ -67,6 +67,7 @@ class FlinkLogicalTransientScanConverter
   def convert(rel: RelNode): RelNode = {
     val scan = rel.asInstanceOf[LogicalTableScan]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
+
     new FlinkLogicalTransientScan(
       rel.getCluster,
       traitSet,

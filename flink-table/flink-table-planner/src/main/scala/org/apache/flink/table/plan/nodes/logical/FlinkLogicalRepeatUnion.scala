@@ -37,6 +37,7 @@ class FlinkLogicalRepeatUnion(
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
+//    new FlinkLogicalRepeatUnion(cluster, traitSet, seed, iterative, all, iterationLimit)
     new FlinkLogicalRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1)
   }
 }
@@ -56,10 +57,10 @@ private class FlinkLogicalRepeatUnionConverter
   override def convert(rel: RelNode): RelNode = {
     val repeatUnion = rel.asInstanceOf[LogicalRepeatUnion]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
-    val seedInput = RelOptRule.convert(repeatUnion.getLeft, FlinkConventions.LOGICAL)
-    val iterativeInput = RelOptRule.convert(repeatUnion.getRight, FlinkConventions.LOGICAL)
+    val seedInput = RelOptRule.convert(repeatUnion.getSeedRel, FlinkConventions.LOGICAL)
+    val iterativeInput = RelOptRule.convert(repeatUnion.getIterativeRel, FlinkConventions.LOGICAL)
 
-    new FlinkLogicalRepeatUnion(rel.getCluster, traitSet, seedInput, iterativeInput, repeatUnion.all, -1)
+    new FlinkLogicalRepeatUnion(rel.getCluster, traitSet, seedInput, iterativeInput, repeatUnion.all, repeatUnion.iterationLimit)
   }
 }
 

@@ -1,6 +1,6 @@
 package org.apache.flink.table.plan.rules.dataSet
 
-import org.apache.calcite.plan.{RelOptRule, RelTraitSet}
+import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
 import org.apache.calcite.rel.core.Spool
@@ -15,15 +15,23 @@ class DataSetTableSpoolRule
     FlinkConventions.DATASET,
     "DataSetTableSpoolRule") {
 
+  override def matches(call: RelOptRuleCall): Boolean = {
+    val tableSpool: FlinkLogicalTableSpool = call.rel(0).asInstanceOf[FlinkLogicalTableSpool]
+    true
+  }
+
+
   def convert(rel: RelNode): RelNode = {
     val tableSpool: FlinkLogicalTableSpool = rel.asInstanceOf[FlinkLogicalTableSpool]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
     val input = RelOptRule.convert(tableSpool, FlinkConventions.DATASET)
 
     new DataSetTableSpool(
-      rel.getCluster,
+      input.getCluster,
       traitSet,
-      input, Spool.Type.LAZY, Spool.Type.LAZY, rel.getTable)
+      input,
+      tableSpool.readType,
+      tableSpool.writeType)
   }
 }
 

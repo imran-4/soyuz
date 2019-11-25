@@ -145,7 +145,7 @@ object FlinkRuleSets {
     FlinkLogicalWindowTableAggregate.CONVERTER,
     FlinkLogicalTableSpool.CONVERTER,
     FlinkLogicalRepeatUnion.CONVERTER,
-    FlinkLogicalProject.CONVERTER,
+//    FlinkLogicalProject.CONVERTER,
     FlinkLogicalTransientScan.CONVERTER
   )
 
