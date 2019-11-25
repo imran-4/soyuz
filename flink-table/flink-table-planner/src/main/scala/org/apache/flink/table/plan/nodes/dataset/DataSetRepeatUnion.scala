@@ -4,10 +4,10 @@ import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.{RelNode, RelWriter}
+import org.apache.flink.api.common.functions.FilterFunction
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
-import org.apache.flink.table.runtime.{CountPartitionFunction, LimitFilterFunction}
 import org.apache.flink.types.Row
 
 class DataSetRepeatUnion(
@@ -37,28 +37,27 @@ class DataSetRepeatUnion(
                                 tableEnv: BatchTableEnvImpl,
                                 queryConfig: BatchQueryConfig): DataSet[Row] = {
 
-    val config = tableEnv.getConfig
+    //todo: semi-naive evaluation algorithm would be implemented here....
 
+    // the following is just a sketch of the algorithm and not properly implemented and tested yet....
+    val config = tableEnv.getConfig
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    var all = seedDs
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
-    val currentParallelism = seedDs.getExecutionEnvironment.getParallelism
+    val iterativeDsInitial = iterativeDs.iterate(1000)
 
-    /*
-    Implement Iteration somewhere here...
-    IterationState workset = getInitialState();
-    IterationState solution = getInitialSolution();
+    val delta = iterativeDsInitial.filter(new FilterFunction[Row] {
+      override def filter(value: Row): Boolean = {
+        true
+      }
+    }).distinct()
 
-    while (!terminationCriterion()) {
-      (delta, workset) = step(workset, solution);
+    all = all.union(delta)
 
-      solution.update(delta)
-    }
-    setFinalState(solution);
-     */
+    val finalAll = iterativeDsInitial.closeWith(all)
 
-    //todo:
-    null
+    finalAll
   }
 
 }
