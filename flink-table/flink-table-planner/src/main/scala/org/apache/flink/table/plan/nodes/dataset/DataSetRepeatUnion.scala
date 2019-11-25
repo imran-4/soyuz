@@ -9,6 +9,8 @@ import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.types.Row
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class DataSetRepeatUnion(
                           cluster: RelOptCluster,
@@ -27,7 +29,9 @@ class DataSetRepeatUnion(
     s"RepeatUnion(union: ($repeatUnionSelectionToString))"
   }
 
-  def repeatUnionSelectionToString: String = ???
+  private def repeatUnionSelectionToString: String = {
+    rowRelDataType.getFieldNames.asScala.toList.mkString(", ")
+  }
 
   override def explainTerms(pw: RelWriter): RelWriter = {
     super.explainTerms(pw).item("repeatunion", repeatUnionSelectionToString)

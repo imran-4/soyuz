@@ -4,8 +4,9 @@ import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
 import org.apache.calcite.rel.core.TableScan
+import org.apache.calcite.schema.impl.ListTransientTable
 import org.apache.flink.table.plan.nodes.FlinkConventions
-import org.apache.flink.table.plan.nodes.dataset.BatchTableSourceScan
+import org.apache.flink.table.plan.nodes.dataset.{BatchTableSourceScan, DataSetTransientTableScan}
 import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalTableSourceScan, FlinkLogicalTransientScan}
 import org.apache.flink.table.plan.schema.TableSourceTable
 import org.apache.flink.table.sources.BatchTableSource
@@ -27,11 +28,11 @@ class DataSetTransientTableScanRule extends ConverterRule(
   def convert(rel: RelNode): RelNode = {
     val scan: FlinkLogicalTransientScan = rel.asInstanceOf[FlinkLogicalTransientScan]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
-    new BatchTableSourceScan(
+    new DataSetTransientTableScan(
       rel.getCluster,
       traitSet,
       scan.getTable,
-      scan.tableSource,
+      scan.getTable.unwrap(classOf[ListTransientTable]),
       scan.selectedFields
     )
   }
