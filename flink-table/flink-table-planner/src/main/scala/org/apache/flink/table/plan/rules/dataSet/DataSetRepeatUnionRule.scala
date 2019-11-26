@@ -5,7 +5,7 @@ import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
 import org.apache.flink.table.plan.nodes.FlinkConventions
 import org.apache.flink.table.plan.nodes.dataset.DataSetRepeatUnion
-import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalRepeatUnion, FlinkLogicalUnion}
+import org.apache.flink.table.plan.nodes.logical.FlinkLogicalRepeatUnion
 
 class DataSetRepeatUnionRule
   extends ConverterRule(
@@ -16,7 +16,7 @@ class DataSetRepeatUnionRule
 
   override def matches(call: RelOptRuleCall): Boolean = {
     val repeatUnion: FlinkLogicalRepeatUnion = call.rel(0).asInstanceOf[FlinkLogicalRepeatUnion]
-    repeatUnion.all
+    true
   }
 
   def convert(rel: RelNode): RelNode = {
@@ -26,12 +26,12 @@ class DataSetRepeatUnionRule
     val iterativeInput = RelOptRule.convert(repeatUnion.getIterativeRel, FlinkConventions.DATASET)
 
     new DataSetRepeatUnion(
-      rel.getCluster,
+      repeatUnion.getCluster,
       traitSet,
       seedInput,
       iterativeInput,
-      repeatUnion.all,
-      repeatUnion.iterationLimit, repeatUnion.getRowType)
+      true,
+      -1, repeatUnion.getRowType)
   }
 }
 

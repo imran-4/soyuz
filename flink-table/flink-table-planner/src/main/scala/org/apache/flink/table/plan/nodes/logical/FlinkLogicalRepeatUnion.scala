@@ -17,8 +17,8 @@ class FlinkLogicalRepeatUnion(
                                traitSet: RelTraitSet,
                                seed: RelNode,
                                iterative: RelNode,
-                               all: Boolean,
-                               iterationLimit: Int)
+                               all: Boolean = true,
+                               iterationLimit: Int = -1)
   extends RepeatUnion(
     cluster,
     traitSet,
@@ -37,6 +37,8 @@ class FlinkLogicalRepeatUnion(
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
+    ///////////////////////
+    ////// This method seems problematic...
 //    new FlinkLogicalRepeatUnion(cluster, traitSet, seed, iterative, all, iterationLimit)
     new FlinkLogicalRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1)
   }

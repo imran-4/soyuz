@@ -40,24 +40,24 @@ class DataSetRepeatUnion(
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-    new DataSetRepeatUnion(cluster, traitSet, seed, iterative, true, -1, rowRelDataType)
+//    new DataSetRepeatUnion(cluster, traitSet, seed, iterative, true, -1, rowRelDataType)
+    new DataSetRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1, rowRelDataType)
+
   }
 
   override def translateToPlan(
                                 tableEnv: BatchTableEnvImpl,
                                 queryConfig: BatchQueryConfig): DataSet[Row] = {
-
     //todo: semi-naive evaluation algorithm would be implemented here....
-
     // the following is just a sketch of the algorithm and not properly implemented and tested yet....
     val config = tableEnv.getConfig
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-    var all = seedDs
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    var all = seedDs
 
     val iterativeDsInitial = iterativeDs.iterate(1000)
 
-    val delta = iterativeDsInitial.filter(new FilterFunction[Row] {
+    var delta = iterativeDsInitial.filter(new FilterFunction[Row] {
       override def filter(value: Row): Boolean = {
         true
       }

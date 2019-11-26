@@ -28,9 +28,11 @@ class DataSetTableSpool(cluster: RelOptCluster,
   }
 
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
+    println(">>>>>>>>>>>>>>>>>>>>>>>++++++++++++++++++++++ INSIDE DATASETTABLESPOOL...")
+
     val config = tableEnv.getConfig
     input.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-    //    convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
+//        convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
     null
   }
 
