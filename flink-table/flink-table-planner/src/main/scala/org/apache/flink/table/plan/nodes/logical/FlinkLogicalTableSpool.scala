@@ -3,12 +3,9 @@ package org.apache.flink.table.plan.nodes.logical
 import org.apache.calcite.plan._
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
-import org.apache.calcite.rel.core.{Spool, TableSpool}
-import org.apache.calcite.rel.logical.LogicalTableSpool
+import org.apache.calcite.rel.core.Spool
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.flink.table.plan.nodes.FlinkConventions
-
-import scala.collection.JavaConverters._
 
 class FlinkLogicalTableSpool(cluster: RelOptCluster,
                              traitSet: RelTraitSet,
@@ -22,7 +19,7 @@ class FlinkLogicalTableSpool(cluster: RelOptCluster,
     val leftRowCnt = mq.getRowCount(input)
     val leftRowSize = estimateRowSize(input.getRowType)
 
-     val ioCost = leftRowCnt+leftRowSize
+    val ioCost = leftRowCnt + leftRowSize
     val cpuCost = leftRowCnt
     val rowCnt = leftRowCnt
 
@@ -36,16 +33,16 @@ class FlinkLogicalTableSpool(cluster: RelOptCluster,
 
 private class FlinkLogicalTableSpoolConverter
   extends ConverterRule(
-    classOf[TableSpool],
+    classOf[Spool],
     Convention.NONE,
     FlinkConventions.LOGICAL,
     "FlinkLogicalTableSpoolConverter") {
 
   override def convert(rel: RelNode): RelNode = {
-    val tableSpool = rel.asInstanceOf[TableSpool]
+    val tableSpool = rel.asInstanceOf[Spool]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
     val inputTable = RelOptRule.convert(tableSpool.getInput, FlinkConventions.LOGICAL)
-//    new FlinkLogicalTableSpool(inputTable.getCluster, traitSet, inputTable, Spool.Type.LAZY, Spool.Type.LAZY)
+    //    new FlinkLogicalTableSpool(inputTable.getCluster, traitSet, inputTable, Spool.Type.LAZY, Spool.Type.LAZY)
     new FlinkLogicalTableSpool(inputTable.getCluster, traitSet, inputTable, tableSpool.readType, tableSpool.writeType)
 
   }

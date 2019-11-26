@@ -1,15 +1,12 @@
 package org.apache.flink.table.plan.rules.dataSet
 
-import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelTraitSet}
+import org.apache.calcite.plan.{RelOptRule, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
-import org.apache.calcite.rel.core.TableScan
 import org.apache.calcite.schema.impl.ListTransientTable
 import org.apache.flink.table.plan.nodes.FlinkConventions
-import org.apache.flink.table.plan.nodes.dataset.{BatchTableSourceScan, DataSetTransientTableScan}
-import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalTableSourceScan, FlinkLogicalTransientScan}
-import org.apache.flink.table.plan.schema.TableSourceTable
-import org.apache.flink.table.sources.BatchTableSource
+import org.apache.flink.table.plan.nodes.dataset.DataSetTransientTableScan
+import org.apache.flink.table.plan.nodes.logical.FlinkLogicalTransientScan
 
 class DataSetTransientTableScanRule extends ConverterRule(
   classOf[FlinkLogicalTransientScan],
@@ -17,23 +14,16 @@ class DataSetTransientTableScanRule extends ConverterRule(
   FlinkConventions.DATASET,
   "DataSetTransientTableScanRule") {
 
-  /** Rule must only match if TableScan targets a [[BatchTableSource]] */
-  override def matches(call: RelOptRuleCall): Boolean = {
-    val scan: TableScan = call.rel(0).asInstanceOf[TableScan]
-
-    val sourceTable = scan.getTable.unwrap(classOf[TableSourceTable[_]])
-    sourceTable != null && !sourceTable.isStreamingMode
-  }
-
   def convert(rel: RelNode): RelNode = {
     val scan: FlinkLogicalTransientScan = rel.asInstanceOf[FlinkLogicalTransientScan]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
+
     new DataSetTransientTableScan(
       rel.getCluster,
       traitSet,
       scan.getTable,
-      scan.getTable.unwrap(classOf[ListTransientTable]),
-      scan.selectedFields
+      scan.getTable.unwrap(classOf[ListTransientTable]) //,
+      //      input.selectedFields
     )
   }
 }

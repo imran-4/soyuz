@@ -1,14 +1,13 @@
 package org.apache.flink.table.plan.nodes.dataset
 
-import org.apache.calcite.plan.{RelOptCluster, RelOptCost, RelOptPlanner, RelOptTable, RelTraitSet}
+import org.apache.calcite.plan.{RelOptCluster, RelOptCost, RelOptPlanner, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.`type`.RelDataType
-import org.apache.calcite.rel.core.{Spool, TableSpool}
+import org.apache.calcite.rel.core.Spool
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
-import org.apache.flink.table.plan.schema.RowSchema
 import org.apache.flink.types.Row
 
 class DataSetTableSpool(cluster: RelOptCluster,
@@ -17,7 +16,7 @@ class DataSetTableSpool(cluster: RelOptCluster,
                         readType: Spool.Type,
                         writeType: Spool.Type)
   extends Spool(cluster, traitSet, input, readType, writeType)
-  with DataSetRel {
+    with DataSetRel {
 
   override def deriveRowType(): RelDataType = input.getRowType
 
@@ -31,7 +30,7 @@ class DataSetTableSpool(cluster: RelOptCluster,
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
     val config = tableEnv.getConfig
     input.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-//    convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
+    //    convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
     null
   }
 

@@ -191,7 +191,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 
 	@Override
 	public <T> DataSet<T> toDataSet(Table table, TypeInformation<T> typeInfo) {
-		return translate(table, typeInfo);//(typeInfo);
+		return translate(table, typeInfo);
 	}
 
 	@Override

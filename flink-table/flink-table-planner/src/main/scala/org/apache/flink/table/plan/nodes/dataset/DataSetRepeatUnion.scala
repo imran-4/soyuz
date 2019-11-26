@@ -1,5 +1,7 @@
 package org.apache.flink.table.plan.nodes.dataset
 
+import java.util
+
 import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
@@ -9,7 +11,7 @@ import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.types.Row
-import scala.collection.JavaConversions._
+
 import scala.collection.JavaConverters._
 
 class DataSetRepeatUnion(
@@ -35,6 +37,10 @@ class DataSetRepeatUnion(
 
   override def explainTerms(pw: RelWriter): RelWriter = {
     super.explainTerms(pw).item("repeatunion", repeatUnionSelectionToString)
+  }
+
+  override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
+    new DataSetRepeatUnion(cluster, traitSet, seed, iterative, true, -1, rowRelDataType)
   }
 
   override def translateToPlan(

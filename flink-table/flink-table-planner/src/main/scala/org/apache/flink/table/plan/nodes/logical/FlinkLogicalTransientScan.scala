@@ -11,7 +11,6 @@ import org.apache.calcite.schema.TransientTable
 import org.apache.calcite.schema.impl.ListTransientTable
 import org.apache.flink.table.plan.nodes.FlinkConventions
 import org.apache.flink.table.sources.FilterableTableSource
-import scala.collection.JavaConverters._
 
 class FlinkLogicalTransientScan(cluster: RelOptCluster,
                                 traitSet: RelTraitSet,
@@ -25,12 +24,12 @@ class FlinkLogicalTransientScan(cluster: RelOptCluster,
     new FlinkLogicalTransientScan(cluster, traitSet, getTable, tableSource, selectedFields)
   }
 
-//  override def deriveRowType(): RelDataType = {
-//    val flinkTypeFactory = cluster.getTypeFactory.asInstanceOf[FlinkTypeFactory]
-//    val streamingTable = table.unwrap(classOf[TableSourceTable[_]]).isStreamingMode
-//
-//    TableSourceUtil.getRelDataType(tableSource, selectedFields, streamingTable, flinkTypeFactory)
-//  }
+  //  override def deriveRowType(): RelDataType = {
+  //    val flinkTypeFactory = cluster.getTypeFactory.asInstanceOf[FlinkTypeFactory]
+  //    val streamingTable = table.unwrap(classOf[TableSourceTable[_]]).isStreamingMode
+  //
+  //    TableSourceUtil.getRelDataType(tableSource, selectedFields, streamingTable, flinkTypeFactory)
+  //  }
 
   override def computeSelfCost(planner: RelOptPlanner, metadata: RelMetadataQuery): RelOptCost = {
     val rowCnt = metadata.getRowCount(this)
@@ -68,11 +67,11 @@ class FlinkLogicalTransientScanConverter
     val scan = rel.asInstanceOf[LogicalTableScan]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
 
+
     new FlinkLogicalTransientScan(
       rel.getCluster,
       traitSet,
       scan.getTable,
-//      scan.getTable.unwrap(classOf[TableSourceTable[_]]).tableSource,
       scan.getTable.unwrap(classOf[ListTransientTable]),
       Option(scan.getRowType.getFieldNames.toArray(new Array[String](0)))
     )
