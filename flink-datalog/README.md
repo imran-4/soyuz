@@ -1,16 +1,28 @@
 # Datalog Programs Execution in Apache Flink
 
+TODO
+
+## Getting Started
+TODO
+
+### Prerequisites
+
+TODO
+
+```
+TODO
+```
 
 
 ### Example
 ```java
 ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
-DataSource<Tuple2<String, String>> dataSet = env.fromElements(new Tuple2<String, String>("a", "b"),new Tuple2<String, String>("b", "c"),new Tuple2<String, String>("c", "c"),new Tuple2<String, String>("c", "d"));
-datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
+DataSource<Tuple2<String, String>> dataSet = ... // create a dataset
+datalogEnv.registerDataSet("<name>", dataSet, "<fields (comma separated )>");
 String inputProgram = 
         "tc(X,Y) :- graph(X, Y).\n" +
-		"tc(X,Y) :- tc(X,Z),graph(Z,Y).";
+		"tc(X,Y) :- tc(X,Z),graph(Z,Y).";   //transitive closure example
 String query = "tc(X,Y)?";
 Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 try {
@@ -19,3 +31,27 @@ try {
 	e.printStackTrace();
 }
 ```
+
+### Experiments
+
+TODO
+
+## Deployment
+
+TODO
+
+## Built With
+
+* [Maven](https://maven.apache.org/) - Dependency Management
+
+## Contributing
+
+TODO
+
+## Authors
+
+TODO
+
+## License
+
+TODO
