@@ -1,3 +1,20 @@
+/*
+ *   Licensed to the Apache Software Foundation (ASF) under one or more
+ *   contributor license agreements.  See the NOTICE file distributed with
+ *   this work for additional information regarding copyright ownership.
+ *   The ASF licenses this file to You under the Apache License, Version 2.0
+ *   (the "License"); you may not use this file except in compliance with
+ *   the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
 package org.apache.flink;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -10,21 +27,4 @@ import org.apache.flink.table.api.Table;
 //anticipated program structure for BATCH data api.. subject to lots of changes.
 
 public class TransitiveClosureTest {
-	public static void main(String[] args) {
-		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
-		DataSource<Tuple2<String, String>> dataSet = env.fromElements( new Tuple2<String, String>("a", "b"),new Tuple2<String, String>("b", "c"),new Tuple2<String, String>("c", "c"),new Tuple2<String, String>("c", "d"));
-		datalogEnv.registerDataSet("graph", dataSet, "v1, v2");
-		String inputProgram =
-			"abc(X,Y) :- graph(X, Y).\n" +
-				"abc(X,Y) :- abc(X,Z),graph(Z,Y).";
-
-//		datalogEnv.evaluateDatalogRules(inputProgram);
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, "abc(X,Y)?"); //not sure whether to return DataSet(DataStream in case of streaming) or Table
-		try {
-			datalogEnv.toDataSet(queryResult,Tuple2.class).collect();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 }
