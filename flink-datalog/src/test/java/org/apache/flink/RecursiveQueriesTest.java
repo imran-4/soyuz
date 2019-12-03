@@ -27,11 +27,15 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(RecursiveTests.class)
 public class RecursiveQueriesTest {
 	private static BatchDatalogEnvironment datalogEnv;
 	private static DataSource<Tuple2<String, String>> dataSet;
@@ -61,7 +65,7 @@ public class RecursiveQueriesTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void transitiveClosureTest() throws Exception {
+	public void testTransitiveClosure() throws Exception {
 		String inputProgram = "tc(X,Y) :- graph(X,Y).\n"
 			+ "tc(X,Y) :- graph(X,Z), tc(Z,Y).\n";
 		String query = "tc(X,Y)?";
@@ -82,7 +86,7 @@ public class RecursiveQueriesTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void sameGenerationTest() throws Exception {
+	public void testSameGeneration() throws Exception {
 		String inputProgram = "sg(X,Y):-graph(P,X),graph(P,Y),X!=Y.\n" +
 			"sg(X,Y):-graph(A,X),sg(A,B),graph(X,Y).\n";
 		String query = "sg(X,Y)?";
@@ -103,7 +107,7 @@ public class RecursiveQueriesTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void peopleYouMayKnowTest() throws Exception {
+	public void testPeopleYouMayKnow() throws Exception {
 		String inputProgram = ""; //todo
 		String query = "";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
@@ -123,7 +127,7 @@ public class RecursiveQueriesTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void connectedComponentsTest() throws Exception {
+	public void testConnectedComponents() throws Exception {
 		String inputProgram = ""; //todo
 		String query = "";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);

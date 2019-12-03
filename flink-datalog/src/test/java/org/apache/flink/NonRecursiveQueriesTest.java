@@ -24,13 +24,15 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(NonRecursiveTests.class)
 public class NonRecursiveQueriesTest {
 	private static BatchDatalogEnvironment datalogEnv;
 	private static DataSource<Tuple2<String, String>> dataSet;
@@ -38,8 +40,8 @@ public class NonRecursiveQueriesTest {
 	/**
 	 *
 	 */
-	@BeforeClass
-	public static void initEnvs() {
+	@Before
+	public void initEnvs() {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		EnvironmentSettings settings = EnvironmentSettings
 			.newInstance()
@@ -56,11 +58,10 @@ public class NonRecursiveQueriesTest {
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void selectionTest() throws Exception {
+	public void testSelection() throws Exception {
 		String inputProgram = "sel(X,Y) :- graph(X,Y).\n";
 		String query = "sel(X,Y)?";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
@@ -76,11 +77,10 @@ public class NonRecursiveQueriesTest {
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void selectionAndFileringTest() throws Exception {
+	public void testSelectionAndFilering() throws Exception {
 		String inputProgram = "sel(X,Y) :- graph(X,Y), X!=a.\n";
 		String query = "sel(X,Y)?";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
@@ -96,11 +96,10 @@ public class NonRecursiveQueriesTest {
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void simpleJoinTest() throws Exception {
+	public void testSimpleJoin() throws Exception {
 		String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y).\n";
 		String query = "sel(X,Y)?";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
@@ -116,11 +115,10 @@ public class NonRecursiveQueriesTest {
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void simpleJoinAndFilterTest() throws Exception {
+	public void testSimpleJoinAndFilter() throws Exception {
 		String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y), X!=Y.\n";
 		String query = "sel(X,Y)?";
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
@@ -136,29 +134,59 @@ public class NonRecursiveQueriesTest {
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void simpleUnionTest() throws Exception {
-
+	public void testSimpleUnion() throws Exception {
+		String inputProgram = "";//todo
+		String query = "sel(X,Y)?";
+		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
+		List<Tuple2<String, String>> transitiveClosureExpected = List
+			.of(new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""));
+		assertEquals(transitiveClosureActual, transitiveClosureExpected);
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void unionAndJoinTest() throws Exception {
-
+	public void testUnionAndJoin() throws Exception {
+		String inputProgram = "";//todo
+		String query = "sel(X,Y)?";
+		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
+		List<Tuple2<String, String>> transitiveClosureExpected = List
+			.of(new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""));
+		assertEquals(transitiveClosureActual, transitiveClosureExpected);
 	}
 
 	/**
-	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void unionJoinFilterTest() throws Exception {
-
+	public void testUnionJoinFilter() throws Exception {
+		String inputProgram = "";//todo
+		String query = "sel(X,Y)?";
+		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
+		List<Tuple2<String, String>> transitiveClosureExpected = List
+			.of(new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""),
+				new Tuple2<>("", ""));
+		assertEquals(transitiveClosureActual, transitiveClosureExpected);
 	}
 }
