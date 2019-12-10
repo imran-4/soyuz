@@ -32,6 +32,9 @@ import org.apache.flink.table.planner.plan.nodes.resource.NodeResourceUtil;
 
 import java.util.List;
 
+/**
+ *
+ */
 public class DatalogBatchExecutor extends ExecutorBase {
 	public DatalogBatchExecutor(StreamExecutionEnvironment executionEnvironment) {
 		super(executionEnvironment);

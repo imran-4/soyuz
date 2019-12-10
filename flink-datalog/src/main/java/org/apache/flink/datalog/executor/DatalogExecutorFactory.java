@@ -28,10 +28,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *
+ */
 public class DatalogExecutorFactory implements ExecutorFactory {
 
 	public Executor create(Map<String, String> properties, StreamExecutionEnvironment executionEnvironment) {
-		if (Boolean.valueOf(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
+		if (Boolean.parseBoolean(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
 			return null;
 		} else {
 			return new DatalogBatchExecutor(executionEnvironment);

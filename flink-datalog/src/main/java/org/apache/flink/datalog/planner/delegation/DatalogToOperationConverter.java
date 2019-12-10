@@ -17,13 +17,15 @@
 
 package org.apache.flink.datalog.planner.delegation;
 
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
 import org.apache.flink.table.operations.Operation;
-import org.apache.flink.table.planner.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.operations.PlannerQueryOperation;
+import org.apache.flink.table.planner.calcite.FlinkPlannerImpl;
 
+import org.apache.calcite.rel.RelRoot;
 
+/**
+ *
+ */
 public class DatalogToOperationConverter {
 	private FlinkPlannerImpl flinkPlanner;
 
@@ -48,7 +50,7 @@ public class DatalogToOperationConverter {
 //				+ validated.getClass().getSimpleName());
 //		}
 
-		return  null;
+		return null;
 	}
 
 	private Operation convertSqlQuery(RelRoot relRoot) {

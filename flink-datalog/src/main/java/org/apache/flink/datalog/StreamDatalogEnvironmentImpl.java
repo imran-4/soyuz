@@ -22,10 +22,19 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.table.api.*;
+import org.apache.flink.table.api.StreamQueryConfig;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.api.TableException;
+import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.TableImpl;
-import org.apache.flink.table.api.scala.internal.StreamTableEnvironmentImpl;
-import org.apache.flink.table.catalog.*;
+import org.apache.flink.table.catalog.Catalog;
+import org.apache.flink.table.catalog.CatalogManager;
+import org.apache.flink.table.catalog.ConnectorCatalogTable;
+import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.ObjectIdentifier;
+import org.apache.flink.table.catalog.QueryOperationCatalogView;
+import org.apache.flink.table.catalog.UnresolvedIdentifier;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.Planner;
@@ -37,7 +46,12 @@ import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableAggregateFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.module.Module;
-import org.apache.flink.table.operations.*;
+import org.apache.flink.table.operations.CatalogQueryOperation;
+import org.apache.flink.table.operations.CatalogSinkModifyOperation;
+import org.apache.flink.table.operations.ModifyOperation;
+import org.apache.flink.table.operations.Operation;
+import org.apache.flink.table.operations.QueryOperation;
+import org.apache.flink.table.operations.TableSourceQueryOperation;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
@@ -45,9 +59,16 @@ import org.apache.flink.table.sources.InputFormatTableSource;
 import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.sources.TableSourceValidation;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ *
+ */
 public class StreamDatalogEnvironmentImpl
 //	extends StreamTableEnvironmentImpl
 	implements StreamDatalogEnvironment {
@@ -312,8 +333,9 @@ public class StreamDatalogEnvironmentImpl
 		List<String> databases = new ArrayList<>();
 		for (String c : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(c).isPresent();
-			if (isCatalogPresent)
+			if (isCatalogPresent) {
 				databases.addAll(this.catalogManager.getCatalog(c).get().listDatabases());
+			}
 		}
 		return databases.toArray(new String[0]);
 	}

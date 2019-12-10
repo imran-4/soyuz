@@ -17,16 +17,21 @@
 
 package org.apache.flink.datalog.plan;
 
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql2rel.RelDecorrelator;
-import org.apache.calcite.tools.RuleSet;
 import org.apache.flink.table.calcite.CalciteConfig;
 import org.apache.flink.table.plan.Optimizer;
 import org.apache.flink.table.plan.nodes.FlinkConventions;
 import org.apache.flink.table.plan.rules.FlinkRuleSets;
 import org.apache.flink.table.planner.PlanningConfigurationBuilder;
+
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql2rel.RelDecorrelator;
+import org.apache.calcite.tools.RuleSet;
+
 import scala.Function0;
 
+/**
+ *
+ */
 public class DatalogBatchOptimizer extends Optimizer {
 	PlanningConfigurationBuilder planningConfigurationBuilder;
 	Function0<CalciteConfig> calciteConfig;

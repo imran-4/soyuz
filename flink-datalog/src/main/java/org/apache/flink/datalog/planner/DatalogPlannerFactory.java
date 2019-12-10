@@ -26,15 +26,21 @@ import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.delegation.PlannerFactory;
 import org.apache.flink.table.descriptors.DescriptorProperties;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+/**
+ *
+ */
 public class DatalogPlannerFactory implements PlannerFactory {
 
 
 	@Override
 	public Planner create(Map<String, String> properties, Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager) {
 
-		if (Boolean.valueOf(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
+		if (Boolean.parseBoolean(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
 			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, true); //later may be we can separate the planner for stream and batch.
 		} else {
 			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, false);

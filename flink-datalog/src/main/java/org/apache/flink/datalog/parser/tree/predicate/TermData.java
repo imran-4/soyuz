@@ -17,9 +17,13 @@
 
 package org.apache.flink.datalog.parser.tree.predicate;
 
+/**
+ *
+ */
 public class TermData { //todo: add type information if needed...
 	private String termName;
 	private Adornment adornment;
+
 	public TermData(String termName, Adornment adornment) {
 		this.termName = termName;
 		this.adornment = adornment;

@@ -22,6 +22,9 @@ import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ *
+ */
 public class AndNode extends Node {
 	private PredicateData predicateData;
 	private List<OrNode> children = new ArrayList<>();
@@ -36,12 +39,12 @@ public class AndNode extends Node {
 		this.isRecursive = isRecursive;
 	}
 
-	public void setRecursive(boolean isRecursive) {
-		this.isRecursive = isRecursive;
-	}
-
 	public boolean isRecursive() {
 		return this.isRecursive;
+	}
+
+	public void setRecursive(boolean isRecursive) {
+		this.isRecursive = isRecursive;
 	}
 
 	@Override
@@ -65,8 +68,12 @@ public class AndNode extends Node {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		AndNode andNode = (AndNode) o;
 		return predicateData.equals(andNode.predicateData);
 	}
@@ -87,7 +94,10 @@ public class AndNode extends Node {
 
 	@Override
 	public <T> void accept(TreeVisitor<? extends T> visitor) {
-		if (visitor instanceof AndOrTreeVisitor) ((AndOrTreeVisitor) visitor).visitAndNode(this);
-		else visitor.visitChildren(this);
+		if (visitor instanceof AndOrTreeVisitor) {
+			((AndOrTreeVisitor) visitor).visitAndNode(this);
+		} else {
+			visitor.visitChildren(this);
+		}
 	}
 }

@@ -27,6 +27,9 @@ import org.apache.flink.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ *
+ */
 public abstract class ExecutorBase implements Executor {
 
 	private static final String DEFAULT_JOB_NAME = "Flink Exec Datalog Job";

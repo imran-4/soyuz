@@ -24,6 +24,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -32,6 +33,9 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * This class contains test cases for non recursive queries.
+ */
 @Category(NonRecursiveTests.class)
 public class NonRecursiveQueriesTest {
 	private static BatchDatalogEnvironment datalogEnv;

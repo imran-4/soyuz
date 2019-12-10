@@ -19,6 +19,9 @@ package org.apache.flink.datalog.parser.tree.predicate;
 
 import java.util.List;
 
+/**
+ *
+ */
 public abstract class PredicateData {
 	private int predicateID;
 

@@ -24,6 +24,9 @@ import org.apache.flink.table.delegation.Executor;
 
 import java.util.List;
 
+/**
+ *
+ */
 public class DatalogStreamExecutor implements Executor {
 	private final StreamExecutionEnvironment executionEnvironment;
 

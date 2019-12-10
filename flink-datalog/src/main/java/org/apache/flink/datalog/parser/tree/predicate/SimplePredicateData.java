@@ -19,6 +19,9 @@ package org.apache.flink.datalog.parser.tree.predicate;
 
 import java.util.List;
 
+/**
+ *
+ */
 public class SimplePredicateData extends PredicateData {
 	private String predicateName;
 	private List<TermData> predicateParameters;

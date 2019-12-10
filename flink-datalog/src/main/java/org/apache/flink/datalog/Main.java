@@ -26,6 +26,9 @@ import org.apache.flink.table.api.Table;
 
 import java.util.List;
 
+/**
+ *
+ */
 //this file is only for testing... it has to be removed later.
 public class Main {
 	public static void main(String[] args) {
@@ -43,11 +46,11 @@ public class Main {
 			new Tuple2<>("c", "1"),
 			new Tuple2<>("c", "1"),
 			new Tuple2<>("d", "1")); //just to test the query logical plan...will remove it later
-		datalogEnv.registerDataSet("tc", dataSet1, "v2,v3");
+//		datalogEnv.registerDataSet("tc", dataSet1, "v2,v3");
 
 		String inputProgram =
 			"tc(X,Y) :- graph(X,Y).\n" +
-				"tc(X,Y) :- tc(X,Y).";
+				"tc(X,Y) :- graph(X,Z), tc(Z,Y).";
 		String query = "tc(X,Y)?";
 
 		String inputProgram2 = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n" +
@@ -61,10 +64,10 @@ public class Main {
 			"sg(X,Y):-arc(A,X),sg(A,B),arc(X,Y).\n";
 		String query3 = "sg(X,Y)?";
 
-		String inputProgram4 =  "tc(X,Y):-arc(X,Y).\n"+ "tc(X,Y):-arc(X,Z), arc(Z,Y), 1=1.";
+		String inputProgram4 =  "tc(X,Y):-arc(X,Y).\n"+ "tc(X,Y):-graph(X,Z), tc(Z,Y).";
 		String query4 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+		Table queryResult = datalogEnv.datalogQuery(inputProgram3, query3);
 		List<Tuple2<String, String>> collectedData = null;
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());

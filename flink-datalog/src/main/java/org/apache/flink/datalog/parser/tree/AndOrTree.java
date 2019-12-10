@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ *
+ */
 public class AndOrTree extends DatalogBaseVisitor<Node> {
 
 	@Override
@@ -58,8 +61,9 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 						((SimplePredicateData) currentNode.getPredicateData()).setIdb(true);
 					}
 					if (parentNode != null) {
-						if (parentNode.getPredicateData().getPredicateName().equals(queryPredicateName))
+						if (parentNode.getPredicateData().getPredicateName().equals(queryPredicateName)) {
 							continue;
+						}
 					}
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
 				}

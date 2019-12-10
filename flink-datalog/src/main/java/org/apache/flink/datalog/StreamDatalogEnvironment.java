@@ -22,6 +22,9 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 
+/**
+ *
+ */
 public interface StreamDatalogEnvironment extends DatalogEnvironment, StreamTableEnvironment {
 
 	static StreamDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {

@@ -17,7 +17,6 @@
 
 package org.apache.flink.datalog;
 
-import org.apache.calcite.rel.RelNode;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
@@ -28,24 +27,47 @@ import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
-import org.apache.flink.table.api.*;
+import org.apache.flink.table.api.BatchQueryConfig;
+import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.api.TableException;
+import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.BatchTableEnvImpl;
 import org.apache.flink.table.api.internal.TableImpl;
-import org.apache.flink.table.catalog.*;
+import org.apache.flink.table.catalog.Catalog;
+import org.apache.flink.table.catalog.CatalogBaseTable;
+import org.apache.flink.table.catalog.CatalogManager;
+import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
+import org.apache.flink.table.catalog.ConnectorCatalogTable;
+import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.ObjectIdentifier;
+import org.apache.flink.table.catalog.QueryOperationCatalogView;
+import org.apache.flink.table.catalog.UnresolvedIdentifier;
 import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.ExecutorFactory;
 import org.apache.flink.table.delegation.Planner;
 import org.apache.flink.table.descriptors.BatchTableDescriptor;
 import org.apache.flink.table.descriptors.ConnectorDescriptor;
-import org.apache.flink.table.expressions.*;
+import org.apache.flink.table.expressions.Expression;
+import org.apache.flink.table.expressions.ExpressionBridge;
+import org.apache.flink.table.expressions.ExpressionParser;
+import org.apache.flink.table.expressions.PlannerExpression;
+import org.apache.flink.table.expressions.PlannerExpressionConverter;
+import org.apache.flink.table.expressions.TableReferenceExpression;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.module.Module;
 import org.apache.flink.table.module.ModuleManager;
-import org.apache.flink.table.operations.*;
+import org.apache.flink.table.operations.CatalogQueryOperation;
+import org.apache.flink.table.operations.DataSetQueryOperation;
+import org.apache.flink.table.operations.ModifyOperation;
+import org.apache.flink.table.operations.PlannerQueryOperation;
+import org.apache.flink.table.operations.QueryOperation;
+import org.apache.flink.table.operations.TableSourceQueryOperation;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
@@ -53,15 +75,21 @@ import org.apache.flink.table.sources.InputFormatTableSource;
 import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.sources.TableSourceValidation;
 import org.apache.flink.table.typeutils.FieldInfoUtils;
-import scala.Option;
+
+import org.apache.calcite.rel.RelNode;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import scala.Option;
+
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
+/**
+ *
+ */
 public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements BatchDatalogEnvironment {
 	private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
@@ -147,7 +175,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		plan.visit(andOrTreeNode);
 		assert andOrTreeNode != null;
 		RelNode relataionalAlgebra = plan.getLogicalPlan();
-		System.out.println(relataionalAlgebra);
 //		DataSetRel dataSetRel = null;
 
 		if (null != relataionalAlgebra) {
@@ -360,8 +387,9 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		List<String> databases = new ArrayList<>();
 		for (String c : this.catalogManager.listCatalogs()) {
 			boolean isCatalogPresent = this.catalogManager.getCatalog(c).isPresent();
-			if (isCatalogPresent)
+			if (isCatalogPresent) {
 				databases.addAll(this.catalogManager.getCatalog(c).get().listDatabases());
+			}
 		}
 		return databases.toArray(new String[0]);
 	}

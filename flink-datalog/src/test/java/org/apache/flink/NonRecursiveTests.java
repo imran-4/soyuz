@@ -17,5 +17,8 @@
 
 package org.apache.flink;
 
+/**
+ *
+ */
 public interface NonRecursiveTests {
 }

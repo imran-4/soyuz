@@ -17,17 +17,7 @@
 
 package org.apache.flink.datalog.planner;
 
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.datalog.executor.DatalogBatchExecutor;
-import org.apache.flink.datalog.parser.ParserManager;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
@@ -49,6 +39,13 @@ import org.apache.flink.table.operations.Operation;
 import org.apache.flink.table.planner.operations.PlannerQueryOperation;
 import org.apache.flink.table.planner.plan.trait.FlinkRelDistributionTraitDef;
 
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlKind;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -56,6 +53,11 @@ import java.util.stream.Collectors;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
+/**
+ * This class is used to return Datalog parser via {@link #getParser()} and transform a Datalog query
+ * into a Table API specific objects
+ * e.g. tree of {@link Operation}s</li>.
+ */
 public class FlinkBatchDatalogPlanner implements Planner {
 	private Executor executor;
 	private TableConfig tableConfig;
@@ -64,7 +66,7 @@ public class FlinkBatchDatalogPlanner implements Planner {
 	private ExpressionBridge<PlannerExpression> expressionBridge;
 	//	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 	private CalciteSchema internalSchema;
-//	private DatalogPlannerContext plannerContext;
+	//	private DatalogPlannerContext plannerContext;
 	private ObjectIdentifier objectIdentifier;
 
 	public FlinkBatchDatalogPlanner(Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager, boolean isStreamingMode) {

@@ -23,8 +23,11 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.java.BatchTableEnvironment;
 
+/**
+ *
+ */
 public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableEnvironment {
-	ExecutionEnvironment env = null;
+	ExecutionEnvironment ENV = null;
 
 	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings) {
 		return create(executionEnvironment, environmentSettings, new TableConfig());
@@ -39,8 +42,8 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
 	}
 
 	/*
-	*
-	* */
+	 *
+	 * */
 //	void evaluateDatalogRules(String program);
 
 	Table datalogQuery(String inputProgram, String query);

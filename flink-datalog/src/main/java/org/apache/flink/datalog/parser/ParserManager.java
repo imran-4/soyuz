@@ -17,19 +17,28 @@
 
 package org.apache.flink.datalog.parser;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.PredictionMode;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.AndOrTree;
 import org.apache.flink.datalog.parser.tree.Node;
 
+import org.antlr.v4.runtime.ANTLRErrorListener;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.tree.ParseTree;
+
 import java.util.List;
 
+/**
+ *
+ */
 public class ParserManager {//todo: extend flink Parser interface
-	public ParserManager() {
 
+	public ParserManager() {
 	}
 
 	private ParseTree parse(String text) {
@@ -45,15 +54,18 @@ public class ParserManager {//todo: extend flink Parser interface
 		parser.setErrorHandler(new DefaultErrorStrategy());
 
 		ParseTree tree = parser.compileUnit();
-		if (tree == null) return null;
+		if (tree == null) {
+			return null;
+		}
 		int numberOfErrors = parser.getNumberOfSyntaxErrors();
 		if (numberOfErrors > 0) {
 			List<? extends ANTLRErrorListener> errorListeners = parser.getErrorListeners();
 			for (ANTLRErrorListener errorListener : errorListeners) {
 				if (errorListener instanceof DatalogErrorListener) {
 					List<String> syntaxErrors = ((DatalogErrorListener) errorListener).getSyntaxErrors();
-					for (String error : syntaxErrors)
+					for (String error : syntaxErrors) {
 						System.out.println(error);
+					}
 				}
 			}
 			return null; //will take care of it later

@@ -22,6 +22,9 @@ import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ *
+ */
 public class OrNode extends Node {
 	private PredicateData predicateData;
 	private List<AndNode> children = new ArrayList<>();
@@ -56,8 +59,12 @@ public class OrNode extends Node {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		OrNode orNode = (OrNode) o;
 		return predicateData.equals(orNode.predicateData);
 	}
@@ -72,7 +79,10 @@ public class OrNode extends Node {
 
 	@Override
 	public <T> void accept(TreeVisitor<? extends T> visitor) {
-		if (visitor instanceof AndOrTreeVisitor) ((AndOrTreeVisitor) visitor).visitOrNode(this);
-		else visitor.visitChildren(this);
+		if (visitor instanceof AndOrTreeVisitor) {
+			((AndOrTreeVisitor) visitor).visitOrNode(this);
+		} else {
+			visitor.visitChildren(this);
+		}
 	}
 }

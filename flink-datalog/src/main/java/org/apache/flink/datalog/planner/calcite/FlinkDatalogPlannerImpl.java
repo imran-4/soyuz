@@ -17,28 +17,26 @@
 
 package org.apache.flink.datalog.planner.calcite;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.flink.datalog.parser.ParserManager;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.table.calcite.FlinkPlannerImpl;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.apache.flink.table.calcite.FlinkRelOptClusterFactory;
-import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.calcite.FlinkTypeFactory;
 import org.apache.flink.table.catalog.CatalogReader;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.tools.FrameworkConfig;
+
 import java.util.function.Function;
 
-public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl{
+/**
+ *
+ */
+public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl {
 	private SqlOperatorTable operatorTable;
 	private ImmutableList<RelTraitDef> traitDefs;
 	private FrameworkConfig frameworkConfig;
@@ -46,6 +44,7 @@ public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl{
 	private FlinkTypeFactory typeFactory;
 	private RelOptPlanner planner;
 	private FlinkRelBuilder flinkRelBuilder;
+
 	public FlinkDatalogPlannerImpl(
 		FrameworkConfig frameworkConfig,
 		Function<Boolean, CatalogReader> catalogReaderSupplier,
@@ -84,7 +83,7 @@ public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl{
 		}
 	}
 
-//	def getCompletionHints(sql: String, cursor: Int): Array[String] = {
+	//	def getCompletionHints(sql: String, cursor: Int): Array[String] = {
 //		val advisorValidator = new SqlAdvisorValidator(
 //			operatorTable,
 //			catalogReaderSupplier.apply(true), // ignore cases for lenient completion

@@ -20,6 +20,9 @@ package org.apache.flink.datalog.parser.tree.predicate;
 
 import java.util.List;
 
+/**
+ *
+ */
 public class PrimitivePredicateData extends PredicateData {
 	private TermData leftTerm;
 	private String operator;
