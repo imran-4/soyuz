@@ -33,6 +33,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.tools.RelBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,8 +46,7 @@ import java.util.stream.Collectors;
  * Use {@link #getLogicalPlan()} to obtain the {@link RelNode} for a logical plan.
  */
 public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
-    private static int stackSize = 0;
-    private FlinkRelBuilder relBuilder;
+    private RelBuilder relBuilder;
     private String currentCatalogName;
     private String currentDatabaseName;
     private Map<String, Integer> idbNameIdMapping = new HashMap<String, Integer>();

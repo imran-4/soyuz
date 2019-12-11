@@ -33,7 +33,13 @@ import java.util.List;
 public class Main {
 	public static void main(String[] args) {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		EnvironmentSettings settings = EnvironmentSettings.newInstance().useDatalogPlanner().inBatchMode().withBuiltInCatalogName("my_catalog").withBuiltInDatabaseName("my_database").build();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.withBuiltInCatalogName("my_catalog")
+				.withBuiltInDatabaseName("my_database")
+				.build();
 		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
 		DataSource<Tuple2<String, String>> dataSet = env.fromElements(
 			new Tuple2<>("a", "b"),
@@ -67,7 +73,11 @@ public class Main {
 		String inputProgram4 =  "tc(X,Y):-arc(X,Y).\n"+ "tc(X,Y):-graph(X,Z), tc(Z,Y).";
 		String query4 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
-		Table queryResult = datalogEnv.datalogQuery(inputProgram3, query3);
+		String inputProgram5 =  "tc(X,Y):-graph(X,Y), graph(Z,Y).";
+		String query5 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
+
+
+		Table queryResult = datalogEnv.datalogQuery(inputProgram5, query5);
 		List<Tuple2<String, String>> collectedData = null;
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
