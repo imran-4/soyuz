@@ -27,24 +27,24 @@ import org.apache.flink.table.api.java.BatchTableEnvironment;
  *
  */
 public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableEnvironment {
-	ExecutionEnvironment ENV = null;
+    ExecutionEnvironment ENV = null;
 
-	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings) {
-		return create(executionEnvironment, environmentSettings, new TableConfig());
-	}
+    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings) {
+        return create(executionEnvironment, environmentSettings, new TableConfig());
+    }
 
-	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
-		return create(executionEnvironment, EnvironmentSettings.newInstance().build());
-	}
+    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
+        return create(executionEnvironment, EnvironmentSettings.newInstance().build());
+    }
 
-	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings, TableConfig tableConfig) {
-		return BatchDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
-	}
+    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings, TableConfig tableConfig) {
+        return BatchDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
+    }
 
-	/*
-	 *
-	 * */
+    /*
+     *
+     * */
 //	void evaluateDatalogRules(String program);
 
-	Table datalogQuery(String inputProgram, String query);
+    Table datalogQuery(String inputProgram, String query);
 }
