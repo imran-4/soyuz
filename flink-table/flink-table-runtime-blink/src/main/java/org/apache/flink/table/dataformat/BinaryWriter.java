@@ -23,7 +23,9 @@ import org.apache.flink.table.runtime.typeutils.BaseMapSerializer;
 import org.apache.flink.table.runtime.typeutils.BaseRowSerializer;
 import org.apache.flink.table.runtime.typeutils.BinaryGenericSerializer;
 import org.apache.flink.table.types.logical.DecimalType;
+import org.apache.flink.table.types.logical.LocalZonedTimestampType;
 import org.apache.flink.table.types.logical.LogicalType;
+import org.apache.flink.table.types.logical.TimestampType;
 
 /**
  * Writer to write a composite data format, like row, array.
@@ -97,10 +99,16 @@ public interface BinaryWriter {
 				writer.writeInt(pos, (int) o);
 				break;
 			case BIGINT:
-			case TIMESTAMP_WITHOUT_TIME_ZONE:
-			case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
 			case INTERVAL_DAY_TIME:
 				writer.writeLong(pos, (long) o);
+				break;
+			case TIMESTAMP_WITHOUT_TIME_ZONE:
+				TimestampType timestampType = (TimestampType) type;
+				writer.writeTimestamp(pos, (SqlTimestamp) o, timestampType.getPrecision());
+				break;
+			case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+				LocalZonedTimestampType lzTs = (LocalZonedTimestampType) type;
+				writer.writeTimestamp(pos, (SqlTimestamp) o, lzTs.getPrecision());
 				break;
 			case FLOAT:
 				writer.writeFloat(pos, (float) o);
@@ -126,7 +134,7 @@ public interface BinaryWriter {
 			case ROW:
 				writer.writeRow(pos, (BaseRow) o, (BaseRowSerializer) serializer);
 				break;
-			case ANY:
+			case RAW:
 				writer.writeGeneric(pos, (BinaryGeneric) o, (BinaryGenericSerializer) serializer);
 				break;
 			case BINARY:

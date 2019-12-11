@@ -137,7 +137,7 @@ object FlinkRelOptUtil {
   }
 
   def getTableConfigFromContext(rel: RelNode): TableConfig = {
-    rel.getCluster.getPlanner.getContext.asInstanceOf[FlinkContext].getTableConfig
+    rel.getCluster.getPlanner.getContext.unwrap(classOf[FlinkContext]).getTableConfig
   }
 
   /** Get max cnf node limit by context of rel */
@@ -381,23 +381,23 @@ object FlinkRelOptUtil {
     * ------------------------------------------------
     * |    A        |    B        |   merged result
     * ------------------------------------------------
-    * | R, I_1 == 0 | R, I_2      |  R, gcd(I_1, I_2)
+    * | R, I_a == 0 | R, I_b      |  R, gcd(I_a, I_b)
     * ------------------------------------------------
-    * | R, I_1 == 0 | P, I_2      |  R, I_2
+    * | R, I_a == 0 | P, I_b      |  R, I_b
     * ------------------------------------------------
-    * | R, I_1 > 0  | R, I_2      |  R, gcd(I_1, I_2)
+    * | R, I_a > 0  | R, I_b      |  R, gcd(I_a, I_b)
     * ------------------------------------------------
-    * | R, I_1 > 0  | P, I_2      |  R, I_1
+    * | R, I_a > 0  | P, I_b      |  R, I_a
     * ------------------------------------------------
-    * | R, I_1 = -1 | R, I_2      |  R, I_1
+    * | R, I_a = -1 | R, I_b      |  R, I_a
     * ------------------------------------------------
-    * | R, I_1 = -1 | P, I_2      |  R, I_1
+    * | R, I_a = -1 | P, I_b      |  R, I_a
     * ------------------------------------------------
-    * | P, I_1      | R, I_2 == 0 |  R, I_1
+    * | P, I_a      | R, I_b == 0 |  R, I_a
     * ------------------------------------------------
-    * | P, I_1      | R, I_2 > 0  |  R, I_2
+    * | P, I_a      | R, I_b > 0  |  R, I_b
     * ------------------------------------------------
-    * | P, I_1      | P, I_2 > 0  |  P, I_1
+    * | P, I_a      | P, I_b > 0  |  P, I_a
     * ------------------------------------------------
     */
   def mergeMiniBatchInterval(

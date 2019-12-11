@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.apache.flink.python.util.ResourceUtil.extractBasicDependenciesFromResource;
+import static org.apache.flink.python.util.ResourceUtil.extractBuiltInDependencies;
 
 /**
  * The program that extracts the internal python libraries and join their absolute paths to append to PYTHONPATH. it can
@@ -32,12 +32,11 @@ import static org.apache.flink.python.util.ResourceUtil.extractBasicDependencies
  */
 public class PythonResourceExtractor {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		String tmpdir = System.getProperty("java.io.tmpdir");
 
-		List<File> files = extractBasicDependenciesFromResource(
+		List<File> files = extractBuiltInDependencies(
 			tmpdir,
-			PythonResourceExtractor.class.getClassLoader(),
 			UUID.randomUUID().toString(),
 			true);
 
