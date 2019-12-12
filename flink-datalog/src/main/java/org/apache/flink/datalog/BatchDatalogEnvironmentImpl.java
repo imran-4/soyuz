@@ -35,6 +35,7 @@ import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.BatchTableEnvImpl;
 import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.Catalog;
 import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.CatalogManager;
@@ -69,6 +70,7 @@ import org.apache.flink.table.operations.PlannerQueryOperation;
 import org.apache.flink.table.operations.QueryOperation;
 import org.apache.flink.table.operations.TableSourceQueryOperation;
 import org.apache.flink.table.operations.utils.OperationTreeBuilder;
+import org.apache.flink.table.planner.PlanningConfigurationBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -97,12 +99,10 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 	private CatalogManager catalogManager;
 	private Executor executor;
 	private TableConfig tableConfig;
-	//	private Planner planner;
 	private ExecutionEnvironment executionEnvironment;
 	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
-//	private DatalogBatchOptimizer optimizer;
 
-	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, Planner planner, ExecutionEnvironment executionEnvironment, DatalogPlanningConfigurationBuilder planningConfigurationBuilder) {
+	public BatchDatalogEnvironmentImpl(CatalogManager catalogManager, TableConfig tableConfig, Executor executor, FunctionCatalog functionCatalog, ExecutionEnvironment executionEnvironment) {
 		super(executionEnvironment, tableConfig, catalogManager, new ModuleManager());
 //		super();
 		this.executionEnvironment = executionEnvironment;
@@ -110,7 +110,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
-//		this.planner = planner; //this should be an instance of FlinkDatalogPlanner
 		this.operationTreeBuilder = OperationTreeBuilder.create(
 			functionCatalog,
 			path -> {
@@ -119,7 +118,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 			},
 			false
 		);
-//		this.planningConfigurationBuilder = planningConfigurationBuilder;
 		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
 		this.planningConfigurationBuilder = new DatalogPlanningConfigurationBuilder(
 			tableConfig,
@@ -127,11 +125,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 			asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
 			expressionBridge,
 			this);
-
-//		this.optimizer = new DatalogBatchOptimizer(
-//			JFunction.func(() -> tableConfig.getPlannerConfig().unwrap(CalciteConfig.class).orElse(CalciteConfig.DEFAULT())),
-//			this.planningConfigurationBuilder
-//		);
 	}
 
 	public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
@@ -143,25 +136,13 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		Map<String, String> executorProperties = settings.toExecutorProperties();
 		Executor executor = ComponentFactoryService.find(ExecutorFactory.class, executorProperties)
 			.create(executorProperties);
-		Map<String, String> plannerProperties = settings.toPlannerProperties();
-//		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
-//			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);   //this should create FlinkDatalogPlanner
-
-//		DatalogPlanningConfigurationBuilder planningConfigurationBuilder =
-//			new DatalogPlanningConfigurationBuilder(
-//				tableConfig,
-//				functionCatalog,
-//				asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
-//				expressionBridge);
 
 		return new BatchDatalogEnvironmentImpl(
 			catalogManager,
 			tableConfig,
 			executor,
 			functionCatalog,
-			null,
-			executionEnvironment,
-			null//			planningConfigurationBuilder
+			executionEnvironment
 		);
 	}
 
@@ -173,9 +154,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		//todo: update catalog here, because the updated catalog will be needed in creating logical algebra (if we use scan() but may be it is not needed in transientScan()).
 		LogicalPlan plan = new LogicalPlan(this.getRelBuilder(), this.catalogManager);
 		plan.visit(andOrTreeNode);
-		assert andOrTreeNode != null;
 		RelNode relataionalAlgebra = plan.getLogicalPlan();
-//		DataSetRel dataSetRel = null;
 
 		if (null != relataionalAlgebra) {
 			return createTable(new PlannerQueryOperation(relataionalAlgebra));
@@ -427,23 +406,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		return explain(table, false);
 	}
 
-//	@Override
-//	public String explain(Table table, boolean extended) {
-//		return planner.explain(Collections.singletonList(table.getQueryOperation()), extended);
-//	}
-//
-//	@Override
-//	public String explain(boolean extended) {
-//		List<Operation> operations = bufferedModifyOperations.stream()
-//			.map(o -> (Operation) o).collect(Collectors.toList());
-//		return planner.explain(operations, extended);
-//	}
-//
-//	@Override
-//	public String[] getCompletionHints(String statement, int position) {
-//		return planner.getCompletionHints(statement, position);
-//	}
-
 	@Override
 	public Table sqlQuery(String query) {
 		throw new UnsupportedOperationException("This implementation is only for Datalog queries, not SQL queries. Use Table API for SQL queries.");
@@ -544,20 +506,8 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 		TableSourceValidation.validateTableSource(tableSource);
 	}
 
-//	private void translate(List<ModifyOperation> modifyOperations) {
-//		List<Transformation<?>> transformations = planner.translate(modifyOperations);
-//		executor.apply(transformations);
-//	}
-//
-//	private void buffer(List<ModifyOperation> modifyOperations) {
-//		bufferedModifyOperations.addAll(modifyOperations);
-//	}
-
-	public Option<CatalogQueryOperation> scanInternal(String... tablePath) {
+	private Option<CatalogQueryOperation> scanInternal(String... tablePath) {
 		return super.scanInternal(UnresolvedIdentifier.of(tablePath));
-//		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(tablePath);
-//		return catalogManager.getTable(objectIdentifier)
-//			.map((t) -> new CatalogQueryOperation(objectIdentifier, t.getSchema()));
 	}
 
 	private <T> DataSetQueryOperation<T> asQueryOperation(DataSet<T> dataSet, Optional<List<Expression>> fields) {
@@ -572,57 +522,12 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvImpl implements Ba
 			typeInfoSchema.toTableSchema());
 	}
 
+	@Override
 	public FlinkDatalogPlannerImpl getFlinkPlanner() {
 		String currentCatalogName = catalogManager.getCurrentCatalog();
 		String currentDatabase = catalogManager.getCurrentDatabase();
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
 	}
-//
-//	public FlinkDatalogPlannerImpl getFlinkPlanner() {
-//		String currentCatalogName = catalogManager.getCurrentCatalog();
-//		String currentDatabase = catalogManager.getCurrentDatabase();
-//		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
-//	}
-
-//	public <T> DataSet<T> translate(Table table, TypeInformation<T> tpe) {
-//		QueryOperation queryOperation = table.getQueryOperation();
-//		RelNode relNode = getRelBuilder().tableOperation(queryOperation).build();
-//		var dataSetPlan = optimizer.optimize(relNode);
-//		return translate(dataSetPlan, getTableSchema(queryOperation.getTableSchema().getFieldNames(), dataSetPlan), tpe);
-//	}
-//
-//	public <T> DataSet<T> translate(RelNode logicalPlan, TableSchema logicalType, TypeInformation<T> tpe) {
-//		validateInputTypeInfo(tpe);
-//		if (logicalPlan instanceof DataSetRel) {
-//			var node = (DataSetRel) logicalPlan;
-//			var plan = node.translateToPlan(this, new BatchQueryConfig());
-//			var conversion =
-//				getConversionMapper(
-//					plan.getType(),
-//					logicalType,
-//					tpe,
-//					"DataSetSinkConversion");
-//			if (conversion.isEmpty()) {
-//				DataSet<T> dataSet = (DataSet<T>) plan;
-//				return dataSet;
-//			}
-//			Optional<Optional<MapFunction<Row, T>>> mapFunction = Optional.of(conversion);
-//			return plan.map(mapFunction.get().orElseThrow())
-//				.returns(tpe)
-//				.name("to: ${tpe.getTypeClass.getSimpleName}");
-//		} else {
-//			throw new TableException("Cannot generate DataSet due to an invalid logical plan. " +
-//				"This is a bug and should not happen. Please file an issue.");
-//		}
-//	}
-//
-//	private TableSchema getTableSchema(String[] originalNames, RelNode optimizedPlan) {
-//		DataType[] fieldTypes = optimizedPlan.getRowType().getFieldList().stream().map(RelDataTypeField::getType)
-//			.map(FlinkTypeFactory::toTypeInfo)
-//			.map(TypeConversions::fromLegacyInfoToDataType)
-//			.collect(Collectors.toList()).toArray(new DataType[0]);
-//		return TableSchema.builder().fields(originalNames, fieldTypes).build();
-//	}
 }
 
 

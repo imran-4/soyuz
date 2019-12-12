@@ -27,6 +27,7 @@ import org.apache.flink.datalog.parser.tree.predicate.TermData;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -245,7 +246,8 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
                     RexNode leftRexNode = relBuilder.field(2, 0, joinedNodeFields.get(l)); //peek=1, fields(peek+1). same.
                     RexNode rightRexNode = null;
                     if (((SimplePredicateData) currentNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
-                        rightRexNode = getField(getPredicateName(currentNode), r);
+//                        rightRexNode = getFieldForIDB(getPredicateName(currentNode), currentNodeFields.get(r));
+                        rightRexNode = getFieldForIDB(currentNode,r, false);
                     } else {
                         rightRexNode = relBuilder
                                 .field(1, getPredicateName(currentNode), currentNodeFields.get(r));
@@ -288,45 +290,83 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 
         RexNode leftRexNode, rightRexNode;
         if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
-            leftRexNode = getField(leftPredicateName, leftNodeFieldOrdinal);
+//            leftRexNode = getFieldForIDB(leftPredicateName, leftNodeFields.get(leftNodeFieldOrdinal));
+            leftRexNode = getFieldForIDB(leftNode, leftNodeFieldOrdinal, true);
         } else {
-            leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
+            if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
+                if (rightNode.getChildren().size() == 0) {
+                    leftRexNode = relBuilder.field(1, 0, leftNodeFields.get(leftNodeFieldOrdinal));
+                } else {
+                    leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
+                }
+            } else {
+                leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
+            }
         }
         if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
-            rightRexNode = getField(rightPredicateName, rightNodeFieldOrdinal);
+//            rightRexNode = getFieldForIDB(rightPredicateName, rightNodeFields.get(rightNodeFieldOrdinal));
+            rightRexNode = getFieldForIDB(rightNode, rightNodeFieldOrdinal, false);
+
         } else {
-            rightRexNode = relBuilder
-                    .field(1, 0, rightNodeFields.get(rightNodeFieldOrdinal));
+            if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
+                if (leftNode.getChildren().size() == 0) {
+                    rightRexNode = relBuilder.field(1, 0, rightNodeFields.get(rightNodeFieldOrdinal));
+                } else {
+                    rightRexNode = relBuilder.field(2, 1, rightNodeFields.get(rightNodeFieldOrdinal));
+                }
+            } else {
+                rightRexNode = relBuilder.field(2, 1, rightNodeFields.get(rightNodeFieldOrdinal));
+            }
         }
         return relBuilder.equals(leftRexNode, rightRexNode);
     }
 
-    private RexNode getField(String predicateName, int fieldOrdinal) {
+    private RexNode getFieldForIDB(OrNode idbNode, int fieldOrdinal, boolean isLeftNode) {
+        int sumNumber = 0;
+        if (idbNode.getChildren().size() == 0) {
+            sumNumber = 1;
+        } else {
+            sumNumber = 2;
+        }
+        int inputOrdinal;
+        if (isLeftNode) {
+            inputOrdinal = 0;
+        } else {
+            inputOrdinal = 1;
+        }
         for (int x = 0; ; x++) {
-            if (relBuilder.peek(x).getId() == idbNameIdMapping.get(predicateName)) {
-                return relBuilder.field(x + 1, 0, fieldOrdinal); //not sure about input ordinal (i.e. 2nd parameter)
+            if (relBuilder.peek(x).getId() == idbNameIdMapping.get(idbNode.getPredicateData().getPredicateName())) {
+                return relBuilder.field(x + sumNumber, inputOrdinal, fieldOrdinal);
             }
         }
     }
 
-//    private RexNode getField(String predicateName, String fieldName) {
+//    private RexNode getFieldForIDB(String predicateName, String fieldName) {
 //        for (int x = 0; ; x++) {
-//            List<RelOptTable> matchingTables = getTablesAtPosition(predicateName, x);
-//            for (var t : matchingTables) {
-//                if (relBuilder.peek(x).getRowType().getFieldNames().contains(fieldName)) {
-//                    return relBuilder.field(x + 1, predicateName, fieldName);
-//                }
+//            if (relBuilder.peek(x).getId() == idbNameIdMapping.get(predicateName)) {
+//                return relBuilder.field(x + 2, predicateName, fieldName);
 //            }
 //        }
 //    }
 
-//    private List<RelOptTable> getTablesAtPosition(String predicateName, int x) {
-//        return RelOptUtil
-//                .findTables(relBuilder.peek(x))
-//                .stream()
-//                .filter(table -> table.getQualifiedName().get(table.getQualifiedName().size() - 1).equals(predicateName))
-//                .collect(Collectors.toList());
-//    }
+    private RexNode getField(String predicateName, String fieldName) {
+        for (int x = 0; ; x++) {
+            List<RelOptTable> matchingTables = getTablesAtPosition(predicateName, x);
+            for (var t : matchingTables) {
+                if (relBuilder.peek(x).getRowType().getFieldNames().contains(fieldName)) {
+                    return relBuilder.field(x + 1, predicateName, fieldName);
+                }
+            }
+        }
+    }
+
+    private List<RelOptTable> getTablesAtPosition(String predicateName, int x) {
+        return RelOptUtil
+                .findTables(relBuilder.peek(x))
+                .stream()
+                .filter(table -> table.getQualifiedName().get(table.getQualifiedName().size() - 1).equals(predicateName))
+                .collect(Collectors.toList());
+    }
 
     private String getPredicateName(OrNode orNode) {
         return orNode.getPredicateData().getPredicateName();

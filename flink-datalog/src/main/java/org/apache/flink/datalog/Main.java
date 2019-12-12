@@ -70,14 +70,16 @@ public class Main {
 			"sg(X,Y):-arc(A,X),sg(A,B),arc(X,Y).\n";
 		String query3 = "sg(X,Y)?";
 
-		String inputProgram4 =  "tc(X,Y):-arc(X,Y).\n"+ "tc(X,Y):-graph(X,Z), tc(Z,Y).";
-		String query4 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
+		String inputProgram4 =  "tc(X,Y):-arc(X,Y).\n"+ "tc1(X,Y):-graph(X,Z), tc(Z,Y).";
+		String query4 = "tc1(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
-		String inputProgram5 =  "tc(X,Y):-graph(X,Y), graph(Z,Y).";
+		String inputProgram5 =  "tc(X,Y):-graph(X,Z), graph(Z,Y).";
 		String query5 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
+		String inputProgram6 =  "tc(X,Y):-graph(X,Y).\n"+ "tc(X,Y):-graph(X,Z), tc(Z,Y).";
+		String query6 = "tc(X,Y)?"; // simple "select v1,v2 from graph   " query (no recursion involved).
 
-		Table queryResult = datalogEnv.datalogQuery(inputProgram5, query5);
+		Table queryResult = datalogEnv.datalogQuery(inputProgram6, query6);
 		List<Tuple2<String, String>> collectedData = null;
 		try {
 			DataSet<Tuple2<String, String>> dataSet2 = datalogEnv.toDataSet(queryResult, dataSet1.getType());
