@@ -145,7 +145,6 @@ object FlinkRuleSets {
     FlinkLogicalWindowTableAggregate.CONVERTER,
     FlinkLogicalTableSpool.CONVERTER,
     FlinkLogicalRepeatUnion.CONVERTER,
-//    FlinkLogicalProject.CONVERTER,
     FlinkLogicalTransientScan.CONVERTER
   )
 
@@ -214,7 +213,6 @@ object FlinkRuleSets {
     BatchTableSourceScanRule.INSTANCE,
     DataSetRepeatUnionRule.INSTANCE,
     DataSetTableSpoolRule.INSTANCE,
-//    DataSetProjectRule.INSTANCE,
     DataSetTransientTableScanRule.INSTANCE
   )
 

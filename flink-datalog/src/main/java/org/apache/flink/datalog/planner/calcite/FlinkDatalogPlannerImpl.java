@@ -44,8 +44,7 @@ public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl {
 		FrameworkConfig frameworkConfig,
 		Function<Boolean, CatalogReader> catalogReaderSupplier,
 		RelOptPlanner planner,
-		FlinkTypeFactory typeFactory,
-		FlinkRelBuilder flinkRelBuilder) {
+		FlinkTypeFactory typeFactory) {
 		super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
 
 	}

@@ -115,16 +115,8 @@ public class DatalogPlanningConfigurationBuilder extends PlanningConfigurationBu
 				planner,
 				new RexBuilder(typeFactory));
 		RelOptSchema relOptSchema = createCatalogReader(false, currentCatalog, currentDatabase);
-		Context chain = Contexts.chain(
-				context,
-				Contexts.of(RelFactories.expandingScanFactory(
-						createFlinkPlanner(currentCatalog, currentDatabase),
-						RelFactories.DEFAULT_TABLE_SCAN_FACTORY)),
-				Contexts.of(RelFactories.DEFAULT_REPEAT_UNION_FACTORY),
-				Contexts.of(RelFactories.DEFAULT_SPOOL_FACTORY)
-		);
 
-		return new FlinkRelBuilder(chain, cluster, relOptSchema, expressionBridge);
+		return new FlinkRelBuilder(context, cluster, relOptSchema, expressionBridge);
     }
 
     @Override
