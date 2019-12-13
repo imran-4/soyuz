@@ -25,10 +25,12 @@ import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.TableScan
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.calcite.schema.TransientTable
-import org.apache.calcite.schema.impl.ListTransientTable
+import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
+import org.apache.flink.table.plan.schema.RowSchema
 import org.apache.flink.types.Row
 
 class DataSetTransientTableScan(cluster: RelOptCluster,
@@ -38,7 +40,7 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
                                 selectedFields: Option[Array[String]]
                                )
   extends TableScan(cluster, traitSet, table)
-    with DataSetRel {
+    with BatchScan {
 
   override def deriveRowType(): RelDataType = table.getRowType
 
@@ -50,11 +52,11 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
 
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
     println(">>>>>>>>>>>>>>>>>>>>>>>++++++++++++++++++++++ INSIDE TRANSIENTTABLESCAN...")
+    val schema = new RowSchema(deriveRowType)
+    val config = tableEnv.getConfig
 
-    //    val schema = new RowSchema(deriveRowType)
-    //    val config = tableEnv.getConfig
-    //    convertToInternalRow(schema, tableSource1.asInstanceOf[DataSet[Any]], List(1, 2).toArray, config, Option.empty)
-    table.asInstanceOf[DataSet[Row]]
+    convertToInternalRow(schema, tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("tc"), classOf[Row]), List(1, 2).toArray, config, Option.empty)
+    //    table.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
     //
 

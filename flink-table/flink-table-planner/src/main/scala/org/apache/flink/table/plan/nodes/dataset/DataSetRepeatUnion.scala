@@ -68,8 +68,9 @@ class DataSetRepeatUnion(
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
 
     tableEnv match {
-      case impl: BatchTableEnvironmentImpl =>
-        tableEnv.registerTable("tc", impl.fromDataSet(seedDs))
+      case btei: BatchTableEnvironmentImpl =>
+//        btei.registerDataSet("tc", seedDs)
+        btei.registerTable("tc", btei.fromDataSet(seedDs))
       case _ =>
     }
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
