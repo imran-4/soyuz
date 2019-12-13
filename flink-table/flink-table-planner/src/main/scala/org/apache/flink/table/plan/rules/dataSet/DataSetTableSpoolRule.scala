@@ -37,7 +37,7 @@ class DataSetTableSpoolRule
     val input = RelOptRule.convert(tableSpool.getInput, FlinkConventions.DATASET)
 
     new DataSetTableSpool(
-      input.getCluster,
+      rel.getCluster,
       traitSet,
       input,
       tableSpool.readType,

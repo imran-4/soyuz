@@ -59,8 +59,8 @@ private class FlinkLogicalTableSpoolConverter
     val tableSpool = rel.asInstanceOf[Spool]
     val traitSet = rel.getTraitSet.replace(FlinkConventions.LOGICAL)
     val inputTable = RelOptRule.convert(tableSpool.getInput, FlinkConventions.LOGICAL)
-    //    new FlinkLogicalTableSpool(inputTable.getCluster, traitSet, inputTable, Spool.Type.LAZY, Spool.Type.LAZY)
-    new FlinkLogicalTableSpool(inputTable.getCluster, traitSet, inputTable, tableSpool.readType, tableSpool.writeType)
+
+    new FlinkLogicalTableSpool(rel.getCluster, traitSet, inputTable, tableSpool.readType, tableSpool.writeType)
 
   }
 }

@@ -17,13 +17,15 @@
 
 package org.apache.flink.table.plan.rules.dataSet
 
-import org.apache.calcite.plan.{RelOptRule, RelTraitSet}
+import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.convert.ConverterRule
+import org.apache.calcite.rel.core.TableScan
 import org.apache.calcite.schema.impl.ListTransientTable
 import org.apache.flink.table.plan.nodes.FlinkConventions
 import org.apache.flink.table.plan.nodes.dataset.{BatchTableSourceScan, DataSetTransientTableScan}
 import org.apache.flink.table.plan.nodes.logical.{FlinkLogicalDataSetScan, FlinkLogicalTransientScan}
+import org.apache.flink.table.plan.schema.TableSourceTable
 
 class DataSetTransientTableScanRule extends ConverterRule(
   classOf[FlinkLogicalTransientScan],
@@ -31,30 +33,24 @@ class DataSetTransientTableScanRule extends ConverterRule(
   FlinkConventions.DATASET,
   "DataSetTransientTableScanRule") {
 
+  override def matches(call: RelOptRuleCall): Boolean = {
+    val scan: TableScan = call.rel(0).asInstanceOf[TableScan]
+
+    val sourceTable = scan.getTable.unwrap(classOf[ListTransientTable])
+    sourceTable != null
+  }
+
   def convert(rel: RelNode): RelNode = {
     val scan: FlinkLogicalTransientScan = rel.asInstanceOf[FlinkLogicalTransientScan]
     val traitSet: RelTraitSet = rel.getTraitSet.replace(FlinkConventions.DATASET)
 
     new DataSetTransientTableScan(
-      scan.getCluster,
+      rel.getCluster,
       traitSet,
       scan.getTable,
       scan.tableSource,
-      scan.selectedFields,
-      scan.getRowType,
-      scan.getTable.unwrap(classOf[ListTransientTable])
-    )
-
-    /*
-   cluster: RelOptCluster,
-                                traitSet: RelTraitSet,
-                                table: RelOptTable,
-                                tableSource: TransientTable,
-                                selectedFields: Option(Array[String]),
-                                rowType: RelDataType,
-                                val tableSource: ListTransientTable
-
-     */
+      scan.selectedFields
+     )
   }
 }
 

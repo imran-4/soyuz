@@ -43,7 +43,7 @@ class DataSetRepeatUnionRule
     val iterativeInput = RelOptRule.convert(repeatUnion.getIterativeRel, FlinkConventions.DATASET)
 
     new DataSetRepeatUnion(
-      repeatUnion.getCluster,
+      rel.getCluster,
       traitSet,
       seedInput,
       iterativeInput,

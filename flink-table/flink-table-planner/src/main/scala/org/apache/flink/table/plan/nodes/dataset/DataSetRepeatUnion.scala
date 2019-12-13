@@ -27,6 +27,7 @@ import org.apache.flink.api.common.functions.FilterFunction
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
 import org.apache.flink.types.Row
 
 import scala.collection.JavaConverters._
@@ -57,33 +58,37 @@ class DataSetRepeatUnion(
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-//    new DataSetRepeatUnion(cluster, traitSet, seed, iterative, true, -1, rowRelDataType)
     new DataSetRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1, rowRelDataType)
-
   }
 
   override def translateToPlan(
                                 tableEnv: BatchTableEnvImpl,
                                 queryConfig: BatchQueryConfig): DataSet[Row] = {
-    //todo: semi-naive evaluation algorithm would be implemented here....
-    // the following is just a sketch of the algorithm and not properly implemented and tested yet....
     val config = tableEnv.getConfig
-    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
+
+    tableEnv match {
+      case impl: BatchTableEnvironmentImpl =>
+        tableEnv.registerTable("tc", impl.fromDataSet(seedDs))
+      case _ =>
+    }
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-    var all = seedDs
 
-    val iterativeDsInitial = iterativeDs.iterate(1000)
+    var workSet: DataSet[Row] = seedDs
+    val iterativeDsInitial = iterativeDs.iterateDelta(workSet, Int.MaxValue)
 
-    var delta = iterativeDsInitial.filter(new FilterFunction[Row] {
-      override def filter(value: Row): Boolean = {
-        true
-      }
-    }).distinct()
+    val delta = iterativeDsInitial.getSolutionSet
+      .filter(new FilterFunction[Row] {
+        override def filter(value: Row): Boolean = {
+          true
+        }
+      })
+      .distinct()
+      .union(workSet)
 
-    all = all.union(delta)
+    workSet = workSet.union(delta)
 
-    val finalAll = iterativeDsInitial.closeWith(all)
-
+    val finalAll = iterativeDsInitial.closeWith(iterativeDs, workSet)
     finalAll
   }
 
