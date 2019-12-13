@@ -51,14 +51,10 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
   }
 
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
-    println(">>>>>>>>>>>>>>>>>>>>>>>++++++++++++++++++++++ INSIDE TRANSIENTTABLESCAN...")
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
 
     convertToInternalRow(schema, tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("tc"), classOf[Row]), List(1, 2).toArray, config, Option.empty)
     //    table.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-
-    //
-
   }
 }

@@ -23,12 +23,14 @@ import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.{RelNode, RelWriter}
-import org.apache.flink.api.common.functions.FilterFunction
+import org.apache.flink.api.common.functions.CoGroupFunction
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
+import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
+import org.apache.flink.util.Collector
 
 import scala.collection.JavaConverters._
 
@@ -65,32 +67,27 @@ class DataSetRepeatUnion(
                                 tableEnv: BatchTableEnvImpl,
                                 queryConfig: BatchQueryConfig): DataSet[Row] = {
     val config = tableEnv.getConfig
-    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
+    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct().asInstanceOf[DataSet[Row]]
 
     tableEnv match {
       case btei: BatchTableEnvironmentImpl =>
-//        btei.registerDataSet("tc", seedDs)
         btei.registerTable("tc", btei.fromDataSet(seedDs))
       case _ =>
     }
-    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
 
-    var workSet: DataSet[Row] = seedDs
-    val iterativeDsInitial = iterativeDs.iterateDelta(workSet, Int.MaxValue)
+    seedDs.union(iterativeDs).distinct().print()  //this gives correct results
 
-    val delta = iterativeDsInitial.getSolutionSet
-      .filter(new FilterFunction[Row] {
-        override def filter(value: Row): Boolean = {
-          true
-        }
-      })
-      .distinct()
-      .union(workSet)
-
-    workSet = workSet.union(delta)
-
-    val finalAll = iterativeDsInitial.closeWith(iterativeDs, workSet)
-    finalAll
+    //todo: fix this...
+    var all = seedDs
+    val workingSet: DataSet[Row] = iterativeDs
+    val solutionSet: DataSet[Row] = seedDs
+    val maxIterations: Int = 100 //Int.MaxValue
+    val iteration = solutionSet.iterateDelta(workingSet, maxIterations,0)
+    val deltas = iteration.getWorkset.coGroup(iteration.getSolutionSet).where( 0).equalTo(0).`with`(new MinusCoGroupFunction[Row](true)).distinct() //no subtract operator for dataset so now using coGroup...
+    all = all.union(deltas)
+    val result = iteration.closeWith(all, deltas)
+//    result.print()
+    result
   }
-
 }
