@@ -76,18 +76,18 @@ class DataSetRepeatUnion(
     }
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
 
-    seedDs.union(iterativeDs).distinct().print()  //this gives correct results
-
-    //todo: fix this...
-    var all = seedDs
     val workingSet: DataSet[Row] = iterativeDs
     val solutionSet: DataSet[Row] = seedDs
-    val maxIterations: Int = 100 //Int.MaxValue
-    val iteration = solutionSet.iterateDelta(workingSet, maxIterations,0)
-    val deltas = iteration.getWorkset.coGroup(iteration.getSolutionSet).where( 0).equalTo(0).`with`(new MinusCoGroupFunction[Row](true)).distinct() //no subtract operator for dataset so now using coGroup...
-    all = all.union(deltas)
-    val result = iteration.closeWith(all, deltas)
-//    result.print()
+    val maxIterations: Int = Int.MaxValue
+    val iteration = solutionSet.iterateDelta(workingSet, 100, (0 until seedDs.getType.getTotalFields):_*)
+    val deltas = iteration.getWorkset
+      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset so now using coGroup...
+      .where((0 until seedDs.getType.getTotalFields):_*)
+      .equalTo((0 until seedDs.getType.getTotalFields):_*)
+      .`with`(new MinusCoGroupFunction[Row](true))
+      .distinct()
+    val newSolutionSet = iteration.getWorkset.union(deltas)
+    val result = iteration.closeWith(newSolutionSet, deltas)
     result
   }
 }

@@ -40,7 +40,7 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
                                 selectedFields: Option[Array[String]]
                                )
   extends TableScan(cluster, traitSet, table)
-    with BatchScan {
+    with DataSetRel {
 
   override def deriveRowType(): RelDataType = table.getRowType
 
@@ -54,7 +54,8 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
 
-    convertToInternalRow(schema, tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("tc"), classOf[Row]), List(1, 2).toArray, config, Option.empty)
+    tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from(String.join(".", table.getQualifiedName)), classOf[Row])
+//    convertToInternalRow(schema, tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("tc"), classOf[Row]), List(1, 2).toArray, config, Option.empty)
     //    table.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
   }
 }
