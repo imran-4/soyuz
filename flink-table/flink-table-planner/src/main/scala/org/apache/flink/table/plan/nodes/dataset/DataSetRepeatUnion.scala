@@ -70,29 +70,39 @@ class DataSetRepeatUnion(
     val config = tableEnv.getConfig
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct().asInstanceOf[DataSet[Row]]
 
-    updateCatalog(tableEnv, seedDs)
-    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
+    updateCatalog(tableEnv, seedDs, "tc")
 
-    val workingSet: DataSet[Row] = iterativeDs
+    val workingSet: DataSet[Row] =  iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
 
-    val maxIterations: Int = 1000 //Int.MaxValue
-    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields):_*)
+    val maxIterations: Int = Int.MaxValue
+    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields):_*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
+
     val deltas = iteration.getWorkset
-      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, so now using coGroup...
+      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
       .where((0 until seedDs.getType.getTotalFields):_*)
-      .equalTo((0 until seedDs.getType.getTotalFields):_*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
 
-    val newWorkSet = iteration.getWorkset.union(deltas)
+    updateCatalog(tableEnv, deltas, "tc")
+    val delta = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
+      .where((0 until seedDs.getType.getTotalFields):_*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
+      .`with`(new MinusCoGroupFunction[Row](true))
+      .distinct()
 
-    updateCatalog(tableEnv, newWorkSet)
-    val result = iteration.closeWith(deltas, newWorkSet)
+    val newWorkSet = delta.coGroup(iteration.getWorkset)
+      .where((0 until seedDs.getType.getTotalFields):_*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
+      .`with`(new MinusCoGroupFunction[Row](true))
+      .distinct()
+    val result = iteration.closeWith(delta, newWorkSet) //sending first parameter(solutionSet) delta means it will union it with solution set.
     result
   }
 
-  private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row]): Unit = {
+  private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row], tableName: String): Unit = {
     tableEnv match {
       case btei: BatchTableEnvironmentImpl =>
         if (btei.getCatalog(btei.getCurrentCatalog).get().tableExists(new ObjectPath(btei.getCurrentDatabase, "tc"))) {
@@ -100,9 +110,9 @@ class DataSetRepeatUnion(
           val mergedDataSets = existingDataSet.asInstanceOf[DataSet[Row]].union(ds).distinct()
 
           btei.getCatalog(btei.getCurrentCatalog).get().dropTable(new ObjectPath(btei.getCurrentDatabase, "tc"), true)
-          btei.registerTable("tc", btei.fromDataSet(mergedDataSets))
+          btei.registerTable(tableName, btei.fromDataSet(mergedDataSets))
         } else {
-          btei.registerTable("tc", btei.fromDataSet(ds)) //if this table already exists, then update the dataset in that table... otherwise add the table.
+          btei.registerTable(tableName, btei.fromDataSet(ds)) //if this table already exists, then update the dataset in that table... otherwise add the table.
         }
       case _ =>
     }
