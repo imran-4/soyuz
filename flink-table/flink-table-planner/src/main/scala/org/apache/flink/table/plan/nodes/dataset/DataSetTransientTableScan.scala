@@ -30,7 +30,9 @@ import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
+import org.apache.flink.table.catalog.ObjectPath
 import org.apache.flink.table.plan.schema.RowSchema
+import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
 
 class DataSetTransientTableScan(cluster: RelOptCluster,
@@ -53,9 +55,7 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
-
-    tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from(String.join(".", table.getQualifiedName)), classOf[Row])
-//    convertToInternalRow(schema, tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("tc"), classOf[Row]), List(1, 2).toArray, config, Option.empty)
-    //    table.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val ds = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from(String.join(".", table.getQualifiedName)), classOf[Row])
+    ds
   }
 }

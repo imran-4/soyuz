@@ -28,6 +28,7 @@ import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
+import org.apache.flink.table.catalog.ObjectPath
 import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
 import org.apache.flink.util.Collector
@@ -69,25 +70,41 @@ class DataSetRepeatUnion(
     val config = tableEnv.getConfig
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct().asInstanceOf[DataSet[Row]]
 
-    tableEnv match {
-      case btei: BatchTableEnvironmentImpl =>
-        btei.registerTable("tc", btei.fromDataSet(seedDs))
-      case _ =>
-    }
+    updateCatalog(tableEnv, seedDs)
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct()
 
     val workingSet: DataSet[Row] = iterativeDs
-    val solutionSet: DataSet[Row] = seedDs
-    val maxIterations: Int = Int.MaxValue
-    val iteration = solutionSet.iterateDelta(workingSet, 100, (0 until seedDs.getType.getTotalFields):_*)
+    val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
+
+    val maxIterations: Int = 1000 //Int.MaxValue
+    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields):_*)
     val deltas = iteration.getWorkset
-      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset so now using coGroup...
+      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, so now using coGroup...
       .where((0 until seedDs.getType.getTotalFields):_*)
       .equalTo((0 until seedDs.getType.getTotalFields):_*)
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
-    val newSolutionSet = iteration.getWorkset.union(deltas)
-    val result = iteration.closeWith(newSolutionSet, deltas)
+
+    val newWorkSet = iteration.getWorkset.union(deltas)
+
+    updateCatalog(tableEnv, newWorkSet)
+    val result = iteration.closeWith(deltas, newWorkSet)
     result
+  }
+
+  private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row]): Unit = {
+    tableEnv match {
+      case btei: BatchTableEnvironmentImpl =>
+        if (btei.getCatalog(btei.getCurrentCatalog).get().tableExists(new ObjectPath(btei.getCurrentDatabase, "tc"))) {
+          val existingDataSet = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
+          val mergedDataSets = existingDataSet.asInstanceOf[DataSet[Row]].union(ds).distinct()
+
+          btei.getCatalog(btei.getCurrentCatalog).get().dropTable(new ObjectPath(btei.getCurrentDatabase, "tc"), true)
+          btei.registerTable("tc", btei.fromDataSet(mergedDataSets))
+        } else {
+          btei.registerTable("tc", btei.fromDataSet(ds)) //if this table already exists, then update the dataset in that table... otherwise add the table.
+        }
+      case _ =>
+    }
   }
 }

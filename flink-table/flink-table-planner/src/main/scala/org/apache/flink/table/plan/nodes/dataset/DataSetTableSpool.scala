@@ -25,6 +25,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
+import org.apache.flink.table.catalog.{CatalogTableImpl, ObjectPath}
 import org.apache.flink.table.plan.schema.RowSchema
 import org.apache.flink.types.Row
 
@@ -48,9 +50,10 @@ class DataSetTableSpool(cluster: RelOptCluster,
   override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
-//    convertToInternalRow(schema, input.asInstanceOf[DataSet[Any]], List(1,2).toArray, config, None)
-    input.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-//        convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
+    //    convertToInternalRow(schema, input.asInstanceOf[DataSet[Any]], List(1,2).toArray, config, None)
+    val ds = input.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    //        convertToInternalRow(schema, inputDataSet.asInstanceOf[DataSet[Any]], fieldIdxs, config, None)
+    ds
   }
 
   override def copy(relTraitSet: RelTraitSet, relNode: RelNode, readType: Spool.Type, writeType: Spool.Type): Spool = {
