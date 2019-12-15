@@ -33,7 +33,6 @@ import org.junit.experimental.categories.Category;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -57,7 +56,6 @@ public class RecursiveQueriesTest {
                 .inBatchMode()
                 .build();
         datalogEnv = BatchDatalogEnvironment.create(env, settings);
-
     }
 
     /**
@@ -98,7 +96,6 @@ public class RecursiveQueriesTest {
                 "sg(X,Y):-graph(A,X),sg(A,B),graph(X,Y).\n";
         String query = "sg(X,Y)?";
 
-
         dataSet = env.fromElements(
                 new Tuple2<>("1", "2"),
                 new Tuple2<>("2", "3"),
@@ -106,7 +103,7 @@ public class RecursiveQueriesTest {
                 new Tuple2<>("2", "5"),
                 new Tuple2<>("5", "4"),
                 new Tuple2<>("1", "9"),
-                new Tuple2<>("2", "8")); //may be we need different datasets for each test...
+                new Tuple2<>("2", "8"));
         datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
         Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
         DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
@@ -137,20 +134,21 @@ public class RecursiveQueriesTest {
         String inputProgram = ""; //todo
         String query = "";
 
-		dataSet = env.fromElements(
-				new Tuple2<>("1", "2"),
-				new Tuple2<>("2", "3"),
-				new Tuple2<>("1", "4"),
-				new Tuple2<>("2", "5"),
-				new Tuple2<>("5", "4"),
-				new Tuple2<>("1", "9"),
-				new Tuple2<>("2", "8")); //may be we need different datasets for each test...
-		datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        dataSet = env.fromElements(
+                new Tuple2<>("1", "2"),
+                new Tuple2<>("2", "3"),
+                new Tuple2<>("1", "4"),
+                new Tuple2<>("2", "5"),
+                new Tuple2<>("5", "4"),
+                new Tuple2<>("1", "9"),
+                new Tuple2<>("2", "8"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
         Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
         DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
         List<Tuple2<String, String>> actual = resultDS.collect();
         List<Tuple2<String, String>> expected = List
-                .of(new Tuple2<>("", ""),
+                .of(
+                        new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
@@ -165,15 +163,26 @@ public class RecursiveQueriesTest {
     public void testConnectedComponents() throws Exception {
         String inputProgram = ""; //todo
         String query = "";
+
+        dataSet = env.fromElements(
+                new Tuple2<>("1", "2"),
+                new Tuple2<>("2", "3"),
+                new Tuple2<>("1", "4"),
+                new Tuple2<>("2", "5"),
+                new Tuple2<>("5", "4"),
+                new Tuple2<>("1", "9"),
+                new Tuple2<>("2", "8"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
         Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
         DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
         List<Tuple2<String, String>> actual = resultDS.collect();
         List<Tuple2<String, String>> expected = List
-                .of(new Tuple2<>("", ""),
+                .of(
+                        new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
                         new Tuple2<>("", ""),
                         new Tuple2<>("", ""));
-        assertEquals(actual, expected);
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
     }
 }

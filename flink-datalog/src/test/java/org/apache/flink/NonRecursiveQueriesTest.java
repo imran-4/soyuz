@@ -25,172 +25,218 @@ import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * This class contains test cases for non recursive queries.
  */
 @Category(NonRecursiveTests.class)
 public class NonRecursiveQueriesTest {
-	private static BatchDatalogEnvironment datalogEnv;
-	private static DataSource<Tuple2<String, String>> dataSet;
+    private static ExecutionEnvironment env;
+    private static BatchDatalogEnvironment datalogEnv;
+    private static DataSource<Tuple2<String, String>> dataSet;
 
-	/**
-	 *
-	 */
-	@Before
-	public void initEnvs() {
-		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		EnvironmentSettings settings = EnvironmentSettings
-			.newInstance()
-			.useDatalogPlanner()
-			.inBatchMode()
-			.build();
-		datalogEnv = BatchDatalogEnvironment.create(env, settings);
-		dataSet = env.fromElements(
-			new Tuple2<>("a", "b"),
-			new Tuple2<>("b", "c"),
-			new Tuple2<>("c", "c"),
-			new Tuple2<>("c", "d")); //may be we need different datasets for each test...
-		datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
-	}
+    /**
+     *
+     */
+    @Before
+    public void initEnvs() {
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        EnvironmentSettings settings = EnvironmentSettings
+                .newInstance()
+                .useDatalogPlanner()
+                .inBatchMode()
+                .build();
+        datalogEnv = BatchDatalogEnvironment.create(env, settings);
+    }
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSelection() throws Exception {
-		String inputProgram = "sel(X,Y) :- graph(X,Y).\n";
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSelection() throws Exception {
+        String inputProgram = "sel(X,Y) :- graph(X,Y).\n";
+        String query = "sel(X,Y)?";
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSelectionAndFilering() throws Exception {
-		String inputProgram = "sel(X,Y) :- graph(X,Y), X!=a.\n";
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSimpleJoin() throws Exception {
-		String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y).\n";
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSimpleJoinAndFilter() throws Exception {
-		String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y), X!=Y.\n";
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSelectionAndFilering() throws Exception {
+        String inputProgram = "sel(X,Y) :- graph(X,Y), X!=a.\n";
+        String query = "sel(X,Y)?";
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSimpleUnion() throws Exception {
-		String inputProgram = "";//todo
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testUnionAndJoin() throws Exception {
-		String inputProgram = "";//todo
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSimpleJoin() throws Exception {
+        String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y).\n";
+        String query = "sel(X,Y)?";
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testUnionJoinFilter() throws Exception {
-		String inputProgram = "";//todo
-		String query = "sel(X,Y)?";
-		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-		DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-		List<Tuple2<String, String>> transitiveClosureActual = resultDS.collect();
-		List<Tuple2<String, String>> transitiveClosureExpected = List
-			.of(new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""),
-				new Tuple2<>("", ""));
-		assertEquals(transitiveClosureActual, transitiveClosureExpected);
-	}
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
+
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSimpleJoinAndFilter() throws Exception {
+        String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y), X!=Y.\n";
+        String query = "sel(X,Y)?";
+
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
+
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSimpleUnion() throws Exception {
+        String inputProgram = "";//todo
+        String query = "sel(X,Y)?";
+
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
+
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testUnionAndJoin() throws Exception {
+        String inputProgram = "";//todo
+        String query = "sel(X,Y)?";
+
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
+
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testUnionJoinFilter() throws Exception {
+        String inputProgram = "";//todo
+        String query = "sel(X,Y)?";
+
+        dataSet = env.fromElements(
+                new Tuple2<>("a", "b"),
+                new Tuple2<>("b", "c"),
+                new Tuple2<>("c", "c"),
+                new Tuple2<>("c", "d"));
+        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        List<Tuple2<String, String>> actual = resultDS.collect();
+        List<Tuple2<String, String>> expected = List
+                .of(new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""),
+                        new Tuple2<>("", ""));
+        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+    }
 }
