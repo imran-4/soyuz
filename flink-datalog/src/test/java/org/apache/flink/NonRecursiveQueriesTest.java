@@ -37,12 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * This class contains test cases for non recursive queries.
  */
-@Category(NonRecursiveTests.class)
 public class NonRecursiveQueriesTest {
-    private static ExecutionEnvironment env;
-    private static BatchDatalogEnvironment datalogEnv;
-    private static DataSource<Tuple2<String, String>> dataSet;
-
     /**
      *
      */
@@ -54,7 +49,7 @@ public class NonRecursiveQueriesTest {
                 .useDatalogPlanner()
                 .inBatchMode()
                 .build();
-        datalogEnv = BatchDatalogEnvironment.create(env, settings);
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
     }
 
     /**
@@ -65,7 +60,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "sel(X,Y) :- graph(X,Y).\n";
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -92,7 +95,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "sel(X,Y) :- graph(X,Y), X!=a.\n";
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -118,7 +129,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y).\n";
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -144,7 +163,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "sel(X,Y) :- graph(X,Z), graph(Z,Y), X!=Y.\n";
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -170,7 +197,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "";//todo
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -196,7 +231,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "";//todo
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+		DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -222,7 +265,15 @@ public class NonRecursiveQueriesTest {
         String inputProgram = "";//todo
         String query = "sel(X,Y)?";
 
-        dataSet = env.fromElements(
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		EnvironmentSettings settings = EnvironmentSettings
+				.newInstance()
+				.useDatalogPlanner()
+				.inBatchMode()
+				.build();
+		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+
+        DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),

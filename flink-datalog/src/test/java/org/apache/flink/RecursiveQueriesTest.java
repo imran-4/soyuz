@@ -20,14 +20,12 @@ package org.apache.flink;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,36 +36,26 @@ import static org.junit.Assert.assertTrue;
 /**
  * This class contains test cases for recursive queries.
  */
-@Category(RecursiveTests.class)
 public class RecursiveQueriesTest {
-    private static ExecutionEnvironment env;
-    private static BatchDatalogEnvironment datalogEnv;
-    private static DataSource<Tuple2<String, String>> dataSet;
-
-    /**
-     *
-     */
-    @BeforeClass
-    public static void initEnvs() {
-        env = ExecutionEnvironment.getExecutionEnvironment();
-        EnvironmentSettings settings = EnvironmentSettings
-                .newInstance()
-                .useDatalogPlanner()
-                .inBatchMode()
-                .build();
-        datalogEnv = BatchDatalogEnvironment.create(env, settings);
-    }
 
     /**
      * @throws Exception
      */
     @Test
     public void testTransitiveClosure() throws Exception {
-        String inputProgram = "tc(X,Y) :- graph(X,Y).\n"
-                + "tc(X,Y) :- graph(X,Z), tc(Z,Y).\n";
+        String inputProgram =
+                "tc(X,Y) :- graph(X,Y).\n"
+                        + "tc(X,Y) :- graph(X,Z), tc(Z,Y).\n";
         String query = "tc(X,Y)?";
 
-        dataSet = env.fromElements(
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        EnvironmentSettings settings = EnvironmentSettings
+                .newInstance()
+                .useDatalogPlanner()
+                .inBatchMode()
+                .build();
+        BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+        DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("a", "b"),
                 new Tuple2<>("b", "c"),
                 new Tuple2<>("c", "c"),
@@ -92,11 +80,19 @@ public class RecursiveQueriesTest {
      */
     @Test
     public void testSameGeneration() throws Exception {
-        String inputProgram = "sg(X,Y):-graph(P,X),graph(P,Y),X!=Y.\n" +
-                "sg(X,Y):-graph(A,X),sg(A,B),graph(X,Y).\n";
+        String inputProgram =
+                "sg(X,Y):-graph(P,X),graph(P,Y),X!=Y.\n" +
+                        "sg(X,Y):-graph(A,X),sg(A,B),graph(X,Y).\n";
         String query = "sg(X,Y)?";
 
-        dataSet = env.fromElements(
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        EnvironmentSettings settings = EnvironmentSettings
+                .newInstance()
+                .useDatalogPlanner()
+                .inBatchMode()
+                .build();
+        BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
+        DataSet<Tuple2<String, String>> dataSet = env.fromElements(
                 new Tuple2<>("1", "2"),
                 new Tuple2<>("2", "3"),
                 new Tuple2<>("1", "4"),
@@ -126,63 +122,68 @@ public class RecursiveQueriesTest {
         assertTrue(CollectionUtils.isEqualCollection(actual, expected));
     }
 
-    /**
-     * @throws Exception
-     */
-    @Test
-    public void testPeopleYouMayKnow() throws Exception {
-        String inputProgram = ""; //todo
-        String query = "";
+//    /**
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testConnectedComponents() throws Exception {
+//        String inputProgram =
+//				"";
+//        String query = "";
+//
+//        dataSet = env.fromElements(
+//                new Tuple2<>("1", "2"),
+//                new Tuple2<>("2", "3"),
+//                new Tuple2<>("1", "4"),
+//                new Tuple2<>("2", "5"),
+//                new Tuple2<>("5", "4"),
+//                new Tuple2<>("1", "9"),
+//                new Tuple2<>("2", "8"));
+//        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+//        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+//        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+//        List<Tuple2<String, String>> actual = resultDS.collect();
+//        List<Tuple2<String, String>> expected = List
+//                .of(
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""));
+//        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+//    }
 
-        dataSet = env.fromElements(
-                new Tuple2<>("1", "2"),
-                new Tuple2<>("2", "3"),
-                new Tuple2<>("1", "4"),
-                new Tuple2<>("2", "5"),
-                new Tuple2<>("5", "4"),
-                new Tuple2<>("1", "9"),
-                new Tuple2<>("2", "8"));
-        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
-        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-        List<Tuple2<String, String>> actual = resultDS.collect();
-        List<Tuple2<String, String>> expected = List
-                .of(
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""));
-        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
-    }
-
-    /**
-     * @throws Exception
-     */
-    @Test
-    public void testConnectedComponents() throws Exception {
-        String inputProgram = ""; //todo
-        String query = "";
-
-        dataSet = env.fromElements(
-                new Tuple2<>("1", "2"),
-                new Tuple2<>("2", "3"),
-                new Tuple2<>("1", "4"),
-                new Tuple2<>("2", "5"),
-                new Tuple2<>("5", "4"),
-                new Tuple2<>("1", "9"),
-                new Tuple2<>("2", "8"));
-        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
-        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
-        List<Tuple2<String, String>> actual = resultDS.collect();
-        List<Tuple2<String, String>> expected = List
-                .of(
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""),
-                        new Tuple2<>("", ""));
-        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
-    }
+//    /**
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testPeopleYouMayKnow() throws Exception {
+//        String inputProgram =
+//				"uarc(X, Y) :- graph(X, Y).\n" +
+//                "uarc(Y, X) :- graph(X, Y).\n" +
+//                "cnt(Y, Z, count〈X〉)) :- uarc(X, Y), uarc(X, Z), Y!= Z,~uarc(Y, Z).\n" +
+//                "pymk(X, W9, topk〈10, Z〉) :- cnt(X, $ID, Z), pages(X, W2, …, W9)."; // aggregations, and negations are not supported.
+//        String query = "pymk(X, Y,Z)?";
+//
+//        dataSet = env.fromElements(
+//                new Tuple2<>("1", "2"),
+//                new Tuple2<>("2", "3"),
+//                new Tuple2<>("1", "4"),
+//                new Tuple2<>("2", "5"),
+//                new Tuple2<>("5", "4"),
+//                new Tuple2<>("1", "9"),
+//                new Tuple2<>("2", "8"));
+//        datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+//        Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
+//        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+//        List<Tuple2<String, String>> actual = resultDS.collect();
+//        List<Tuple2<String, String>> expected = List
+//                .of(
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""),
+//                        new Tuple2<>("", ""));
+//        assertTrue(CollectionUtils.isEqualCollection(actual, expected));
+//    }
 }
