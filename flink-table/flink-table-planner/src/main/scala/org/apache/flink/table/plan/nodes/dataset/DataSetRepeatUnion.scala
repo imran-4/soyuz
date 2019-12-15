@@ -68,10 +68,10 @@ class DataSetRepeatUnion(
     val config = tableEnv.getConfig
     val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig).distinct().asInstanceOf[DataSet[Row]]
 
-    updateCatalog(tableEnv, seedDs, "tc")
+    updateCatalog(tableEnv, seedDs, "__TEMP")
 
     val workingSet: DataSet[Row] = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-    val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
+    val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("__TEMP"), classOf[Row])
 
     val maxIterations: Int = Int.MaxValue
     val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
@@ -83,7 +83,7 @@ class DataSetRepeatUnion(
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
 
-    updateCatalog(tableEnv, deltas, "tc")
+    updateCatalog(tableEnv, deltas, "__TEMP")
     val delta = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
       .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
       .where((0 until seedDs.getType.getTotalFields): _*)
@@ -103,11 +103,11 @@ class DataSetRepeatUnion(
   private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row], tableName: String): Unit = {
     tableEnv match {
       case btei: BatchTableEnvironmentImpl =>
-        if (btei.getCatalog(btei.getCurrentCatalog).get().tableExists(new ObjectPath(btei.getCurrentDatabase, "tc"))) {
-          val existingDataSet = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
+        if (btei.getCatalog(btei.getCurrentCatalog).get().tableExists(new ObjectPath(btei.getCurrentDatabase, tableName))) {
+          val existingDataSet = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from(tableName), classOf[Row])
           val mergedDataSets = existingDataSet.asInstanceOf[DataSet[Row]].union(ds).distinct()
 
-          btei.getCatalog(btei.getCurrentCatalog).get().dropTable(new ObjectPath(btei.getCurrentDatabase, "tc"), true)
+          btei.getCatalog(btei.getCurrentCatalog).get().dropTable(new ObjectPath(btei.getCurrentDatabase, tableName), true)
           btei.registerTable(tableName, btei.fromDataSet(mergedDataSets))
         } else {
           btei.registerTable(tableName, btei.fromDataSet(ds)) //if this table already exists, then update the dataset in that table... otherwise add the table.
