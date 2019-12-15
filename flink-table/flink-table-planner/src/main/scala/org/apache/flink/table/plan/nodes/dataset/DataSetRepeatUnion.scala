@@ -23,7 +23,6 @@ import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.{RelNode, RelWriter}
-import org.apache.flink.api.common.functions.CoGroupFunction
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
@@ -31,7 +30,6 @@ import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
 import org.apache.flink.table.catalog.ObjectPath
 import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
-import org.apache.flink.util.Collector
 
 import scala.collection.JavaConverters._
 
@@ -72,30 +70,30 @@ class DataSetRepeatUnion(
 
     updateCatalog(tableEnv, seedDs, "tc")
 
-    val workingSet: DataSet[Row] =  iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val workingSet: DataSet[Row] = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("tc"), classOf[Row])
 
     val maxIterations: Int = Int.MaxValue
-    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields):_*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
+    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
 
     val deltas = iteration.getWorkset
       .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
-      .where((0 until seedDs.getType.getTotalFields):_*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
+      .where((0 until seedDs.getType.getTotalFields): _*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
 
     updateCatalog(tableEnv, deltas, "tc")
     val delta = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
       .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
-      .where((0 until seedDs.getType.getTotalFields):_*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
+      .where((0 until seedDs.getType.getTotalFields): _*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
 
     val newWorkSet = delta.coGroup(iteration.getWorkset)
-      .where((0 until seedDs.getType.getTotalFields):_*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields):_*)
+      .where((0 until seedDs.getType.getTotalFields): _*)
+      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
       .`with`(new MinusCoGroupFunction[Row](true))
       .distinct()
     val result = iteration.closeWith(delta, newWorkSet) //sending first parameter(solutionSet) delta means it will union it with solution set.

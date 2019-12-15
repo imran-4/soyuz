@@ -250,7 +250,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
                         rightRexNode = getFieldForIDB(currentNode,r, false);
                     } else {
                         rightRexNode = relBuilder
-                                .field(1, getPredicateName(currentNode), currentNodeFields.get(r));
+                                .field(2, 1, currentNodeFields.get(r));
                     }
                     conditions.add(relBuilder.equals(leftRexNode, rightRexNode));
                 }
