@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package org.apache.flink;
+package org.apache.flink.datalog;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
