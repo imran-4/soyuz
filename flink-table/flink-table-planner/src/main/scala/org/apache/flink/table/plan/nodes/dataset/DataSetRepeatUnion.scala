@@ -70,33 +70,23 @@ class DataSetRepeatUnion(
 
     updateCatalog(tableEnv, seedDs, "__TEMP")
 
-    val workingSet: DataSet[Row] = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val workingSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("__TEMP"), classOf[Row])
     val solutionSet: DataSet[Row] = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.asInstanceOf[BatchTableEnvironmentImpl].from("__TEMP"), classOf[Row])
 
     val maxIterations: Int = Int.MaxValue
     val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
 
-    val deltas = iteration.getWorkset
-      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
-      .where((0 until seedDs.getType.getTotalFields): _*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
-      .`with`(new MinusCoGroupFunction[Row](true))
-      .distinct()
+    updateCatalog(tableEnv, iteration.getWorkset, "__TEMP")
+    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    updateCatalog(tableEnv, iterativeDs, "__TEMP")
 
-    updateCatalog(tableEnv, deltas, "__TEMP")
-    val delta = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-      .coGroup(iteration.getSolutionSet) //no subtract operator for dataset, that's why using coGroup...
+    val delta = iterativeDs
+      .coGroup(iteration.getSolutionSet)
       .where((0 until seedDs.getType.getTotalFields): _*)
       .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
-      .`with`(new MinusCoGroupFunction[Row](true))
-      .distinct()
+      .`with`(new MinusCoGroupFunction[Row](false))
 
-    val newWorkSet = delta.coGroup(iteration.getWorkset)
-      .where((0 until seedDs.getType.getTotalFields): _*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
-      .`with`(new MinusCoGroupFunction[Row](true))
-      .distinct()
-    val result = iteration.closeWith(delta, newWorkSet) //sending first parameter(solutionSet) delta means it will union it with solution set.
+    val result = iteration.closeWith(delta, delta) //sending first parameter(solutionSet) delta means it will union it with solution set.
     result
   }
 

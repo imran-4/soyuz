@@ -237,8 +237,8 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 
         List<String> currentNodeFields = getFieldNames(currentNode);
         List<String> joinedNodeFields = relBuilder.peek(1).getRowType().getFieldNames().stream().distinct().collect(Collectors.toList());
-        newNames.addAll(currentNodeFields);
         newNames.addAll(joinedNodeFields);
+        newNames.addAll(currentNodeFields);
 
         for (int l = 0; l < joinedNodeFields.size(); l++) {
             for (int r = 0; r < currentNodeFields.size(); r++) {
