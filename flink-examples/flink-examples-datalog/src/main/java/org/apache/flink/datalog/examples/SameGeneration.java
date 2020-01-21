@@ -53,6 +53,6 @@ public class SameGeneration {
 
         System.out.println(resultDS.count());
 //        resultDS.writeAsCsv(testFilePath + "_output");
-        env.execute("SG");
+
     }
 }

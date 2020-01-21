@@ -55,6 +55,6 @@ public class TransitiveClosure {
 
 //        resultDS.writeAsCsv(testFilePath+"_output");
         System.out.println(resultDS.count());
-        env.execute("TC");
+
     }
 }
