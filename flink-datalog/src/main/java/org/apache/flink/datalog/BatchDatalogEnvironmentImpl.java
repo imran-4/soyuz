@@ -29,6 +29,7 @@ import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.BatchQueryConfig;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.SqlParserException;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
@@ -91,7 +92,7 @@ import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
  *
  */
 public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl implements BatchDatalogEnvironment {
-    private final OperationTreeBuilder operationTreeBuilder;
+//    private final OperationTreeBuilder operationTreeBuilder;
     private final FunctionCatalog functionCatalog;
     private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
     private CatalogManager catalogManager;
@@ -107,14 +108,15 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
         this.tableConfig = tableConfig;
         this.functionCatalog = functionCatalog;
         this.catalogManager = catalogManager;
-        this.operationTreeBuilder = OperationTreeBuilder.create(
-                functionCatalog,
-                path -> {
-                    Optional<CatalogQueryOperation> catalogTableOperation = Optional.ofNullable(scanInternal(path).getOrElse(null));
-                    return catalogTableOperation.map(tableOperation -> new TableReferenceExpression(path, tableOperation));
-                },
-                false
-        );
+//        this.operationTreeBuilder = OperationTreeBuilder.create(
+//                functionCatalog,
+//                path -> {
+//                    Optional<CatalogQueryOperation> catalogTableOperation = Optional.ofNullable(scanInternal(path).getOrElse(null));
+//                    return catalogTableOperation.map(tableOperation -> new TableReferenceExpression(path, tableOperation));
+//                },
+//                false
+//        );
+
         ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
         this.planningConfigurationBuilder = new DatalogPlanningConfigurationBuilder(
                 tableConfig,
@@ -124,6 +126,13 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
                 this);
     }
 
+    /**
+     *
+     * @param executionEnvironment
+     * @param settings
+     * @param tableConfig
+     * @return
+     */
     public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
         CatalogManager catalogManager = new CatalogManager(
                 settings.getBuiltInCatalogName(),
@@ -143,6 +152,12 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
         );
     }
 
+    /**
+     *
+     * @param inputProgram
+     * @param query
+     * @return
+     */
     @Override
     public Table datalogQuery(String inputProgram, String query) {
         FlinkDatalogPlannerImpl datalogPlanner = getFlinkPlanner();
@@ -161,6 +176,12 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
         }
     }
 
+    /**
+     *
+     * @param name The name under which the function is registered.
+     * @param tableFunction The TableFunction to register.
+     * @param <T>
+     */
     @Override
     public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
         throw new UnsupportedOperationException("Not supported."); //there are no functions in datalog
@@ -495,7 +516,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
         return TableImpl.createTable(
                 this,
                 tableOperation,
-                operationTreeBuilder,
+                super.operationTreeBuilder(),
                 functionCatalog);
     }
 

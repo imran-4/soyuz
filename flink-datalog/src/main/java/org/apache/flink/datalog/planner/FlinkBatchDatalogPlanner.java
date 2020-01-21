@@ -47,6 +47,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlKind;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -110,7 +111,8 @@ public class FlinkBatchDatalogPlanner implements Planner {
 		LogicalPlan plan = new LogicalPlan(getFlinkRelBuilder(), this.catalogManager);
 		plan.visit(andOrTreeRootNode);
 		RelRoot relRoot = RelRoot.of(plan.getLogicalPlan(), SqlKind.SELECT);
-		return List.of(new PlannerQueryOperation(relRoot.project()));
+		return Arrays.asList(new Operation[]{new PlannerQueryOperation(relRoot.project())});
+//		return List.of(new PlannerQueryOperation(relRoot.project()));
 	}
 
 	@Override
@@ -120,7 +122,6 @@ public class FlinkBatchDatalogPlanner implements Planner {
 
 	@Override
 	public List<Transformation<?>> translate(List<ModifyOperation> modifyOperations) {
-		System.out.println("---------------******");
 		return modifyOperations
 			.stream()
 			.map(this::translate)

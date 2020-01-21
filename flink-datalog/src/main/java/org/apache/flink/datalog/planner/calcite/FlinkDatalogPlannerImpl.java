@@ -20,17 +20,10 @@ package org.apache.flink.datalog.planner.calcite;
 import org.apache.flink.datalog.parser.ParserManager;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.table.calcite.FlinkPlannerImpl;
-import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.calcite.FlinkTypeFactory;
 import org.apache.flink.table.catalog.CatalogReader;
-import org.apache.flink.table.planner.calcite.FlinkRelOptClusterFactory;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 
 import java.util.function.Function;
@@ -40,22 +33,35 @@ import java.util.function.Function;
  */
 public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl {
 
-	public FlinkDatalogPlannerImpl(
-		FrameworkConfig frameworkConfig,
-		Function<Boolean, CatalogReader> catalogReaderSupplier,
-		RelOptPlanner planner,
-		FlinkTypeFactory typeFactory) {
-		super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
+	/**
+	 *
+	 * @param frameworkConfig
+	 * @param catalogReaderSupplier
+	 * @param planner
+	 * @param typeFactory
+	 */
+    public FlinkDatalogPlannerImpl(
+            FrameworkConfig frameworkConfig,
+            Function<Boolean, CatalogReader> catalogReaderSupplier,
+            RelOptPlanner planner,
+            FlinkTypeFactory typeFactory) {
+        super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
 
-	}
+    }
 
-	public Node parse(String inputProgram, String query) {
-		try {
-			ParserManager parserManager = new ParserManager();
-			return parserManager.parse(inputProgram, query);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+	/**
+	 *
+	 * @param inputProgram
+	 * @param query
+	 * @return
+	 */
+    public Node parse(String inputProgram, String query) {
+        try {
+            ParserManager parserManager = new ParserManager();
+            return parserManager.parse(inputProgram, query);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

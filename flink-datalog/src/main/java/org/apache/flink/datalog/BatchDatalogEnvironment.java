@@ -41,10 +41,5 @@ public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableE
         return BatchDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
     }
 
-    /*
-     *
-     * */
-//	void evaluateDatalogRules(String program);
-
     Table datalogQuery(String inputProgram, String query);
 }
