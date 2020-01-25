@@ -1,20 +1,22 @@
-# Datalog Programs Execution in Apache Flink
 
-TODO
+<p align="center">
+  <img width="460" height="100" src="logo.jpg">
+</p>
 
-## Getting Started
-TODO
+# Cog
+
+Cog is a system to execute Datalog queries in Apache Flink.
+
 
 ### Prerequisites
 
-TODO
-
-```
-TODO
-```
-
+* Java 8 (or later)
+* Flink APIs
 
 ### Example
+
+The following is an example program that shows how Datalog queries can be written in order to be executed on Apache Flink:
+
 ```java
 ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env);
@@ -34,24 +36,20 @@ try {
 
 ### Experiments
 
-TODO
+Tested on a cluster of 9 machines (8 Flink TaskManagers and 1 Flink JobManager). 
+The following table shows test results: 
+
+<TODO: insert table>
 
 ## Deployment
 
-TODO
+It can be deployed on a (standalone or YARN) cluster or on a single machine. 
 
 ## Built With
 
 * [Maven](https://maven.apache.org/) - Dependency Management
 
-## Contributing
-
-TODO
-
-## Authors
-
-TODO
 
 ## License
 
-TODO
+This project is licensed under Apache 2.0.
