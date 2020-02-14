@@ -95,7 +95,7 @@ abstract class BatchTableEnvImpl(
     * @param tableSource The [[TableSource]] to register.
     */
   override protected def validateTableSource(tableSource: TableSource[_]): Unit = {
-    TableSourceValidation.validateTableSource(tableSource)
+    TableSourceValidation.validateTableSource(tableSource, tableSource.getTableSchema)
 
     if (!tableSource.isInstanceOf[BatchTableSource[_]] &&
         !tableSource.isInstanceOf[InputFormatTableSource[_]]) {
@@ -300,6 +300,9 @@ abstract class BatchTableEnvImpl(
 
     logicalPlan match {
       case node: DataSetRel =>
+        execEnv.configure(
+          config.getConfiguration,
+          Thread.currentThread().getContextClassLoader)
         val plan = node.translateToPlan(this, new BatchQueryConfig)
         val conversion =
           getConversionMapper(

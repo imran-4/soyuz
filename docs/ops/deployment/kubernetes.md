@@ -28,6 +28,8 @@ This page describes how to deploy a Flink job and session cluster on [Kubernetes
 * This will be replaced by the TOC
 {:toc}
 
+{% info %} This page describes deploying a [standalone](#cluster_setup.html) Flink session on top of Kubernetes. For information on native Kubernetes deployments read [here]({{ site.baseurl }}/ops/deployment/native_kubernetes.html).
+
 ## Setup Kubernetes
 
 Please follow [Kubernetes' setup guide](https://kubernetes.io/docs/setup/) in order to deploy a Kubernetes cluster.
@@ -129,7 +131,7 @@ data:
     jobmanager.rpc.port: 6123
     taskmanager.rpc.port: 6122
     jobmanager.heap.size: 1024m
-    taskmanager.memory.total-process.size: 1024m
+    taskmanager.memory.process.size: 1024m
   log4j.properties: |+
     log4j.rootLogger=INFO, file
     log4j.logger.akka=INFO

@@ -178,8 +178,7 @@ public class SqlToOperationConverter {
 		// set with properties
 		Map<String, String> properties = new HashMap<>();
 		sqlCreateTable.getPropertyList().getList().forEach(p ->
-			properties.put(((SqlTableOption) p).getKeyString().toLowerCase(),
-				((SqlTableOption) p).getValueString()));
+			properties.put(((SqlTableOption) p).getKeyString(), ((SqlTableOption) p).getValueString()));
 
 		TableSchema tableSchema = createTableSchema(sqlCreateTable);
 		String tableComment = sqlCreateTable.getComment().map(comment ->
@@ -229,8 +228,7 @@ public class SqlToOperationConverter {
 				Map<String, String> properties = new HashMap<>();
 				properties.putAll(originalCatalogTable.getProperties());
 				((SqlAlterTableProperties) sqlAlterTable).getPropertyList().getList().forEach(p ->
-					properties.put(((SqlTableOption) p).getKeyString().toLowerCase(),
-						((SqlTableOption) p).getValueString()));
+					properties.put(((SqlTableOption) p).getKeyString(), ((SqlTableOption) p).getValueString()));
 				CatalogTable catalogTable = new CatalogTableImpl(
 					originalCatalogTable.getSchema(),
 					originalCatalogTable.getPartitionKeys(),
@@ -259,15 +257,15 @@ public class SqlToOperationConverter {
 			FunctionLanguage language = parseLanguage(sqlCreateFunction.getFunctionLanguage());
 			CatalogFunction catalogFunction = new CatalogFunctionImpl(
 				sqlCreateFunction.getFunctionClassName().getValueAs(String.class),
-				language,
-				sqlCreateFunction.isTemporary());
+				language);
 
 			ObjectIdentifier identifier = catalogManager.qualifyIdentifier(unresolvedIdentifier);
 
 			return new CreateCatalogFunctionOperation(
 				identifier,
 				catalogFunction,
-				sqlCreateFunction.isIfNotExists()
+				sqlCreateFunction.isIfNotExists(),
+				sqlCreateFunction.isTemporary()
 			);
 		}
 	}
@@ -281,15 +279,15 @@ public class SqlToOperationConverter {
 		FunctionLanguage language = parseLanguage(sqlAlterFunction.getFunctionLanguage());
 		CatalogFunction catalogFunction = new CatalogFunctionImpl(
 			sqlAlterFunction.getFunctionClassName().getValueAs(String.class),
-			language,
-			sqlAlterFunction.isTemporary());
+			language);
 
 		UnresolvedIdentifier unresolvedIdentifier = UnresolvedIdentifier.of(sqlAlterFunction.getFunctionIdentifier());
 		ObjectIdentifier identifier = catalogManager.qualifyIdentifier(unresolvedIdentifier);
 		return new AlterCatalogFunctionOperation(
 			identifier,
 			catalogFunction,
-			sqlAlterFunction.isIfExists()
+			sqlAlterFunction.isIfExists(),
+			sqlAlterFunction.isTemporary()
 		);
 	}
 
@@ -306,9 +304,8 @@ public class SqlToOperationConverter {
 
 			return new DropCatalogFunctionOperation(
 				identifier,
-				sqlDropFunction.isTemporary(),
-				sqlDropFunction.isSystemFunction(),
-				sqlDropFunction.getIfExists()
+				sqlDropFunction.getIfExists(),
+				sqlDropFunction.isTemporary()
 			);
 		}
 	}
@@ -370,8 +367,7 @@ public class SqlToOperationConverter {
 		// set with properties
 		Map<String, String> properties = new HashMap<>();
 		sqlCreateDatabase.getPropertyList().getList().forEach(p ->
-			properties.put(((SqlTableOption) p).getKeyString().toLowerCase(),
-				((SqlTableOption) p).getValueString()));
+			properties.put(((SqlTableOption) p).getKeyString(), ((SqlTableOption) p).getValueString()));
 		CatalogDatabase catalogDatabase = new CatalogDatabaseImpl(properties, databaseComment);
 		return new CreateDatabaseOperation(catalogName, databaseName, catalogDatabase, ignoreIfExists);
 	}
@@ -414,8 +410,7 @@ public class SqlToOperationConverter {
 		}
 		// set with properties
 		sqlAlterDatabase.getPropertyList().getList().forEach(p ->
-			properties.put(((SqlTableOption) p).getKeyString().toLowerCase(),
-				((SqlTableOption) p).getValueString()));
+			properties.put(((SqlTableOption) p).getKeyString(), ((SqlTableOption) p).getValueString()));
 		CatalogDatabase catalogDatabase = new CatalogDatabaseImpl(properties, originCatalogDatabase.getComment());
 		return new AlterDatabaseOperation(catalogName, databaseName, catalogDatabase);
 	}

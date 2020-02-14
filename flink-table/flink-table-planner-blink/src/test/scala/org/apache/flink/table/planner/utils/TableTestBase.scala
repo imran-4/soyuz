@@ -66,10 +66,9 @@ import org.apache.calcite.rel.RelNode
 import org.apache.calcite.sql.parser.SqlParserPos
 import org.apache.calcite.sql.{SqlExplainLevel, SqlIntervalQualifier}
 import org.apache.commons.lang3.SystemUtils
-
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Rule
-import org.junit.rules.{ExpectedException, TestName}
+import org.junit.rules.{ExpectedException, TemporaryFolder, TestName}
 
 import _root_.java.math.{BigDecimal => JBigDecimal}
 import _root_.java.util
@@ -87,6 +86,11 @@ abstract class TableTestBase {
 
   // used for get test case method name
   val testName: TestName = new TestName
+
+  val _tempFolder = new TemporaryFolder
+
+  @Rule
+  def tempFolder: TemporaryFolder = _tempFolder
 
   @Rule
   def thrown: ExpectedException = expectedException
@@ -963,7 +967,7 @@ class TestingTableEnvironment private(
   // `<T, ACC> void registerFunction(String name, AggregateFunction<T, ACC> aggregateFunction);`
   // is added into TableEnvironment
   def registerFunction[T: TypeInformation](name: String, tf: TableFunction[T]): Unit = {
-    val typeInfo = UserFunctionsTypeHelper
+    val typeInfo = UserDefinedFunctionHelper
       .getReturnTypeOfTableFunction(tf, implicitly[TypeInformation[T]])
     functionCatalog.registerTempSystemTableFunction(
       name,
@@ -993,9 +997,9 @@ class TestingTableEnvironment private(
   private def registerUserDefinedAggregateFunction[T: TypeInformation, ACC: TypeInformation](
       name: String,
       f: UserDefinedAggregateFunction[T, ACC]): Unit = {
-    val typeInfo = UserFunctionsTypeHelper
+    val typeInfo = UserDefinedFunctionHelper
       .getReturnTypeOfAggregateFunction(f, implicitly[TypeInformation[T]])
-    val accTypeInfo = UserFunctionsTypeHelper
+    val accTypeInfo = UserDefinedFunctionHelper
       .getAccumulatorTypeOfAggregateFunction(f, implicitly[TypeInformation[ACC]])
     functionCatalog.registerTempSystemAggregateFunction(
       name,
@@ -1087,7 +1091,7 @@ object TestingTableEnvironment {
             settings.getBuiltInCatalogName, settings.getBuiltInDatabaseName))
     }
     val moduleManager = new ModuleManager
-    val functionCatalog = new FunctionCatalog(catalogMgr, moduleManager)
+    val functionCatalog = new FunctionCatalog(tableConfig, catalogMgr, moduleManager)
     val plannerProperties = settings.toPlannerProperties
     val executorProperties = settings.toExecutorProperties
     val executor = ComponentFactoryService.find(classOf[ExecutorFactory],

@@ -44,6 +44,9 @@ env:
   global:
     - cache-dir: $HOME/flink_download_cache
     - cache-btl: 30
+    - cache-download-max-retries: 3
+    - cache-download-attempt-timeout: 5
+    - cache-download-global-timeout: 10
     # Global variable to avoid hanging travis builds when downloading cache archives.
     - MALLOC_ARENA_MAX=2
     - DOCKER_COMPOSE_VERSION=1.22.0
@@ -351,7 +354,7 @@ jobs:
       name: e2e - checkpoints
     - if: type = cron
       env: PROFILE="-DincludeE2E=org.apache.flink.tests.util.categories.TravisGroup5"
-      script: ./tools/travis/nightly.sh split_container.sh
+      script: ./tools/travis/nightly.sh split_container.sh without-hadoop
       name: e2e - container
     - if: type = cron
       env: PROFILE="-DincludeE2E=org.apache.flink.tests.util.categories.TravisGroup6"

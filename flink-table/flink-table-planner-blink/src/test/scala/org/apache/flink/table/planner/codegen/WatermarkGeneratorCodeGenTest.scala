@@ -24,7 +24,7 @@ import org.apache.flink.table.api.TableConfig
 import org.apache.flink.table.catalog.{CatalogManager, FunctionCatalog, GenericInMemoryCatalog, ObjectIdentifier}
 import org.apache.flink.table.dataformat.{GenericRow, SqlTimestamp}
 import org.apache.flink.table.module.ModuleManager
-import org.apache.flink.table.planner.calcite.{FlinkPlannerImpl, FlinkTypeFactory}
+import org.apache.flink.table.planner.calcite.{FlinkContext, FlinkPlannerImpl, FlinkTypeFactory}
 import org.apache.flink.table.planner.catalog.CatalogManagerCalciteSchema
 import org.apache.flink.table.planner.delegation.PlannerContext
 import org.apache.flink.table.planner.runtime.utils.JavaUserDefinedScalarFunctions.JavaFunc5
@@ -45,11 +45,12 @@ import java.util.Collections
 class WatermarkGeneratorCodeGenTest {
 
   // mock FlinkPlannerImpl to avoid discovering TableEnvironment and Executor.
+  val config = new TableConfig
   val catalog = new GenericInMemoryCatalog("MockCatalog", "default")
   val catalogManager = new CatalogManager("builtin", catalog)
-  val functionCatalog = new FunctionCatalog(catalogManager, new ModuleManager)
+  val functionCatalog = new FunctionCatalog(config, catalogManager, new ModuleManager)
   val plannerContext = new PlannerContext(
-    new TableConfig,
+    config,
     functionCatalog,
     catalogManager,
     asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
@@ -129,7 +130,13 @@ class WatermarkGeneratorCodeGenTest {
         new IntType()
       ))
     val rowType = FlinkTypeFactory.toLogicalRowType(tableRowType)
-    val converter = planner.createSqlExprToRexConverter(tableRowType)
+    val converter = planner.createToRelContext()
+        .getCluster
+        .getPlanner
+        .getContext
+        .unwrap(classOf[FlinkContext])
+        .getSqlExprToRexConverterFactory
+        .create(tableRowType)
     val rexNode = converter.convertToRexNode(expr)
     val generated = WatermarkGeneratorCodeGenerator
       .generateWatermarkGenerator(new TableConfig(), rowType, rexNode)

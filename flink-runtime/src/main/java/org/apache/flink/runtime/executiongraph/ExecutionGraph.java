@@ -898,7 +898,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		while (true) {
 			JobStatus current = state;
 
-			if (current == JobStatus.RUNNING || current == JobStatus.CREATED) {
+			if (current == JobStatus.RUNNING || current == JobStatus.CREATED || current == JobStatus.RESTARTING) {
 				if (transitionState(current, JobStatus.CANCELLING)) {
 
 					// make sure no concurrent local actions interfere with the cancellation
@@ -935,16 +935,6 @@ public class ExecutionGraph implements AccessExecutionGraph {
 			// all vertices to be in their final state.
 			else if (current == JobStatus.FAILING) {
 				if (transitionState(current, JobStatus.CANCELLING)) {
-					return;
-				}
-			}
-			// All vertices have been cancelled and it's safe to directly go
-			// into the canceled state.
-			else if (current == JobStatus.RESTARTING) {
-				if (transitionState(current, JobStatus.CANCELED)) {
-					onTerminalState(JobStatus.CANCELED);
-
-					LOG.info("Canceled during restart.");
 					return;
 				}
 			}
@@ -1220,7 +1210,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 	//  State Transitions
 	// ------------------------------------------------------------------------
 
-	private boolean transitionState(JobStatus current, JobStatus newState) {
+	public boolean transitionState(JobStatus current, JobStatus newState) {
 		return transitionState(current, newState, null);
 	}
 
@@ -1260,7 +1250,7 @@ public class ExecutionGraph implements AccessExecutionGraph {
 		numberOfRestartsCounter.inc();
 	}
 
-	private void initFailureCause(Throwable t) {
+	public void initFailureCause(Throwable t) {
 		this.failureCause = t;
 		this.failureInfo = new ErrorInfo(t, System.currentTimeMillis());
 	}
