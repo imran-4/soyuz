@@ -26,7 +26,6 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.blob.VoidBlobWriter;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinator;
-import org.apache.flink.runtime.checkpoint.CheckpointRetentionPolicy;
 import org.apache.flink.runtime.checkpoint.StandaloneCheckpointRecoveryFactory;
 import org.apache.flink.runtime.checkpoint.hooks.TestMasterHook;
 import org.apache.flink.runtime.concurrent.ComponentMainThreadExecutorServiceAdapter;
@@ -36,8 +35,9 @@ import org.apache.flink.runtime.executiongraph.AccessExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionVertex;
 import org.apache.flink.runtime.executiongraph.ErrorInfo;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.executiongraph.failover.flip1.RestartPipelinedRegionStrategy;
+import org.apache.flink.runtime.executiongraph.failover.flip1.RestartPipelinedRegionFailoverStrategy;
 import org.apache.flink.runtime.executiongraph.failover.flip1.TestRestartBackoffTimeStrategy;
+import org.apache.flink.runtime.executiongraph.utils.SimpleAckingTaskManagerGateway;
 import org.apache.flink.runtime.executiongraph.utils.SimpleSlotProvider;
 import org.apache.flink.runtime.io.network.partition.NoOpJobMasterPartitionTracker;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
@@ -47,10 +47,7 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
-import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
-import org.apache.flink.runtime.jobgraph.tasks.JobCheckpointingSettings;
 import org.apache.flink.runtime.jobmanager.scheduler.NoResourceAvailableException;
-import org.apache.flink.runtime.messages.checkpoint.AcknowledgeCheckpoint;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.rest.handler.legacy.backpressure.VoidBackPressureStatsTracker;
 import org.apache.flink.runtime.scheduler.strategy.EagerSchedulingStrategy;
@@ -76,16 +73,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.flink.runtime.scheduler.SchedulerTestingUtils.acknowledgePendingCheckpoint;
+import static org.apache.flink.runtime.scheduler.SchedulerTestingUtils.enableCheckpointing;
+import static org.apache.flink.runtime.scheduler.SchedulerTestingUtils.getCheckpointCoordinator;
 import static org.apache.flink.util.ExceptionUtils.findThrowable;
 import static org.apache.flink.util.ExceptionUtils.findThrowableWithMessage;
 import static org.hamcrest.Matchers.contains;
@@ -443,9 +443,11 @@ public class DefaultSchedulerTest extends TestLogger {
 	}
 
 	@Test
-	public void abortPendingCheckpointsWhenRestartingTasks() {
+	public void abortPendingCheckpointsWhenRestartingTasks() throws Exception {
 		final JobGraph jobGraph = singleNonParallelJobVertexJobGraph();
 		enableCheckpointing(jobGraph);
+
+		final CountDownLatch checkpointTriggeredLatch = getCheckpointTriggeredLatch();
 
 		final DefaultScheduler scheduler = createSchedulerAndStartScheduling(jobGraph);
 
@@ -456,6 +458,7 @@ public class DefaultSchedulerTest extends TestLogger {
 		final CheckpointCoordinator checkpointCoordinator = getCheckpointCoordinator(scheduler);
 
 		checkpointCoordinator.triggerCheckpoint(System.currentTimeMillis(),  false);
+		checkpointTriggeredLatch.await();
 		assertThat(checkpointCoordinator.getNumberOfPendingCheckpoints(), is(equalTo(1)));
 
 		scheduler.updateTaskExecutionState(new TaskExecutionState(jobGraph.getJobID(), attemptId, ExecutionState.FAILED));
@@ -467,6 +470,8 @@ public class DefaultSchedulerTest extends TestLogger {
 	public void restoreStateWhenRestartingTasks() throws Exception {
 		final JobGraph jobGraph = singleNonParallelJobVertexJobGraph();
 		enableCheckpointing(jobGraph);
+
+		final CountDownLatch checkpointTriggeredLatch = getCheckpointTriggeredLatch();
 
 		final DefaultScheduler scheduler = createSchedulerAndStartScheduling(jobGraph);
 
@@ -482,6 +487,7 @@ public class DefaultSchedulerTest extends TestLogger {
 
 		// complete one checkpoint for state restore
 		checkpointCoordinator.triggerCheckpoint(System.currentTimeMillis(),  false);
+		checkpointTriggeredLatch.await();
 		final long checkpointId = checkpointCoordinator.getPendingCheckpoints().keySet().iterator().next();
 		acknowledgePendingCheckpoint(scheduler, checkpointId);
 
@@ -495,6 +501,8 @@ public class DefaultSchedulerTest extends TestLogger {
 		final JobGraph jobGraph = singleNonParallelJobVertexJobGraph();
 		final JobVertex onlyJobVertex = getOnlyJobVertex(jobGraph);
 		enableCheckpointing(jobGraph);
+
+		final CountDownLatch checkpointTriggeredLatch = getCheckpointTriggeredLatch();
 
 		final DefaultScheduler scheduler = createSchedulerAndStartScheduling(jobGraph);
 
@@ -511,6 +519,7 @@ public class DefaultSchedulerTest extends TestLogger {
 
 		// complete one checkpoint for state restore
 		checkpointCoordinator.triggerCheckpoint(System.currentTimeMillis(),  false);
+		checkpointTriggeredLatch.await();
 		final long checkpointId = checkpointCoordinator.getPendingCheckpoints().keySet().iterator().next();
 		acknowledgePendingCheckpoint(scheduler, checkpointId);
 
@@ -677,54 +686,6 @@ public class DefaultSchedulerTest extends TestLogger {
 			new TaskExecutionState(scheduler.getJobGraph().getJobID(), attemptId, ExecutionState.FINISHED));
 	}
 
-	private void acknowledgePendingCheckpoint(final SchedulerBase scheduler, final long checkpointId) throws Exception {
-		final CheckpointCoordinator checkpointCoordinator = getCheckpointCoordinator(scheduler);
-
-		for (ArchivedExecutionVertex executionVertex : scheduler.requestJob().getAllExecutionVertices()) {
-			final ExecutionAttemptID attemptId = executionVertex.getCurrentExecutionAttempt().getAttemptId();
-			final AcknowledgeCheckpoint acknowledgeCheckpoint = new AcknowledgeCheckpoint(
-				scheduler.getJobGraph().getJobID(),
-				attemptId,
-				checkpointId);
-			checkpointCoordinator.receiveAcknowledgeMessage(acknowledgeCheckpoint, "Unknown location");
-		}
-	}
-
-	private void enableCheckpointing(final JobGraph jobGraph) {
-		final List<JobVertexID> triggerVertices = new ArrayList<>();
-		final List<JobVertexID> ackVertices = new ArrayList<>();
-		final List<JobVertexID> commitVertices = new ArrayList<>();
-
-		for (JobVertex vertex : jobGraph.getVertices()) {
-			if (vertex.isInputVertex()) {
-				triggerVertices.add(vertex.getID());
-			}
-			commitVertices.add(vertex.getID());
-			ackVertices.add(vertex.getID());
-		}
-
-		jobGraph.setSnapshotSettings(
-			new JobCheckpointingSettings(
-				triggerVertices,
-				ackVertices,
-				commitVertices,
-				new CheckpointCoordinatorConfiguration(
-					Long.MAX_VALUE, // disable periodical checkpointing
-					10 * 60 * 1000,
-					0,
-					1,
-					CheckpointRetentionPolicy.NEVER_RETAIN_AFTER_TERMINATION,
-					false,
-					false,
-					0),
-				null));
-	}
-
-	private CheckpointCoordinator getCheckpointCoordinator(final SchedulerBase scheduler) {
-		// TODO: get CheckpointCoordinator from the scheduler directly after it is factored out from ExecutionGraph
-		return scheduler.getExecutionGraph().getCheckpointCoordinator();
-	}
-
 	private void waitForTermination(final DefaultScheduler scheduler) throws Exception {
 		scheduler.getTerminationFuture().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 	}
@@ -803,7 +764,7 @@ public class DefaultSchedulerTest extends TestLogger {
 			NettyShuffleMaster.INSTANCE,
 			NoOpJobMasterPartitionTracker.INSTANCE,
 			schedulingStrategyFactory,
-			new RestartPipelinedRegionStrategy.Factory(),
+			new RestartPipelinedRegionFailoverStrategy.Factory(),
 			testRestartBackoffTimeStrategy,
 			testExecutionVertexOperations,
 			executionVertexVersioner,
@@ -813,5 +774,23 @@ public class DefaultSchedulerTest extends TestLogger {
 	private void startScheduling(final SchedulerNG scheduler) {
 		scheduler.setMainThreadExecutor(ComponentMainThreadExecutorServiceAdapter.forMainThread());
 		scheduler.startScheduling();
+	}
+
+	/**
+	 * Since checkpoint is triggered asynchronously, we need to figure out when checkpoint is really
+	 * triggered.
+	 * Note that this should be invoked before scheduler initialized.
+	 *
+	 * @return the latch representing checkpoint is really triggered
+	 */
+	private CountDownLatch getCheckpointTriggeredLatch() {
+		final CountDownLatch checkpointTriggeredLatch = new CountDownLatch(1);
+		final SimpleAckingTaskManagerGateway taskManagerGateway = new SimpleAckingTaskManagerGateway();
+		testExecutionSlotAllocator.getLogicalSlotBuilder().setTaskManagerGateway(taskManagerGateway);
+		taskManagerGateway.setCheckpointConsumer(
+			(executionAttemptID, jobId, checkpointId, timestamp, checkpointOptions, advanceToEndOfEventTime) -> {
+				checkpointTriggeredLatch.countDown();
+			});
+		return checkpointTriggeredLatch;
 	}
 }

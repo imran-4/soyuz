@@ -43,6 +43,7 @@ import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTracker;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
+import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobmanager.scheduler.CoLocationConstraint;
 import org.apache.flink.runtime.jobmanager.scheduler.LocationPreferenceConstraint;
 import org.apache.flink.runtime.jobmanager.scheduler.NoResourceAvailableException;
@@ -53,17 +54,21 @@ import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SlotRequestId;
 import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.messages.TaskBackPressureResponse;
+import org.apache.flink.runtime.operators.coordination.OperatorEvent;
+import org.apache.flink.runtime.operators.coordination.TaskNotRunningException;
 import org.apache.flink.runtime.shuffle.NettyShuffleMaster;
 import org.apache.flink.runtime.shuffle.PartitionDescriptor;
 import org.apache.flink.runtime.shuffle.ProducerDescriptor;
 import org.apache.flink.runtime.shuffle.ShuffleDescriptor;
 import org.apache.flink.runtime.shuffle.ShuffleMaster;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorOperatorEventGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.OptionalFailure;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.SerializedValue;
 import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.slf4j.Logger;
@@ -84,7 +89,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -121,14 +125,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public class Execution implements AccessExecution, Archiveable<ArchivedExecution>, LogicalSlot.Payload {
 
-	private static final AtomicReferenceFieldUpdater<Execution, ExecutionState> STATE_UPDATER =
-			AtomicReferenceFieldUpdater.newUpdater(Execution.class, ExecutionState.class, "state");
-
 	private static final Logger LOG = ExecutionGraph.LOG;
 
 	private static final int NUM_CANCEL_CALL_TRIES = 3;
-
-	private static final int NUM_STOP_CALL_TRIES = 3;
 
 	// --------------------------------------------------------------------------------------------
 
@@ -164,17 +163,17 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 	private volatile ExecutionState state = CREATED;
 
-	private volatile LogicalSlot assignedResource;
+	private LogicalSlot assignedResource;
 
-	private volatile Throwable failureCause;          // once assigned, never changes
+	private Throwable failureCause;          // once assigned, never changes
 
 	/** Information to restore the task on recovery, such as checkpoint id and task state snapshot. */
 	@Nullable
-	private volatile JobManagerTaskRestore taskRestore;
+	private JobManagerTaskRestore taskRestore;
 
 	/** This field holds the allocation id once it was assigned successfully. */
 	@Nullable
-	private volatile AllocationID assignedAllocationID;
+	private AllocationID assignedAllocationID;
 
 	// ------------------------ Accumulators & Metrics ------------------------
 
@@ -183,9 +182,9 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 	private final Object accumulatorLock = new Object();
 
 	/* Continuously updated map of user-defined accumulators */
-	private volatile Map<String, Accumulator<?, ?>> userAccumulators;
+	private Map<String, Accumulator<?, ?>> userAccumulators;
 
-	private volatile IOMetrics ioMetrics;
+	private IOMetrics ioMetrics;
 
 	private Map<IntermediateResultPartitionID, ResultPartitionDeploymentDescriptor> producedPartitions;
 
@@ -1036,6 +1035,23 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 		}
 	}
 
+	/**
+	 * Sends the operator event to the Task on the Task Executor.
+	 *
+	 * @return True, of the message was sent, false is the task is currently not running.
+	 */
+	public CompletableFuture<Acknowledge> sendOperatorEvent(OperatorID operatorId, SerializedValue<OperatorEvent> event) {
+		final LogicalSlot slot = assignedResource;
+
+		if (slot != null && getState() == RUNNING) {
+			final TaskExecutorOperatorEventGateway eventGateway = slot.getTaskManagerGateway();
+			return eventGateway.sendOperatorEventToTask(getAttemptId(), operatorId, event);
+		} else {
+			return FutureUtils.completedExceptionally(new TaskNotRunningException(
+				'"' + vertex.getTaskNameWithSubtaskIndex() + "\" is currently not running or ready."));
+		}
+	}
+
 	// --------------------------------------------------------------------------------------------
 	//   Callbacks
 	// --------------------------------------------------------------------------------------------
@@ -1545,7 +1561,8 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 			throw new IllegalStateException("Cannot leave terminal state " + currentState + " to transition to " + targetState + '.');
 		}
 
-		if (STATE_UPDATER.compareAndSet(this, currentState, targetState)) {
+		if (state == currentState) {
+			state = targetState;
 			markTimestamp(targetState);
 
 			if (error == null) {

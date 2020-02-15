@@ -29,6 +29,9 @@ import org.apache.flink.configuration.description.HtmlFormatter;
 import org.apache.flink.util.TimeUtils;
 import org.apache.flink.util.function.ThrowingConsumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -59,6 +62,8 @@ import static org.apache.flink.docs.util.Utils.escapeCharacters;
  */
 public class ConfigOptionsDocGenerator {
 
+	private static final Logger LOG = LoggerFactory.getLogger(ConfigOptionsDocGenerator.class);
+
 	static final OptionsClassLocation[] LOCATIONS = new OptionsClassLocation[]{
 		new OptionsClassLocation("flink-core", "org.apache.flink.configuration"),
 		new OptionsClassLocation("flink-runtime", "org.apache.flink.runtime.shuffle"),
@@ -68,6 +73,7 @@ public class ConfigOptionsDocGenerator {
 		new OptionsClassLocation("flink-mesos", "org.apache.flink.mesos.configuration"),
 		new OptionsClassLocation("flink-mesos", "org.apache.flink.mesos.runtime.clusterframework"),
 		new OptionsClassLocation("flink-metrics/flink-metrics-prometheus", "org.apache.flink.metrics.prometheus"),
+		new OptionsClassLocation("flink-metrics/flink-metrics-influxdb", "org.apache.flink.metrics.influxdb"),
 		new OptionsClassLocation("flink-state-backends/flink-statebackend-rocksdb", "org.apache.flink.contrib.streaming.state"),
 		new OptionsClassLocation("flink-table/flink-table-api-java", "org.apache.flink.table.api.config"),
 		new OptionsClassLocation("flink-python", "org.apache.flink.python"),
@@ -109,6 +115,13 @@ public class ConfigOptionsDocGenerator {
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
 		String outputDirectory = args[0];
 		String rootDir = args[1];
+
+		LOG.info("Searching the following locations; configured via {}#LOCATIONS:{}",
+			ConfigOptionsDocGenerator.class.getCanonicalName(),
+			Arrays.stream(LOCATIONS).map(OptionsClassLocation::toString).collect(Collectors.joining("\n\t", "\n\t", "")));
+		LOG.info("Excluding the following classes; configured via {}#EXCLUSIONS:{}",
+			ConfigOptionsDocGenerator.class.getCanonicalName(),
+			EXCLUSIONS.stream().collect(Collectors.joining("\n\t", "\n\t", "")));
 
 		for (OptionsClassLocation location : LOCATIONS) {
 			createTable(rootDir, location.getModule(), location.getPackage(), outputDirectory, DEFAULT_PATH_PREFIX);

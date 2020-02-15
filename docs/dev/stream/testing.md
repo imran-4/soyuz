@@ -147,7 +147,7 @@ class IncrementFlatMapFunctionTest extends FlatSpec with MockFactory {
 Testing the functionality of a user-defined function, which makes use of managed state or timers is more difficult because it involves testing the interaction between the user code and Flink's runtime.
 For this Flink comes with a collection of so called test harnesses, which can be used to test such user-defined functions as well as custom operators:
 
-* `OneInputStreamOperatorTestHarness` (for operators on `DataStreams`s)
+* `OneInputStreamOperatorTestHarness` (for operators on `DataStream`s)
 * `KeyedOneInputStreamOperatorTestHarness` (for operators on `KeyedStream`s)
 * `TwoInputStreamOperatorTestHarness` (for operators of `ConnectedStreams` of two `DataStream`s)
 * `KeyedTwoInputStreamOperatorTestHarness` (for operators on `ConnectedStreams` of two `KeyedStream`s)
@@ -578,7 +578,7 @@ A few remarks on integration testing with `MiniClusterWithClientResource`:
 Communicating with operators instantiated by a local Flink mini cluster via static variables is one way around this issue.
 Alternatively, you could write the data to files in a temporary directory with your test sink.
 
-* You can implement a custom *parallel* source function for emitting watermarks if your job uses event timer timers.
+* You can implement a custom *parallel* source function for emitting watermarks if your job uses event time timers.
 
 * It is recommended to always test your pipelines locally with a parallelism > 1 to identify bugs which only surface for the pipelines executed in parallel.
 

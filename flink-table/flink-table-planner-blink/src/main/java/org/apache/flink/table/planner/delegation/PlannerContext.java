@@ -322,6 +322,7 @@ public class PlannerContext {
 		return ChainedSqlOperatorTable.of(
 				new FunctionCatalogOperatorTable(
 						context.getFunctionCatalog(),
+						context.getCatalogManager().getDataTypeFactory(),
 						typeFactory),
 				FlinkSqlOperatorTable.instance());
 	}
