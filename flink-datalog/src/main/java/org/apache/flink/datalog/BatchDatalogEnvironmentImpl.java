@@ -22,19 +22,16 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.datalog.catalog.DatalogCatalog;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.BatchQueryConfig;
 import org.apache.flink.table.api.EnvironmentSettings;
-import org.apache.flink.table.api.SqlParserException;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.ValidationException;
-import org.apache.flink.table.api.internal.BatchTableEnvImpl;
 import org.apache.flink.table.api.internal.TableImpl;
 import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl;
 import org.apache.flink.table.catalog.Catalog;
@@ -43,6 +40,7 @@ import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.ConnectorCatalogTable;
 import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.GenericInMemoryCatalog;
 import org.apache.flink.table.catalog.ObjectIdentifier;
 import org.apache.flink.table.catalog.QueryOperationCatalogView;
 import org.apache.flink.table.catalog.UnresolvedIdentifier;
@@ -56,7 +54,6 @@ import org.apache.flink.table.expressions.ExpressionBridge;
 import org.apache.flink.table.expressions.ExpressionParser;
 import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.expressions.PlannerExpressionConverter;
-import org.apache.flink.table.expressions.TableReferenceExpression;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.functions.AggregateFunction;
 import org.apache.flink.table.functions.ScalarFunction;
@@ -69,7 +66,6 @@ import org.apache.flink.table.operations.ModifyOperation;
 import org.apache.flink.table.operations.PlannerQueryOperation;
 import org.apache.flink.table.operations.QueryOperation;
 import org.apache.flink.table.operations.TableSourceQueryOperation;
-import org.apache.flink.table.operations.utils.OperationTreeBuilder;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.BatchTableSource;
 import org.apache.flink.table.sources.InputFormatTableSource;
@@ -92,7 +88,7 @@ import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
  *
  */
 public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl implements BatchDatalogEnvironment {
-//    private final OperationTreeBuilder operationTreeBuilder;
+    //    private final OperationTreeBuilder operationTreeBuilder;
     private final FunctionCatalog functionCatalog;
     private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
     private CatalogManager catalogManager;
@@ -127,18 +123,27 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
     }
 
     /**
-     *
      * @param executionEnvironment
      * @param settings
      * @param tableConfig
      * @return
      */
     public static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings settings, TableConfig tableConfig) {
-        CatalogManager catalogManager = new CatalogManager(
-                settings.getBuiltInCatalogName(),
-                new DatalogCatalog(settings.getBuiltInCatalogName(), settings.getBuiltInDatabaseName()));
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         ModuleManager moduleManager = new ModuleManager();
-        FunctionCatalog functionCatalog = new FunctionCatalog(catalogManager, moduleManager);
+
+        CatalogManager catalogManager = CatalogManager.newBuilder()
+                .classLoader(classLoader)
+                .config(tableConfig.getConfiguration())
+                .defaultCatalog(
+                        settings.getBuiltInCatalogName(),
+                        new GenericInMemoryCatalog(
+                                settings.getBuiltInCatalogName(),
+                                settings.getBuiltInDatabaseName()))
+                .build();
+
+        FunctionCatalog functionCatalog = new FunctionCatalog(tableConfig, catalogManager, moduleManager);
         Map<String, String> executorProperties = settings.toExecutorProperties();
         Executor executor = ComponentFactoryService.find(ExecutorFactory.class, executorProperties)
                 .create(executorProperties);
@@ -153,7 +158,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
     }
 
     /**
-     *
      * @param inputProgram
      * @param query
      * @return
@@ -177,8 +181,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
     }
 
     /**
-     *
-     * @param name The name under which the function is registered.
+     * @param name          The name under which the function is registered.
      * @param tableFunction The TableFunction to register.
      * @param <T>
      */
@@ -301,7 +304,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
     @Override
     public void registerTableSource(String name, TableSource<?> tableSource) {
         // the implementation of this function is similar to the one in TableEnvImpl, since its purpose is same.
-        TableSourceValidation.validateTableSource(tableSource);
+        TableSourceValidation.validateTableSource(tableSource, tableSource.getTableSchema());
 
         if (!(tableSource instanceof BatchTableSource<?> || tableSource instanceof InputFormatTableSource<?>)) {
             throw new TableException("Only BatchTableSource or InputFormatTableSource are allowed here.");
@@ -521,7 +524,7 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
     }
 
     public void validateTableSource(TableSource<?> tableSource) {
-        TableSourceValidation.validateTableSource(tableSource);
+        TableSourceValidation.validateTableSource(tableSource, tableSource.getTableSchema());
     }
 
     private Option<CatalogQueryOperation> scanInternal(String... tablePath) {
