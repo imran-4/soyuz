@@ -23,14 +23,18 @@ import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.state.CheckpointStorageWorkerView;
+import org.apache.flink.runtime.util.FatalExitExceptionHandler;
 import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamTaskStateInitializer;
 import org.apache.flink.streaming.runtime.streamstatus.StreamStatusMaintainer;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
+import org.apache.flink.streaming.runtime.tasks.ProcessingTimeServiceFactory;
 import org.apache.flink.streaming.runtime.tasks.StreamTask;
-import org.apache.flink.streaming.runtime.tasks.mailbox.execution.DefaultActionContext;
-import org.apache.flink.streaming.runtime.tasks.mailbox.execution.MailboxExecutor;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskActionExecutor;
+import org.apache.flink.streaming.runtime.tasks.TimerService;
+import org.apache.flink.streaming.runtime.tasks.mailbox.MailboxDefaultAction;
+import org.apache.flink.streaming.runtime.tasks.mailbox.TaskMailbox;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -62,11 +66,13 @@ public class MockStreamTask<OUT, OP extends StreamOperator<OUT>> extends StreamT
 		CloseableRegistry closableRegistry,
 		StreamStatusMaintainer streamStatusMaintainer,
 		CheckpointStorageWorkerView checkpointStorage,
-		ProcessingTimeService processingTimeService,
+		TimerService timerService,
 		BiConsumer<String, Throwable> handleAsyncException,
-		Map<String, Accumulator<?, ?>> accumulatorMap
+		Map<String, Accumulator<?, ?>> accumulatorMap,
+		TaskMailbox taskMailbox,
+		StreamTaskActionExecutor.SynchronizedStreamTaskActionExecutor taskActionExecutor
 	) {
-		super(environment);
+		super(environment, timerService, FatalExitExceptionHandler.INSTANCE, taskActionExecutor, taskMailbox);
 		this.name = name;
 		this.checkpointLock = checkpointLock;
 		this.config = config;
@@ -75,24 +81,23 @@ public class MockStreamTask<OUT, OP extends StreamOperator<OUT>> extends StreamT
 		this.closableRegistry = closableRegistry;
 		this.streamStatusMaintainer = streamStatusMaintainer;
 		this.checkpointStorage = checkpointStorage;
-		this.processingTimeService = processingTimeService;
+		this.processingTimeService = timerService;
 		this.handleAsyncException = handleAsyncException;
 		this.accumulatorMap = accumulatorMap;
 	}
 
 	@Override
 	public void init() {
-		this.mailboxProcessor.open();
 	}
 
 	@Override
-	protected void performDefaultAction(DefaultActionContext context) throws Exception {
-		context.allActionsCompleted();
+	protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
+		controller.allActionsCompleted();
 	}
 
 	@Override
 	protected void cleanup() {
-		this.mailboxProcessor.close();
+		mailboxProcessor.allActionsCompleted();
 	}
 
 	@Override
@@ -100,7 +105,11 @@ public class MockStreamTask<OUT, OP extends StreamOperator<OUT>> extends StreamT
 		return name;
 	}
 
-	@Override
+	/**
+	 * Checkpoint lock in {@link StreamTask} is replaced by {@link StreamTaskActionExecutor}.
+	 * <code>getCheckpointLock</code> method was moved from to the {@link org.apache.flink.streaming.runtime.tasks.SourceStreamTask SourceStreamTask}.
+	 */
+	@Deprecated
 	public Object getCheckpointLock() {
 		return checkpointLock;
 	}
@@ -145,11 +154,6 @@ public class MockStreamTask<OUT, OP extends StreamOperator<OUT>> extends StreamT
 	}
 
 	@Override
-	public ProcessingTimeService getProcessingTimeService() {
-		return processingTimeService;
-	}
-
-	@Override
 	public void handleAsyncException(String message, Throwable exception) {
 		handleAsyncException.accept(message, exception);
 	}
@@ -159,13 +163,8 @@ public class MockStreamTask<OUT, OP extends StreamOperator<OUT>> extends StreamT
 		return accumulatorMap;
 	}
 
-	/**
-	 * Creates the mailbox executor for the operator with the given configuration.
-	 *
-	 * @param config the config of the operator.
-	 * @return the mailbox executor of the operator.
-	 */
-	public MailboxExecutor getMailboxExecutor(StreamConfig config) {
-		return getMailboxExecutorFactory().createExecutor(config.getChainIndex());
+	@Override
+	public ProcessingTimeServiceFactory getProcessingTimeServiceFactory() {
+		return mailboxExecutor -> processingTimeService;
 	}
 }

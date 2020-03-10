@@ -160,6 +160,14 @@ print()
 
 `execute()` 方法返回 `JobExecutionResult`，它包括执行耗时和一个累加器的结果。
 
+如果你不需要等待作业的结束，只是想要触发程序执行，你可以调用 `StreamExecutionEnvironment` 的 `executeAsync()` 方法。这个方法将返回一个 `JobClient` 对象，通过 `JobClient` 能够与程序对应的作业进行交互。作为例子，这里介绍通过 `executeAsync()` 实现与 `execute()` 相同行为的方法。
+
+{% highlight java %}
+final JobClient jobClient = env.executeAsync();
+
+final JobExecutionResult jobExecutionResult = jobClient.getJobExecutionResult(userClassloader).get();
+{% endhighlight %}
+
 有关流数据的 source 和 sink 以及有关 DataStream 支持的转换操作的详细信息请参阅[流处理指南]({{ site.baseurl }}/zh/dev/datastream_api.html)。
 
 有关批数据的 source 和 sink 以及有关 DataSet 支持的转换操作的详细信息请参阅[批处理指南]({{ site.baseurl }}/zh/dev/batch/index.html)。
@@ -316,7 +324,7 @@ public static class ComplexNestedClass {
 <div data-lang="scala" markdown="1">
 
 下例中，我们有一个包含“word”和“count”两个字段的 POJO：`WC`。要用 `word` 字段分组，我们只需要把它的名字传给 `keyBy()` 函数即可。
-{% highlight java %}
+{% highlight scala %}
 // 普通的 POJO（简单的 Java 对象）
 class WC(var word: String, var count: Int) {
   def this() { this("", 0L) }
@@ -535,7 +543,7 @@ data.map (new RichMapFunction[String, Int] {
 
 Flink 对于 DataSet 或 DataStream 中可以包含的元素类型做了一些限制。这么做是为了使系统能够分析类型以确定有效的执行策略。
 
-有六种不同的数据类型：
+有七种不同的数据类型：
 
 1. **Java Tuple** 和 **Scala Case Class**
 2. **Java POJO**

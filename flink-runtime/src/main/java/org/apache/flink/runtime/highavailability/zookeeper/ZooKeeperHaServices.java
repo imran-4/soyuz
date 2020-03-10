@@ -33,9 +33,10 @@ import org.apache.flink.runtime.leaderretrieval.LeaderRetrievalService;
 import org.apache.flink.runtime.util.ZooKeeperUtils;
 import org.apache.flink.util.ExceptionUtils;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
+import org.apache.flink.shaded.curator4.org.apache.curator.framework.CuratorFramework;
+import org.apache.flink.shaded.curator4.org.apache.curator.utils.ZKPaths;
+import org.apache.flink.shaded.zookeeper3.org.apache.zookeeper.KeeperException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,7 +152,7 @@ public class ZooKeeperHaServices implements HighAvailabilityServices {
 	}
 
 	@Override
-	public LeaderRetrievalService getWebMonitorLeaderRetriever() {
+	public LeaderRetrievalService getClusterRestEndpointLeaderRetriever() {
 		return ZooKeeperUtils.createLeaderRetrievalService(client, configuration, REST_SERVER_LEADER_PATH);
 	}
 
@@ -171,7 +172,7 @@ public class ZooKeeperHaServices implements HighAvailabilityServices {
 	}
 
 	@Override
-	public LeaderElectionService getWebMonitorLeaderElectionService() {
+	public LeaderElectionService getClusterRestEndpointLeaderElectionService() {
 		return ZooKeeperUtils.createLeaderElectionService(client, configuration, REST_SERVER_LEADER_PATH);
 	}
 

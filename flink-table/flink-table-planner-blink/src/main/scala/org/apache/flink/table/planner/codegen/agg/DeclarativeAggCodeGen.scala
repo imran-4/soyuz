@@ -17,12 +17,14 @@
  */
 package org.apache.flink.table.planner.codegen.agg
 
+import org.apache.flink.table.expressions.ApiExpressionUtils.localRef
 import org.apache.flink.table.expressions._
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory
 import org.apache.flink.table.planner.codegen.agg.AggsHandlerCodeGenerator.DISTINCT_KEY_TERM
 import org.apache.flink.table.planner.codegen.{CodeGeneratorContext, ExprCodeGenerator, GeneratedExpression}
 import org.apache.flink.table.planner.expressions.DeclarativeExpressionResolver.{toRexDistinctKey, toRexInputRef}
-import org.apache.flink.table.planner.expressions.{DeclarativeExpressionResolver, RexNodeConverter, RexNodeExpression}
+import org.apache.flink.table.planner.expressions.converter.ExpressionConverter
+import org.apache.flink.table.planner.expressions.{DeclarativeExpressionResolver, RexNodeExpression}
 import org.apache.flink.table.planner.functions.aggfunctions.DeclarativeAggregateFunction
 import org.apache.flink.table.planner.plan.utils.AggregateInfo
 import org.apache.flink.table.runtime.types.LogicalTypeDataTypeConverter.{fromDataTypeToLogicalType, fromLogicalTypeToDataType}
@@ -65,12 +67,12 @@ class DeclarativeAggCodeGen(
   private val bufferTerms = function.aggBufferAttributes
       .map(a => s"agg${aggInfo.aggIndex}_${a.getName}")
 
-  private val rexNodeGen = new RexNodeConverter(relBuilder)
+  private val rexNodeGen = new ExpressionConverter(relBuilder)
 
   private val bufferNullTerms = {
     val exprCodegen = new ExprCodeGenerator(ctx, false)
     bufferTerms.zip(bufferTypes).map {
-      case (name, t) => new LocalReferenceExpression(name, fromLogicalTypeToDataType(t))
+      case (name, t) => localRef(name, fromLogicalTypeToDataType(t))
     }.map(_.accept(rexNodeGen)).map(exprCodegen.generateExpression).map(_.nullTerm)
   }
 
@@ -253,7 +255,7 @@ class DeclarativeAggCodeGen(
 
     override def toAggBufferExpr(name: String, localIndex: Int): ResolvedExpression = {
       // name => agg${aggInfo.aggIndex}_$name"
-      new LocalReferenceExpression(
+      localRef(
         bufferTerms(localIndex),
         fromLogicalTypeToDataType(bufferTypes(localIndex)))
     }
