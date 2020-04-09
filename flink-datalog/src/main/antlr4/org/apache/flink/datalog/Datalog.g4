@@ -51,7 +51,7 @@ retraction //this should also be a separate compilation unit
     : predicate TILDE
     ;
 predicateList
-    : ( predicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
+    : ( predicate | primitivePredicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
     ;
 notPredicate   // only use in predicateList
     : NOT predicate
@@ -86,7 +86,7 @@ atom
     | STRING
     ;
 integer
-    : DECIMAL+
+    : DECIMAL
     | OCTAL
     | BINARY
     | HEX

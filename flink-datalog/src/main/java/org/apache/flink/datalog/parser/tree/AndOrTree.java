@@ -146,20 +146,33 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		@Override
 		public OrNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
 			TermData leftTerm = null, rightTerm = null;
-			if (ctx.CONSTANT(0) != null) {
-				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
-			} else if (ctx.VARIABLE(0) != null) {
+			if (ctx.VARIABLE(0) != null) {
 				leftTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+				if (ctx.VARIABLE(1) != null) {
+					rightTerm = new TermData(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
+				} else if (ctx.DECIMAL(0) != null) {
+					rightTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
+				} else if (ctx.CONSTANT(0) != null) {
+					rightTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				}
 			} else if (ctx.DECIMAL(0) != null) {
-				leftTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
-			}
-
-			if (ctx.CONSTANT(1) != null) {
-				rightTerm = new TermData(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
-			} else if (ctx.VARIABLE(1) != null) {
-				rightTerm = new TermData(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
-			} else if (ctx.DECIMAL(1) != null) {
-				rightTerm = new TermData(ctx.DECIMAL(1).getText(), TermData.Adornment.BOUND);
+				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				if (ctx.VARIABLE(0) != null) {
+					rightTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+				} else if (ctx.DECIMAL(1) != null) {
+					rightTerm = new TermData(ctx.DECIMAL(1).getText(), TermData.Adornment.BOUND);
+				} else if (ctx.CONSTANT(0) != null) {
+					rightTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				}
+			} else if (ctx.CONSTANT(0) != null) {
+				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				if (ctx.VARIABLE(0) != null) {
+					rightTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+				} else if (ctx.DECIMAL(0) != null) {
+					rightTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
+				} else if (ctx.CONSTANT(1) != null) {
+					rightTerm = new TermData(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
+				}
 			}
 
 			return new OrNode(new PrimitivePredicateData(leftTerm, ctx.COMPARISON_OPERATOR().getText(), rightTerm));
@@ -183,10 +196,10 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class TermBuilder extends DatalogBaseVisitor<TermData> {
 		@Override
 		public TermData visitTerm(DatalogParser.TermContext ctx) {
-			if (ctx.CONSTANT() != null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
-				return new TermData(ctx.getText(), TermData.Adornment.BOUND);
-			} else {
+			if (ctx.VARIABLE() != null){
 				return new TermData(ctx.getText(), TermData.Adornment.FREE);
+			} else  { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+				return new TermData(ctx.getText(), TermData.Adornment.BOUND);
 			}
 		}
 	}

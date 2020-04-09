@@ -77,8 +77,8 @@ class DataSetRepeatUnion(
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val delta = iterativeDs
       .coGroup(iteration.getSolutionSet)
-      .where((0 until seedDs.getType.getTotalFields): _*)
-      .equalTo((0 until iteration.getWorkset.getType.getTotalFields): _*)
+      .where("*")
+      .equalTo("*")
       .`with`(new MinusCoGroupFunction[Row](false))
     val result = iteration.closeWith(delta, delta) //sending first parameter(solutionSet) delta means it will union it with solution set.
     result

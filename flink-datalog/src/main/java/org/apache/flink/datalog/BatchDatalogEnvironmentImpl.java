@@ -79,8 +79,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import scala.Option;
+import scala.compat.java8.JFunction;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
@@ -113,11 +115,13 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
 //                false
 //        );
 
-        ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<>(functionCatalog, PlannerExpressionConverter.INSTANCE());
+
+
+        ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(PlannerExpressionConverter.INSTANCE());
         this.planningConfigurationBuilder = new DatalogPlanningConfigurationBuilder(
                 tableConfig,
                 functionCatalog,
-                asRootSchema(new CatalogManagerCalciteSchema(catalogManager, false)),
+                asRootSchema(new CatalogManagerCalciteSchema(catalogManager, tableConfig,false)),
                 expressionBridge,
                 this);
     }
@@ -520,7 +524,12 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
                 this,
                 tableOperation,
                 super.operationTreeBuilder(),
-                functionCatalog);
+                functionCatalog.asLookup(new Function<String, UnresolvedIdentifier>() {
+                    @Override
+                    public UnresolvedIdentifier apply(String s) {
+                        return null;
+                    }
+                }));
     }
 
     public void validateTableSource(TableSource<?> tableSource) {
