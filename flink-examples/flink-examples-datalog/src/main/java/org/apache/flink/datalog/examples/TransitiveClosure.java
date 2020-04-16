@@ -19,6 +19,7 @@ package org.apache.flink.datalog.examples;
 
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.DiscardingOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -54,6 +55,15 @@ public class TransitiveClosure {
         Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
         DataSet<Tuple2<IntValue, IntValue>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
 
+<<<<<<< HEAD
+=======
+        long start = System.currentTimeMillis();
+
+//        resultDS.output(new DiscardingOutputFormat<>());
+//        System.out.println(env.getExecutionPlan());
+
+
+>>>>>>> 5baac30859... Add withForwardedFieldsFirst annotation to the coGroup call to eliminate the shuffling between the coGroup and the solution set update
 //        resultDS.writeAsCsv(testFilePath+"_output");
         System.out.println(resultDS.count());
 
