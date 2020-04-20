@@ -91,11 +91,11 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
         List<RexNode> projectionParameters = new ArrayList<>();
         for (TermData termData : predicateData.getPredicateParameters()) {
             if (termData.getAdornment() == TermData.Adornment.BOUND) {
-                projectionParameters.add(relBuilder.literal(termData.getTermName()));
+                projectionParameters.add(relBuilder.literal(termData.getTerm()));
             } else {
                 projectionParameters.add(
                         relBuilder
-                                .field(termData.getTermName()));
+                                .field(termData.getTerm().toString()));
             }
         }
         return projectionParameters;
@@ -103,9 +103,9 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 
     private RexNode getPrimitivePredExpression(TermData termData) {
         if (termData.getAdornment() == TermData.Adornment.BOUND) {
-            return relBuilder.literal(termData.getTermName());
+            return relBuilder.literal(termData.getTerm());
         } else {
-            return relBuilder.field(termData.getTermName());
+            return relBuilder.field(termData.getTerm().toString());
         }
     }
 
@@ -120,16 +120,16 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
             int i = 0;
             List<RexNode> projectionParameters = new ArrayList<>();
             List<String> newNames = new ArrayList<>();
-            for (TermData termData : predicateData.getPredicateParameters()) {
-                projectionParameters.add(relBuilder.alias(relBuilder.field(i), termData.getTermName()));
+            for (TermData<?> termData : predicateData.getPredicateParameters()) {
+                projectionParameters.add(relBuilder.alias(relBuilder.field(i), termData.getTerm().toString()));
                 if (termData.getAdornment() == TermData.Adornment.BOUND) {
                     relBuilder.filter(
                             relBuilder.call(
                                     SqlStdOperatorTable.EQUALS,
                                     relBuilder.field(i),
-                                    relBuilder.literal(termData.getTermName())));
+                                    relBuilder.literal(termData.getTerm())));
                 }
-                newNames.add(termData.getTermName());
+                newNames.add(termData.getTerm().toString());
                 i++;
             }
             relBuilder
@@ -167,7 +167,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
             }
 
 
-            relBuilder.rename(node.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList()));
+            relBuilder.rename(node.getPredicateData().getPredicateParameters().stream().map(x-> x.getTerm().toString()).collect(Collectors.toList()));
             idbNameIdMapping.put(predicateData.getPredicateName(), relBuilder.peek().getId());
             if (hasRecursiveNode) {
                 relBuilder
@@ -357,6 +357,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
     }
 
     private List<String> getFieldNames(OrNode orNode) {
-        return orNode.getPredicateData().getPredicateParameters().stream().map(TermData::getTermName).collect(Collectors.toList());
+        return orNode.getPredicateData().getPredicateParameters().stream().map(x-> x.getTerm().toString()).collect(Collectors.toList());
     }
 }

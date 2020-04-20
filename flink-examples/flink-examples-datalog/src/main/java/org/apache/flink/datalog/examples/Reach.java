@@ -23,6 +23,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datalog.BatchDatalogEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
+import org.apache.flink.types.IntValue;
 
 public class Reach {
     public static void main(String[] args) throws Exception {
@@ -32,9 +33,18 @@ public class Reach {
             testFilePath = args[0].trim();
         } else
             throw new Exception("Please provide input dataset. ");
-        String inputProgram =
-                "reach(X,Y) :- graph(X,Y),X="+ args[1] +".\n"
+        String inputProgram = null;
+        if (args.length == 2) {
+            inputProgram =
+                    "reach(X,Y) :- graph(X,Y),X="+ Integer.parseInt(args[1]) +".\n"
+                            + "reach(X,Y) :- reach(X,Z),graph(Z,Y).\n";
+        } else if (args.length == 3) {
+
+
+        inputProgram =
+                "reach(X,Y) :- graph(X,Y),X="+ new IntValue(Integer.parseInt(args[1])) +".\n"
                         + "reach(X,Y) :- reach(X,Z),graph(Z,Y).\n";
+        }
         String query = "reach(X,Y)?";
 
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -44,11 +54,11 @@ public class Reach {
                 .inBatchMode()
                 .build();
         BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
-        DataSet<Tuple2<String, String>> dataSet = env.readCsvFile(testFilePath).fieldDelimiter(",").types(String.class, String.class);
+        DataSet<Tuple2<Integer, Integer>> dataSet = env.readCsvFile(testFilePath).fieldDelimiter(",").types(Integer.class, Integer.class);
 
         datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
         Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
-        DataSet<Tuple2<String, String>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
+        DataSet<Tuple2<Integer, Integer>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
 
 //        resultDS.writeAsCsv(testFilePath+"_output");
         System.out.println(resultDS.count());

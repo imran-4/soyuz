@@ -1131,9 +1131,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 			open(oldNumBucketSegments);
 		}
 	}
-<<<<<<< HEAD
-}
-=======
 
 	public final static class JoinFacade<BT, PT> {
 
@@ -1257,4 +1254,3 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		}
 	}
 }
->>>>>>> c884ab081d... Change hash table of joins to InPlaceMutableHashTable

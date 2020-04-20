@@ -51,6 +51,7 @@ import org.apache.flink.runtime.iterative.io.SerializedUpdateBuffer;
 import org.apache.flink.runtime.operators.BatchTask;
 import org.apache.flink.runtime.operators.Driver;
 import org.apache.flink.runtime.operators.hash.CompactingHashTable;
+import org.apache.flink.runtime.operators.hash.InPlaceMutableHashTable;
 import org.apache.flink.runtime.operators.util.TaskConfig;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
@@ -172,7 +173,7 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 		return backChannel;
 	}
 
-	private <BT> CompactingHashTable<BT> initCompactingHashTable() throws Exception {
+	private <BT> InPlaceMutableHashTable<BT> initManagedHashTable() throws Exception {
 		// get some memory
 		double hashjoinMemorySize = config.getRelativeSolutionSetMemory();
 		final ClassLoader userCodeClassLoader = getUserCodeClassLoader();
@@ -183,13 +184,13 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 		TypeSerializer<BT> solutionTypeSerializer = solutionTypeSerializerFactory.getSerializer();
 		TypeComparator<BT> solutionTypeComparator = solutionTypeComparatorFactory.createComparator();
 
-		CompactingHashTable<BT> hashTable = null;
+		InPlaceMutableHashTable<BT> hashTable = null;
 		List<MemorySegment> memSegments = null;
 		boolean success = false;
 		try {
 			int numPages = getMemoryManager().computeNumberOfPages(hashjoinMemorySize);
 			memSegments = getMemoryManager().allocatePages(getContainingTask(), numPages);
-			hashTable = new CompactingHashTable<BT>(solutionTypeSerializer, solutionTypeComparator, memSegments);
+			hashTable = new InPlaceMutableHashTable<>(solutionTypeSerializer, solutionTypeComparator, memSegments, getMemoryManager(), getContainingTask());
 			success = true;
 			return hashTable;
 		} finally {
@@ -224,7 +225,7 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 		return new JoinHashMap<BT>(solutionTypeSerializer, solutionTypeComparator);
 	}
 
-	private void readInitialSolutionSet(CompactingHashTable<X> solutionSet, MutableObjectIterator<X> solutionSetInput) throws IOException {
+	private void readInitialSolutionSet(InPlaceMutableHashTable<X> solutionSet, MutableObjectIterator<X> solutionSetInput) throws IOException {
 		solutionSet.open();
 		solutionSet.buildTableWithUniqueKey(solutionSetInput);
 	}
@@ -254,7 +255,7 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 
 		final boolean objectSolutionSet = config.isSolutionSetUnmanaged();
 
-		CompactingHashTable<X> solutionSet = null; // if workset iteration
+		InPlaceMutableHashTable<X> solutionSet = null; // if workset iteration
 		JoinHashMap<X> solutionSetObjectMap = null; // if workset iteration with unmanaged solution set
 
 		boolean waitForSolutionSetUpdate = config.getWaitForSolutionSetUpdate();
@@ -288,7 +289,7 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 					readInitialSolutionSet(solutionSetObjectMap, solutionSetInput);
 					SolutionSetBroker.instance().handIn(brokerKey, solutionSetObjectMap);
 				} else {
-					solutionSet = initCompactingHashTable();
+					solutionSet = initManagedHashTable();
 					readInitialSolutionSet(solutionSet, solutionSetInput);
 					SolutionSetBroker.instance().handIn(brokerKey, solutionSet);
 				}
@@ -418,7 +419,7 @@ public class IterationHeadTask<X, Y, S extends Function, OT> extends AbstractIte
 		}
 	}
 
-	private void streamSolutionSetToFinalOutput(CompactingHashTable<X> hashTable) throws IOException {
+	private void streamSolutionSetToFinalOutput(InPlaceMutableHashTable<X> hashTable) throws IOException {
 		final MutableObjectIterator<X> results = hashTable.getEntryIterator();
 		final Collector<X> output = this.finalOutputCollector;
 		X record = solutionTypeSerializer.getSerializer().createInstance();

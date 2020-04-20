@@ -145,33 +145,33 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class PrimitivePredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
-			TermData leftTerm = null, rightTerm = null;
+			TermData<?> leftTerm = null, rightTerm = null;
 			if (ctx.VARIABLE(0) != null) {
-				leftTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+				leftTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
 				if (ctx.VARIABLE(1) != null) {
-					rightTerm = new TermData(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(0) != null) {
-					rightTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(0).getText()), TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(0) != null) {
-					rightTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
 				}
 			} else if (ctx.DECIMAL(0) != null) {
-				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				leftTerm = new TermData<Integer>(Integer.parseInt(ctx.CONSTANT(0).getText()), TermData.Adornment.BOUND);
 				if (ctx.VARIABLE(0) != null) {
-					rightTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(1) != null) {
-					rightTerm = new TermData(ctx.DECIMAL(1).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(1).getText()), TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(0) != null) {
-					rightTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
 				}
 			} else if (ctx.CONSTANT(0) != null) {
-				leftTerm = new TermData(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				leftTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
 				if (ctx.VARIABLE(0) != null) {
-					rightTerm = new TermData(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(0) != null) {
-					rightTerm = new TermData(ctx.DECIMAL(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(0).getText()), TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(1) != null) {
-					rightTerm = new TermData(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
 				}
 			}
 
@@ -186,20 +186,24 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		}
 	}
 
-	private static class TermListBuilder extends DatalogBaseVisitor<List<TermData>> {
+	private static class TermListBuilder extends DatalogBaseVisitor<List<TermData<?>>> {
 		@Override
-		public List<TermData> visitTermList(DatalogParser.TermListContext ctx) {
+		public List<TermData<?>> visitTermList(DatalogParser.TermListContext ctx) {
 			return ctx.term().stream().map(termContext -> new TermBuilder().visitTerm(termContext)).collect(Collectors.toList());
 		}
 	}
 
 	private static class TermBuilder extends DatalogBaseVisitor<TermData> {
 		@Override
-		public TermData visitTerm(DatalogParser.TermContext ctx) {
+		public TermData<?> visitTerm(DatalogParser.TermContext ctx) {
 			if (ctx.VARIABLE() != null){
-				return new TermData(ctx.getText(), TermData.Adornment.FREE);
-			} else  { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
-				return new TermData(ctx.getText(), TermData.Adornment.BOUND);
+				return new TermData<String>(ctx.getText(), TermData.Adornment.FREE);
+			} else  if (ctx.CONSTANT() != null){ //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
+			} else  if (ctx.integer() != null){ //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+				return new TermData<Integer>(Integer.parseInt(ctx.getText()), TermData.Adornment.BOUND);
+			} else {
+				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
 			}
 		}
 	}

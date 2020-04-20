@@ -92,6 +92,14 @@ under the License.
 			<fileMode>0644</fileMode>
 		</file>
 
+<!--		&lt;!&ndash; Datalog JAR &ndash;&gt;-->
+<!--		<file>-->
+<!--			<source>../flink-/target/flink-datalog-${project.version}.jar</source>-->
+<!--			<outputDirectory>lib/</outputDirectory>-->
+<!--			<destName>flink-datalog-${project.version}.jar</destName>-->
+<!--			<fileMode>0644</fileMode>-->
+<!--		</file>-->
+
 		<!-- copy the config file -->
 		<file>
 			<source>src/main/resources/flink-conf.yaml</source>

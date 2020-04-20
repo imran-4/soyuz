@@ -24,16 +24,16 @@ import java.util.List;
  */
 public class SimplePredicateData extends PredicateData {
 	private String predicateName;
-	private List<TermData> predicateParameters;
+	private List<TermData<?>> predicateParameters;
 	private boolean isIdb = false;
 
-	public SimplePredicateData(String predicateName, List<TermData> predicateParameters) {
+	public SimplePredicateData(String predicateName, List<TermData<?>> predicateParameters) {
 		this.predicateName = predicateName;
 		this.predicateParameters = predicateParameters;
 		this.isIdb = false;
 	}
 
-	public SimplePredicateData(String predicateName, List<TermData> predicateParameters, boolean isIdb) {
+	public SimplePredicateData(String predicateName, List<TermData<?>> predicateParameters, boolean isIdb) {
 		this(predicateName, predicateParameters);
 		this.isIdb = isIdb;
 	}
@@ -52,7 +52,7 @@ public class SimplePredicateData extends PredicateData {
 	}
 
 	@Override
-	public List<TermData> getPredicateParameters() {
+	public List<TermData<?>> getPredicateParameters() {
 		return predicateParameters;
 	}
 

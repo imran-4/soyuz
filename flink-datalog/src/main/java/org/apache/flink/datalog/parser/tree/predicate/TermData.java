@@ -20,25 +20,25 @@ package org.apache.flink.datalog.parser.tree.predicate;
 /**
  *
  */
-public class TermData { //todo: add type information if needed...
-	private String termName;
+public class TermData<T> { //todo: add type information if needed...
+	private T term;
 	private Adornment adornment;
 
-	public TermData(String termName, Adornment adornment) {
-		this.termName = termName;
+	public TermData(T term, Adornment adornment) {
+		this.term = term;
 		this.adornment = adornment;
 	}
 
 	@Override
 	public String toString() {
 		return "TermData{" +
-			"termName='" + termName + '\'' +
+			"termName='" + term + '\'' +
 			", adornment=" + adornment +
 			'}';
 	}
 
-	public String getTermName() {
-		return termName;
+	public T getTerm() {
+		return term;
 	}
 
 	public Adornment getAdornment() {

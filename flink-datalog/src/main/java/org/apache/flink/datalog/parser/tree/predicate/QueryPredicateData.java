@@ -23,7 +23,7 @@ import java.util.List;
  *
  */
 public class QueryPredicateData extends SimplePredicateData {
-	public QueryPredicateData(String predicateName, List<TermData> predicateParameters) {
+	public QueryPredicateData(String predicateName, List<TermData<?>> predicateParameters) {
 		super(predicateName, predicateParameters);
 	}
 

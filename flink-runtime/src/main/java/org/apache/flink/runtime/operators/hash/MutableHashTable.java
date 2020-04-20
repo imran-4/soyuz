@@ -521,6 +521,8 @@ public class MutableHashTable<BT, PT> implements MemorySegmentSource {
 				this.bucketIterator.set(bucket, p.overflowSegments, p, hash, bucketInSegmentOffset);
 				return true;
 			} else {
+				LOG.info("++++++++++++++++++++++++processProbeIter+++++++++++++++++++++++++++++++++++++++++");
+
 				byte status = bucket.get(bucketInSegmentOffset + HEADER_STATUS_OFFSET);
 				if (status == BUCKET_STATUS_IN_FILTER) {
 					this.bloomFilter.setBitsLocation(bucket, bucketInSegmentOffset + BUCKET_HEADER_LENGTH);
@@ -838,7 +840,7 @@ public class MutableHashTable<BT, PT> implements MemorySegmentSource {
 	
 
 	protected void buildTableFromSpilledPartition(final HashPartition<BT, PT> p) throws IOException {
-		
+		LOG.info("++++++++++++++++++++++++buildTableFromSpilledPartition+++++++++++++++++++++++++++++++++++++++++");
 		final int nextRecursionLevel = p.getRecursionLevel() + 1;
 		if (nextRecursionLevel > MAX_RECURSION_DEPTH) {
 			throw new RuntimeException("Hash join exceeded maximum number of recursions, without reducing "
@@ -1046,11 +1048,16 @@ public class MutableHashTable<BT, PT> implements MemorySegmentSource {
 				overflowSeg = getNextBuffer();
 				if (overflowSeg == null) {
 					// no memory available to create overflow bucket. we need to spill a partition
+					LOG.info("+++++++++++++++++++++++++++++++spillingAllowed+++++++++++++++++++++++++++++++++++++: " + spillingAllowed);
+
 					if (!spillingAllowed) {
 						throw new IOException("Hashtable memory ran out in a non-spillable situation. " +
 								"This is probably related to wrong size calculations.");
 					}
+					LOG.info("+++++++++++++++++++++++++++++++spilledPart+++++++++++++++++++++++++++++++++++++");
+
 					final int spilledPart = spillPartition();
+
 					if (spilledPart == p.getPartitionNumber()) {
 						// this bucket is no longer in-memory
 						return;
@@ -1209,6 +1216,7 @@ public class MutableHashTable<BT, PT> implements MemorySegmentSource {
 	 * @return The number of the spilled partition.
 	 */
 	protected int spillPartition() throws IOException {
+		LOG.info("+++++++++++++++++++++++++++++++spillPartition+++++++++++++++++++++++++++++++++++++");
 		// find the largest partition
 		ArrayList<HashPartition<BT, PT>> partitions = this.partitionsBeingBuilt;
 		int largestNumBlocks = 0;

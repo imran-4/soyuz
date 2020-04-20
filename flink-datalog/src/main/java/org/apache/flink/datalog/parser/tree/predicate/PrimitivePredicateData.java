@@ -24,17 +24,17 @@ import java.util.List;
  *
  */
 public class PrimitivePredicateData extends PredicateData {
-	private TermData leftTerm;
+	private TermData<?> leftTerm;
 	private String operator;
-	private TermData rightTerm;
+	private TermData<?> rightTerm;
 
-	public PrimitivePredicateData(TermData leftTerm, String operator, TermData rightTerm) {
+	public PrimitivePredicateData(TermData<?> leftTerm, String operator, TermData<?> rightTerm) {
 		this.leftTerm = leftTerm;
 		this.operator = operator;
 		this.rightTerm = rightTerm;
 	}
 
-	public TermData getLeftTerm() {
+	public TermData<?> getLeftTerm() {
 		return leftTerm;
 	}
 
@@ -42,7 +42,7 @@ public class PrimitivePredicateData extends PredicateData {
 		return operator;
 	}
 
-	public TermData getRightTerm() {
+	public TermData<?> getRightTerm() {
 		return rightTerm;
 	}
 
@@ -52,7 +52,7 @@ public class PrimitivePredicateData extends PredicateData {
 	}
 
 	@Override
-	public List<TermData> getPredicateParameters() {
+	public List<TermData<?>> getPredicateParameters() {
 		return null;
 	}
 

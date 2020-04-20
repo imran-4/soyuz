@@ -27,7 +27,7 @@ public abstract class PredicateData {
 
 	public abstract String getPredicateName();
 
-	public abstract List<TermData> getPredicateParameters();
+	public abstract List<TermData<?>> getPredicateParameters();
 
 	@Override
 	public String toString() {

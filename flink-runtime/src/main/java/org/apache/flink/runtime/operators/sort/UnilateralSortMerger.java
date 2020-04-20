@@ -1253,6 +1253,7 @@ public class UnilateralSortMerger<E> implements Sorter<E> {
 			while (isRunning()) {
 				// take next element from queue
 				try {
+					LOG.info("++++++++++++++++++++++++++++this.queues.spill.take()+++++++++++++++++++++++++++++++++++++++++++++");
 					element = this.queues.spill.take();
 				}
 				catch (InterruptedException iex) {
@@ -1336,6 +1337,8 @@ public class UnilateralSortMerger<E> implements Sorter<E> {
 			// loop as long as the thread is marked alive and we do not see the final element
 			while (isRunning()) {
 				try {
+					LOG.info("++++++++++++++++++++++++++++takeNext(this.queues.spill, cache)+++++++++++++++++++++++++++++++++++++++++++++");
+
 					element = takeNext(this.queues.spill, cache);
 				}
 				catch (InterruptedException iex) {
@@ -1367,6 +1370,8 @@ public class UnilateralSortMerger<E> implements Sorter<E> {
 				final ChannelWriterOutputView output = new ChannelWriterOutputView(writer, this.writeMemory,
 																			this.memManager.getPageSize());
 
+				LOG.info("++++++++++++++++++++++++++++ChannelWriterOutputView output+++++++++++++++++++++++++++++++++++++++++++++");
+
 				// write sort-buffer to channel
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("Spilling buffer " + element.id + ".");
@@ -1389,6 +1394,7 @@ public class UnilateralSortMerger<E> implements Sorter<E> {
 				element.buffer.reset();
 				this.queues.empty.add(element);
 			}
+			LOG.info("++++++++++++++++++++++++++++spilling done+++++++++++++++++++++++++++++++++++++++++++++");
 
 			// done with the spilling
 			if (LOG.isDebugEnabled()) {
@@ -1474,6 +1480,8 @@ public class UnilateralSortMerger<E> implements Sorter<E> {
 				// get the readers and register them to be released
 				setResultIterator(getMergingIterator(channelIDs, readBuffers, new ArrayList<FileIOChannel>(channelIDs.size()), largeRecords));
 			}
+
+			LOG.info("++++++++++++++++++++++++++++spilling and mering thread done+++++++++++++++++++++++++++++++++++++++++++++");
 
 			// done
 			if (LOG.isDebugEnabled()) {
