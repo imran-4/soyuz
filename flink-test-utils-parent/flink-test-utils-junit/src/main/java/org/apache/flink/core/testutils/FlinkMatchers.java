@@ -19,8 +19,11 @@
 package org.apache.flink.core.testutils;
 
 import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +31,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 /**
  * Some reusable hamcrest matchers for Flink.
@@ -60,8 +64,27 @@ public class FlinkMatchers {
 	/**
 	 * Checks whether {@link CompletableFuture} will completed exceptionally within a certain time.
 	 */
+	public static <T> FutureWillFailMatcher<T> futureWillCompleteExceptionally(
+			Function<Throwable, Boolean> exceptionCheck,
+			Duration timeout,
+			String checkDescription) {
+		Objects.requireNonNull(exceptionCheck, "exceptionType should not be null");
+		Objects.requireNonNull(timeout, "timeout should not be null");
+		return new FutureWillFailMatcher<>(exceptionCheck, timeout, checkDescription);
+	}
+
+	/**
+	 * Checks whether {@link CompletableFuture} will completed exceptionally within a certain time.
+	 */
 	public static <T> FutureWillFailMatcher<T> futureWillCompleteExceptionally(Duration timeout) {
 		return futureWillCompleteExceptionally(Throwable.class, timeout);
+	}
+
+	/**
+	 * Checks that a {@link CompletableFuture} won't complete within the given timeout.
+	 */
+	public static Matcher<CompletableFuture<?>> willNotComplete(Duration timeout) {
+		return new WillNotCompleteMatcher(timeout);
 	}
 
 	// ------------------------------------------------------------------------
@@ -118,14 +141,31 @@ public class FlinkMatchers {
 
 	private static final class FutureWillFailMatcher<T> extends TypeSafeDiagnosingMatcher<CompletableFuture<T>> {
 
-		private final Class<? extends Throwable> expectedException;
+		private final Function<Throwable, Boolean> exceptionValidator;
 
 		private final Duration timeout;
 
-		FutureWillFailMatcher(Class<? extends Throwable> expectedException, Duration timeout) {
+		private final String validationDescription;
+
+		FutureWillFailMatcher(
+			Class<? extends Throwable> expectedException,
+			Duration timeout) {
+
 			super(CompletableFuture.class);
-			this.expectedException = expectedException;
+			this.exceptionValidator = (e) -> expectedException.isAssignableFrom(e.getClass());
 			this.timeout = timeout;
+			this.validationDescription = expectedException.getName();
+		}
+
+		FutureWillFailMatcher(
+				Function<Throwable, Boolean> exceptionValidator,
+				Duration timeout,
+				String validationDescription) {
+
+			super(CompletableFuture.class);
+			this.exceptionValidator = exceptionValidator;
+			this.timeout = timeout;
+			this.validationDescription = validationDescription;
 		}
 
 		@Override
@@ -144,18 +184,66 @@ public class FlinkMatchers {
 				return false;
 			}
 			catch (ExecutionException e) {
-				if (e.getCause() == null || !expectedException.isAssignableFrom(e.getCause().getClass())) {
-					mismatchDescription.appendText("Future completed with different exception: " + e.getCause());
-					return false;
+				final Throwable cause = e.getCause();
+				if (cause != null && exceptionValidator.apply(cause)) {
+					return true;
 				}
-				return true;
+
+				String otherDescription = "(null)";
+				if (cause != null) {
+					final StringWriter stm = new StringWriter();
+					try (PrintWriter wrt = new PrintWriter(stm)) {
+						cause.printStackTrace(wrt);
+					}
+					otherDescription = stm.toString();
+				}
+
+				mismatchDescription.appendText("Future completed with different exception: " + otherDescription);
+				return false;
 			}
 		}
 
 		@Override
 		public void describeTo(Description description) {
-			description.appendText("A CompletableFuture that will failed within " +
-				timeout.toMillis() + " milliseconds with: " + expectedException.getName());
+			description.appendText("A CompletableFuture that will have failed within " +
+				timeout.toMillis() + " milliseconds with: " + validationDescription);
+		}
+	}
+
+	private static final class WillNotCompleteMatcher extends TypeSafeDiagnosingMatcher<CompletableFuture<?>> {
+
+		private final Duration timeout;
+
+		private WillNotCompleteMatcher(Duration timeout) {
+			this.timeout = timeout;
+		}
+
+		@Override
+		protected boolean matchesSafely(
+				CompletableFuture<?> item,
+				Description mismatchDescription) {
+
+			try {
+				final Object value = item.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+				mismatchDescription.appendText("The given future completed with ")
+						.appendValue(value);
+			} catch (TimeoutException timeoutException) {
+				return true;
+			} catch (InterruptedException e) {
+				mismatchDescription.appendText("The waiting thread was interrupted.");
+			} catch (ExecutionException e) {
+				mismatchDescription.appendText("The given future was completed exceptionally: ")
+						.appendValue(e);
+			}
+
+			return false;
+		}
+
+		@Override
+		public void describeTo(Description description) {
+			description.appendText("The given future should not complete within ")
+					.appendValue(timeout.toMillis())
+					.appendText(" ms.");
 		}
 	}
 }

@@ -19,6 +19,8 @@
 package org.apache.flink.yarn.configuration;
 
 import org.apache.flink.configuration.ConfigOption;
+import org.apache.flink.configuration.ExternalResourceOptions;
+import org.apache.flink.configuration.SecurityOptions;
 import org.apache.flink.configuration.description.Description;
 
 import java.util.List;
@@ -237,6 +239,55 @@ public class YarnConfigOptions {
 				.stringType()
 				.noDefaultValue()
 				.withDescription("Specify YARN node label for the YARN application.");
+
+	public static final ConfigOption<Boolean> SHIP_LOCAL_KEYTAB =
+			key("yarn.security.kerberos.ship-local-keytab")
+					.booleanType()
+					.defaultValue(true)
+					.withDescription(
+							"When this is true Flink will ship the keytab file configured via " +
+									SecurityOptions.KERBEROS_LOGIN_KEYTAB.key() +
+									" as a localized YARN resource.");
+
+	public static final ConfigOption<String> LOCALIZED_KEYTAB_PATH =
+			key("yarn.security.kerberos.localized-keytab-path")
+					.stringType()
+					.defaultValue("krb5.keytab")
+					.withDescription(
+							"Local (on NodeManager) path where kerberos keytab file will be" +
+									" localized to. If " + SHIP_LOCAL_KEYTAB.key() + " set to " +
+									"true, Flink willl ship the keytab file as a YARN local " +
+									"resource. In this case, the path is relative to the local " +
+									"resource directory. If set to false, Flink" +
+									" will try to directly locate the keytab from the path itself.");
+
+	public static final ConfigOption<List<String>> PROVIDED_LIB_DIRS =
+		key("yarn.provided.lib.dirs")
+			.stringType()
+			.asList()
+			.noDefaultValue()
+			.withDescription("A semicolon-separated list of provided lib directories. They should be pre-uploaded and " +
+				"world-readable. Flink will use them to exclude the local Flink jars(e.g. flink-dist, lib/, plugins/)" +
+				"uploading to accelerate the job submission process. Also YARN will cache them on the nodes so that " +
+				"they doesn't need to be downloaded every time for each application. An example could be " +
+				"hdfs://$namenode_address/path/of/flink/lib");
+
+	/** Defines the configuration key of that external resource in Yarn. This is used as a suffix in an actual config. */
+	public static final String EXTERNAL_RESOURCE_YARN_CONFIG_KEY_SUFFIX = "yarn.config-key";
+
+	/**
+	 * If configured, Flink will add this key to the resource profile of container request to Yarn. The value will be
+	 * set to {@link ExternalResourceOptions#EXTERNAL_RESOURCE_AMOUNT}.
+	 *
+	 * <p>It is intentionally included into user docs while unused.
+	 */
+	@SuppressWarnings("unused")
+	public static final ConfigOption<String> EXTERNAL_RESOURCE_YARN_CONFIG_KEY =
+		key(ExternalResourceOptions.genericKeyWithSuffix(EXTERNAL_RESOURCE_YARN_CONFIG_KEY_SUFFIX))
+			.stringType()
+			.noDefaultValue()
+			.withDescription("If configured, Flink will add this key to the resource profile of container request to Yarn. " +
+				"The value will be set to the value of " + ExternalResourceOptions.EXTERNAL_RESOURCE_AMOUNT.key() + ".");
 
 	// ------------------------------------------------------------------------
 

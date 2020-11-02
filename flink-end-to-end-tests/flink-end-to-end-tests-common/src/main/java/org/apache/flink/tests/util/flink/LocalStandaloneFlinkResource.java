@@ -79,8 +79,8 @@ public class LocalStandaloneFlinkResource implements FlinkResource {
 		TestUtils.copyDirectory(distributionDirectory, tmp);
 
 		distribution = new FlinkDistribution(tmp);
-		for (JarMove jarMove : setup.getJarMoveOperations()) {
-			distribution.moveJar(jarMove);
+		for (JarOperation jarOperation : setup.getJarOperations()) {
+			distribution.performJarOperation(jarOperation);
 		}
 		if (setup.getConfig().isPresent()) {
 			distribution.appendConfiguration(setup.getConfig().get());
@@ -112,7 +112,7 @@ public class LocalStandaloneFlinkResource implements FlinkResource {
 
 	private void backupLogs() {
 		if (logBackupDirectory != null) {
-			final Path targetDirectory = logBackupDirectory.resolve(UUID.randomUUID().toString());
+			final Path targetDirectory = logBackupDirectory.resolve("flink-" + UUID.randomUUID().toString());
 			try {
 				distribution.copyLogsTo(targetDirectory);
 				LOG.info("Backed up logs to {}.", targetDirectory);

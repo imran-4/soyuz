@@ -84,6 +84,7 @@ under the License.
 			<fileMode>0644</fileMode>
 		</file>
 
+<<<<<<< HEAD
 		<!-- Datalog JAR -->
 		<file>
 			<source>../flink-datalog/target/flink-datalog-${project.version}.jar</source>
@@ -99,6 +100,22 @@ under the License.
 <!--			<destName>flink-datalog-${project.version}.jar</destName>-->
 <!--			<fileMode>0644</fileMode>-->
 <!--		</file>-->
+=======
+		<!-- Built-in formats -->
+		<file>
+			<source>../flink-formats/flink-csv/target/flink-csv-${project.version}.jar</source>
+			<outputDirectory>lib/</outputDirectory>
+			<destName>flink-csv-${project.version}.jar</destName>
+			<fileMode>0644</fileMode>
+		</file>
+
+		<file>
+			<source>../flink-formats/flink-json/target/flink-json-${project.version}.jar</source>
+			<outputDirectory>lib/</outputDirectory>
+			<destName>flink-json-${project.version}.jar</destName>
+			<fileMode>0644</fileMode>
+		</file>
+>>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 
 		<!-- copy the config file -->
 		<file>
@@ -142,7 +159,7 @@ under the License.
 			<outputDirectory>bin</outputDirectory>
 			<fileMode>0755</fileMode>
 			<excludes>
-				<exclude>pyflink-udf-runner.sh</exclude>
+				<exclude>pyflink-udf-runner.*</exclude>
 			</excludes>
 		</fileSet>
 
@@ -251,6 +268,7 @@ under the License.
 			<excludes>
 				<exclude>flink-examples-streaming*.jar</exclude>
 				<exclude>original-*.jar</exclude>
+				<exclude>MatrixVectorMul.jar</exclude>
 			</excludes>
 		</fileSet>
 

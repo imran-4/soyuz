@@ -17,15 +17,6 @@
 # limitations under the License.
 ################################################################################
 
-echo $M2_HOME
-echo $PATH
-echo $MAVEN_OPTS
-
-mvn -version
-echo "Commit: $(git rev-parse HEAD)"
-
-
-
 HERE="`dirname \"$0\"`"             # relative
 HERE="`( cd \"$HERE\" && pwd )`"    # absolutized and normalized
 if [ -z "$HERE" ] ; then
@@ -34,8 +25,16 @@ if [ -z "$HERE" ] ; then
     exit 1  # fail
 fi
 
-source "${HERE}/travis/stage.sh"
-source "${HERE}/travis/shade.sh"
+source "${HERE}/ci/stage.sh"
+source "${HERE}/ci/shade.sh"
+source "${HERE}/ci/maven-utils.sh"
+
+echo $M2_HOME
+echo $PATH
+echo $MAVEN_OPTS
+
+run_mvn -version
+echo "Commit: $(git rev-parse HEAD)"
 
 print_system_info() {
     echo "CPU information"
@@ -63,8 +62,7 @@ EXIT_CODE=0
 # mirror. We use a different mirror because the official maven central mirrors
 # often lead to connection timeouts (probably due to rate-limiting)
 
-# adding -Dmaven.wagon.http.pool=false (see https://developercommunity.visualstudio.com/content/problem/851041/microsoft-hosted-agents-run-into-maven-central-tim.html)
-MVN="mvn clean install --settings ./tools/azure-pipelines/google-mirror-settings.xml $MAVEN_OPTS -nsu -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.wagon.http.pool=false -Dmaven.javadoc.skip=true -B -U -DskipTests $PROFILE"
+MVN="run_mvn clean install $MAVEN_OPTS -Dflink.convergence.phase=install -Pcheck-convergence -Dflink.forkCount=2 -Dflink.forkCountTestPackage=2 -Dmaven.javadoc.skip=true -U -DskipTests"
 
 # Run actual compile&test steps
 if [ $STAGE == "$STAGE_COMPILE" ]; then
@@ -121,10 +119,11 @@ if [ $STAGE == "$STAGE_COMPILE" ]; then
             ! -path "$CACHE_FLINK_DIR/flink-formats/flink-avro/target/flink-avro*.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-runtime/target/flink-runtime*tests.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-streaming-java/target/flink-streaming-java*tests.jar" \
-            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/lib/flink-dist*.jar" \
-            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/lib/flink-table_*.jar" \
-            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/lib/flink-table-blink*.jar" \
+            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/lib/*.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/opt/flink-python*.jar" \
+            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/opt/flink-sql-client_*.jar" \
+            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/plugins/*.jar" \
+            ! -path "$CACHE_FLINK_DIR/flink-dist/target/flink-*-bin/flink-*/bin/*.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-connectors/flink-connector-elasticsearch-base/target/flink-*.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-connectors/flink-connector-kafka-base/target/flink-*.jar" \
             ! -path "$CACHE_FLINK_DIR/flink-table/flink-table-planner/target/flink-table-planner*tests.jar" | xargs rm -rf
@@ -185,7 +184,7 @@ elif [ $STAGE != "$STAGE_CLEANUP" ]; then
     fi
 
 
-    TEST="$STAGE" "./tools/travis_watchdog.sh" 300
+    TEST="$STAGE" "./tools/travis_watchdog.sh" 900
     EXIT_CODE=$?
 elif [ $STAGE == "$STAGE_CLEANUP" ]; then
     echo "Cleaning up $CACHE_BUILD_DIR"

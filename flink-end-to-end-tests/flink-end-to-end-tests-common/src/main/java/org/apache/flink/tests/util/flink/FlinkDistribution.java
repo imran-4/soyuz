@@ -71,6 +71,7 @@ final class FlinkDistribution {
 	private final Path conf;
 	private final Path log;
 	private final Path bin;
+	private final Path plugins;
 
 	private final Configuration defaultConfig;
 
@@ -80,6 +81,7 @@ final class FlinkDistribution {
 		lib = distributionDir.resolve("lib");
 		conf = distributionDir.resolve("conf");
 		log = distributionDir.resolve("log");
+		plugins = distributionDir.resolve("plugins");
 
 		defaultConfig = new UnmodifiableConfiguration(GlobalConfiguration.loadConfiguration(conf.toAbsolutePath().toString()));
 	}
@@ -200,28 +202,45 @@ final class FlinkDistribution {
 			commands.add("--jar");
 			commands.add(jar);
 		}
-		commands.add("--update");
-		commands.add("\"" + job.getSQL() + "\"");
 
-		AutoClosableProcess.runBlocking(commands.toArray(new String[0]));
+		AutoClosableProcess
+			.create(commands.toArray(new String[0]))
+			.setStdInputs(job.getSqlLines().toArray(new String[0]))
+			.setStdoutProcessor(LOG::info) // logging the SQL statements and error message
+			.runBlocking();
 	}
 
-	public void moveJar(JarMove move) throws IOException {
-		final Path source = mapJarLocationToPath(move.getSource());
-		final Path target = mapJarLocationToPath(move.getTarget());
+	public void performJarOperation(JarOperation operation) throws IOException {
+		final Path source = mapJarLocationToPath(operation.getSource());
+		final Path target = mapJarLocationToPath(operation.getTarget());
 
 		final Optional<Path> jarOptional;
 		try (Stream<Path> files = Files.walk(source)) {
 			jarOptional = files
-				.filter(path -> path.getFileName().toString().startsWith(move.getJarNamePrefix()))
+				.filter(path -> path.getFileName().toString().startsWith(operation.getJarNamePrefix()))
 				.findFirst();
 		}
 		if (jarOptional.isPresent()) {
 			final Path sourceJar = jarOptional.get();
-			final Path targetJar = target.resolve(sourceJar.getFileName());
-			Files.move(sourceJar, targetJar);
+			final Path targetJar = target.resolve(operation.getJarNamePrefix()).resolve(sourceJar.getFileName());
+			Files.createDirectories(targetJar.getParent());
+			switch (operation.getOperationType()){
+				case COPY:
+					Files.copy(sourceJar, targetJar);
+					break;
+				case MOVE:
+					Files.move(sourceJar, targetJar);
+					if (operation.getSource() == JarLocation.PLUGINS) {
+						// plugin system crashes on startup if a plugin directory is empty
+						Files.delete(sourceJar.getParent());
+					}
+					break;
+				default:
+					throw new IllegalStateException();
+			}
+
 		} else {
-			throw new FileNotFoundException("No jar could be found matching the pattern " + move.getJarNamePrefix() + ".");
+			throw new FileNotFoundException("No jar could be found matching the pattern " + operation.getJarNamePrefix() + ".");
 		}
 	}
 
@@ -231,6 +250,8 @@ final class FlinkDistribution {
 				return lib;
 			case OPT:
 				return opt;
+			case PLUGINS:
+				return plugins;
 			default:
 				throw new IllegalStateException();
 		}
@@ -249,7 +270,7 @@ final class FlinkDistribution {
 	}
 
 	public void setTaskExecutorHosts(Collection<String> taskExecutorHosts) throws IOException {
-		Files.write(conf.resolve("slaves"), taskExecutorHosts);
+		Files.write(conf.resolve("workers"), taskExecutorHosts);
 	}
 
 	public Stream<String> searchAllLogs(Pattern pattern, Function<Matcher, String> matchProcessor) throws IOException {

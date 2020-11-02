@@ -29,6 +29,7 @@ import org.apache.flink.runtime.util.ClassLoaderUtil;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.collector.selector.OutputSelector;
+import org.apache.flink.streaming.api.environment.ExecutionCheckpointingOptions;
 import org.apache.flink.streaming.api.operators.SimpleOperatorFactory;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
@@ -73,7 +74,6 @@ public class StreamConfig implements Serializable {
 	private static final String VERTEX_NAME = "vertexID";
 	private static final String ITERATION_ID = "iterationId";
 	private static final String OUTPUT_SELECTOR_WRAPPER = "outputSelectorWrapper";
-	private static final String BUFFER_TIMEOUT = "bufferTimeout";
 	private static final String TYPE_SERIALIZERS_IN_COUNT = "typeSerializer_in_count";
 	private static final String TYPE_SERIALIZERS_IN_PATTERN = "typeSerializer_in_%d";
 	private static final String TYPE_SERIALIZER_OUT_1 = "typeSerializer_out";
@@ -81,7 +81,6 @@ public class StreamConfig implements Serializable {
 	private static final String ITERATON_WAIT = "iterationWait";
 	private static final String NONCHAINED_OUTPUTS = "nonChainedOutputs";
 	private static final String EDGES_IN_ORDER = "edgesInOrder";
-	private static final String OUT_STREAM_EDGES = "outStreamEdges";
 	private static final String IN_STREAM_EDGES = "inStreamEdges";
 	private static final String OPERATOR_NAME = "operatorName";
 	private static final String OPERATOR_ID = "operatorID";
@@ -103,7 +102,6 @@ public class StreamConfig implements Serializable {
 	//  Default Values
 	// ------------------------------------------------------------------------
 
-	private static final long DEFAULT_TIMEOUT = 100;
 	private static final CheckpointingMode DEFAULT_CHECKPOINTING_MODE = CheckpointingMode.EXACTLY_ONCE;
 
 	private static final double DEFAULT_MANAGED_MEMORY_FRACTION = 0.0;
@@ -236,19 +234,6 @@ public class StreamConfig implements Serializable {
 		}
 	}
 
-	public void setBufferTimeout(long timeout) {
-		config.setLong(BUFFER_TIMEOUT, timeout);
-	}
-
-	public long getBufferTimeout() {
-		return config.getLong(BUFFER_TIMEOUT, DEFAULT_TIMEOUT);
-	}
-
-	public boolean isFlushAlwaysEnabled() {
-		return getBufferTimeout() == 0;
-	}
-
-	@VisibleForTesting
 	public void setStreamOperator(StreamOperator<?> operator) {
 		setStreamOperatorFactory(SimpleOperatorFactory.of(operator));
 	}
@@ -376,23 +361,6 @@ public class StreamConfig implements Serializable {
 		}
 	}
 
-	public void setOutEdges(List<StreamEdge> outEdges) {
-		try {
-			InstantiationUtil.writeObjectToConfig(outEdges, this.config, OUT_STREAM_EDGES);
-		} catch (IOException e) {
-			throw new StreamTaskException("Cannot serialize outward edges.", e);
-		}
-	}
-
-	public List<StreamEdge> getOutEdges(ClassLoader cl) {
-		try {
-			List<StreamEdge> outEdges = InstantiationUtil.readObjectFromConfig(this.config, OUT_STREAM_EDGES, cl);
-			return outEdges == null ? new ArrayList<StreamEdge>() : outEdges;
-		} catch (Exception e) {
-			throw new StreamTaskException("Could not instantiate outputs.", e);
-		}
-	}
-
 	public void setInPhysicalEdges(List<StreamEdge> inEdges) {
 		try {
 			InstantiationUtil.writeObjectToConfig(inEdges, this.config, IN_STREAM_EDGES);
@@ -431,6 +399,18 @@ public class StreamConfig implements Serializable {
 		} else {
 			return DEFAULT_CHECKPOINTING_MODE;
 		}
+	}
+
+	public void setUnalignedCheckpointsEnabled(boolean enabled) {
+		config.setBoolean(ExecutionCheckpointingOptions.ENABLE_UNALIGNED, enabled);
+	}
+
+	public boolean isUnalignedCheckpointsEnabled() {
+		return config.getBoolean(ExecutionCheckpointingOptions.ENABLE_UNALIGNED, false);
+	}
+
+	public boolean isExactlyOnceCheckpointMode() {
+		return getCheckpointMode() == CheckpointingMode.EXACTLY_ONCE;
 	}
 
 	public void setOutEdgesInOrder(List<StreamEdge> outEdgeList) {
@@ -606,7 +586,6 @@ public class StreamConfig implements Serializable {
 		catch (Exception e) {
 			builder.append("\nOperator: Missing");
 		}
-		builder.append("\nBuffer timeout: ").append(getBufferTimeout());
 		builder.append("\nState Monitoring: ").append(isCheckpointingEnabled());
 		if (isChainStart() && getChainedOutputs(cl).size() > 0) {
 			builder.append("\n\n\n---------------------\nChained task configs\n---------------------\n");

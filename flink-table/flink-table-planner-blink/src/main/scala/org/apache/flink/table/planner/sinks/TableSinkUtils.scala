@@ -23,21 +23,25 @@ import org.apache.flink.api.java.typeutils.{GenericTypeInfo, PojoTypeInfo, Tuple
 import org.apache.flink.api.scala.typeutils.CaseClassTypeInfo
 import org.apache.flink.table.api._
 import org.apache.flink.table.catalog.{CatalogTable, ObjectIdentifier}
-import org.apache.flink.table.dataformat.BaseRow
+import org.apache.flink.table.connector.sink.DynamicTableSink
+import org.apache.flink.table.connector.sink.abilities.{SupportsOverwrite, SupportsPartitioning}
+import org.apache.flink.table.data.RowData
 import org.apache.flink.table.operations.CatalogSinkModifyOperation
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory
-import org.apache.flink.table.planner.plan.utils.RelOptUtils
 import org.apache.flink.table.runtime.types.TypeInfoDataTypeConverter.fromDataTypeToTypeInfo
-import org.apache.flink.table.runtime.typeutils.BaseRowTypeInfo
+import org.apache.flink.table.runtime.typeutils.RowDataTypeInfo
 import org.apache.flink.table.sinks._
 import org.apache.flink.table.types.DataType
-import org.apache.flink.table.types.inference.TypeTransformations.{legacyDecimalToDefaultDecimal, toNullable, legacyRawToTypeInfoRaw}
-import org.apache.flink.table.types.logical.utils.{LogicalTypeCasts, LogicalTypeChecks}
-import org.apache.flink.table.types.logical.{LegacyTypeInformationType, LogicalType, RowType, TypeInformationRawType}
+import org.apache.flink.table.types.inference.TypeTransformations.{legacyDecimalToDefaultDecimal, legacyRawToTypeInfoRaw, toNullable}
+import org.apache.flink.table.types.logical.utils.LogicalTypeCasts.{supportsAvoidingCast, supportsImplicitCast}
+import org.apache.flink.table.types.logical.utils.LogicalTypeChecks
+import org.apache.flink.table.types.logical.{LegacyTypeInformationType, RowType}
 import org.apache.flink.table.types.utils.DataTypeUtils
 import org.apache.flink.table.types.utils.TypeConversions.{fromLegacyInfoToDataType, fromLogicalToDataType}
 import org.apache.flink.table.utils.{TableSchemaUtils, TypeMappingUtils}
 import org.apache.flink.types.Row
+
+import org.apache.calcite.plan.RelOptUtil
 import org.apache.calcite.rel.RelNode
 
 import _root_.scala.collection.JavaConversions._
@@ -62,33 +66,33 @@ object TableSinkUtils {
       sinkIdentifier: Option[String] = None): RelNode = {
 
     val queryLogicalType = FlinkTypeFactory.toLogicalRowType(query.getRowType)
+    val sinkDataType = sinkSchema.toRowDataType
     val sinkLogicalType = DataTypeUtils
       // we recognize legacy decimal is the same to default decimal
-      .transform(sinkSchema.toRowDataType, legacyDecimalToDefaultDecimal, legacyRawToTypeInfoRaw)
+      // we ignore NULL constraint, the NULL constraint will be checked during runtime
+      // see StreamExecSink and BatchExecSink
+      .transform(sinkDataType, legacyDecimalToDefaultDecimal, legacyRawToTypeInfoRaw, toNullable)
       .getLogicalType
       .asInstanceOf[RowType]
-    if (LogicalTypeCasts.supportsImplicitCast(queryLogicalType, sinkLogicalType)) {
+    if (supportsImplicitCast(queryLogicalType, sinkLogicalType)) {
       // the query can be written into sink
       // but we may need to add a cast project if the types are not compatible
-      if (LogicalTypeChecks.areTypesCompatible(
-          nullableLogicalType(queryLogicalType), nullableLogicalType(sinkLogicalType))) {
-        // types are compatible excepts nullable, do not need cast project
-        // we ignores nullable to avoid cast project as cast non-null to nullable is redundant
+      if (supportsAvoidingCast(queryLogicalType, sinkLogicalType)) {
         query
       } else {
         // otherwise, add a cast project
         val castedDataType = typeFactory.buildRelNodeRowType(
           sinkLogicalType.getFieldNames,
           sinkLogicalType.getFields.map(_.getType))
-        RelOptUtils.createCastRel(query, castedDataType)
+        RelOptUtil.createCastRel(query, castedDataType, true)
       }
     } else {
       // format query and sink schema strings
       val srcSchema = queryLogicalType.getFields
-        .map(f => s"${f.getName}: ${f.getType}")
+        .map(f => s"${f.getName}: ${f.getType.asSerializableString()}")
         .mkString("[", ", ", "]")
       val sinkSchema = sinkLogicalType.getFields
-        .map(f => s"${f.getName}: ${f.getType}")
+        .map(f => s"${f.getName}: ${f.getType.asSerializableString()}")
         .mkString("[", ", ", "]")
 
       val sinkDesc: String = sinkIdentifier.getOrElse("")
@@ -98,13 +102,6 @@ object TableSinkUtils {
           s"Query schema: $srcSchema\n" +
           s"Sink schema: $sinkSchema")
     }
-  }
-
-  /**
-    * Make the logical type nullable recursively.
-    */
-  private def nullableLogicalType(logicalType: LogicalType): LogicalType = {
-    DataTypeUtils.transform(fromLogicalToDataType(logicalType), toNullable).getLogicalType
   }
 
   /**
@@ -149,6 +146,54 @@ object TableSinkUtils {
         assert(!sinkOperation.isOverwrite, "INSERT OVERWRITE requires " +
           s"${classOf[OverwritableTableSink].getSimpleName} but actually got " +
           sink.getClass.getName)
+    }
+  }
+
+  /**
+   * It checks whether the [[DynamicTableSink]] is compatible to the INSERT INTO clause, e.g.
+   * whether the sink implements [[SupportsOverwrite]] and [[SupportsPartitioning]].
+   *
+   * @param sinkOperation The sink operation with the query that is supposed to be written.
+   * @param sinkIdentifier Tha path of the sink. It is needed just for logging. It does not
+   *                      participate in the validation.
+   * @param sink     The sink that we want to write to.
+   * @param partitionKeys The partition keys of this table.
+   */
+  def validateTableSink(
+    sinkOperation: CatalogSinkModifyOperation,
+    sinkIdentifier: ObjectIdentifier,
+    sink: DynamicTableSink,
+    partitionKeys: Seq[String]): Unit = {
+
+    // check partitions are valid
+    if (partitionKeys.nonEmpty) {
+      sink match {
+        case _: SupportsPartitioning => // pass
+        case _ => throw new TableException(
+          s"'${sinkIdentifier.asSummaryString()}' is a partitioned table, " +
+            s"but the underlying [${sink.asSummaryString()}] DynamicTableSink " +
+            s"doesn't implement SupportsPartitioning interface.")
+      }
+    }
+
+    val staticPartitions = sinkOperation.getStaticPartitions
+    if (staticPartitions != null && !staticPartitions.isEmpty) {
+      staticPartitions.map(_._1) foreach { p =>
+        if (!partitionKeys.contains(p)) {
+          throw new ValidationException(s"Static partition column $p should be in the partition" +
+            s" fields list $partitionKeys for table '$sinkIdentifier'.")
+        }
+      }
+    }
+
+    sink match {
+      case overwritable: SupportsOverwrite =>
+        overwritable.applyOverwrite(sinkOperation.isOverwrite)
+      case _ =>
+        if (sinkOperation.isOverwrite) {
+          throw new ValidationException(s"INSERT OVERWRITE requires ${sink.asSummaryString()} " +
+            "DynamicTableSink to implement SupportsOverwrite interface.")
+        }
     }
   }
 
@@ -275,13 +320,13 @@ object TableSinkUtils {
     requestedTypeInfo match {
       case gt: GenericTypeInfo[Row] if gt.getTypeClass == classOf[Row] =>
         fromLogicalToDataType(queryLogicalType).bridgedTo(classOf[Row])
-      case gt: GenericTypeInfo[BaseRow] if gt.getTypeClass == classOf[BaseRow] =>
-        fromLogicalToDataType(queryLogicalType).bridgedTo(classOf[BaseRow])
-      case bt: BaseRowTypeInfo =>
+      case gt: GenericTypeInfo[RowData] if gt.getTypeClass == classOf[RowData] =>
+        fromLogicalToDataType(queryLogicalType).bridgedTo(classOf[RowData])
+      case bt: RowDataTypeInfo =>
         val fields = bt.getFieldNames.zip(bt.getLogicalTypes).map { case (n, t) =>
           DataTypes.FIELD(n, fromLogicalToDataType(t))
         }
-        DataTypes.ROW(fields: _*).bridgedTo(classOf[BaseRow])
+        DataTypes.ROW(fields: _*).bridgedTo(classOf[RowData])
       case _ =>
         fromLegacyInfoToDataType(requestedTypeInfo)
     }
@@ -327,5 +372,16 @@ object TableSinkUtils {
         logicalFieldName,
         false)
      }
+  }
+
+  /**
+   * Gets the NOT NULL physical field indices on the [[CatalogTable]].
+   */
+  def getNotNullFieldIndices(catalogTable: CatalogTable): Array[Int] = {
+    val rowType = catalogTable.getSchema.toPhysicalRowDataType.getLogicalType.asInstanceOf[RowType]
+    val fieldTypes = rowType.getFields.map(_.getType).toArray
+    fieldTypes.indices.filter { index =>
+      !fieldTypes(index).isNullable
+    }.toArray
   }
 }

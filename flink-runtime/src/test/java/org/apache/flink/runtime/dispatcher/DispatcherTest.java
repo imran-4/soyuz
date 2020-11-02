@@ -64,6 +64,7 @@ import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.testtasks.NoOpInvokable;
 import org.apache.flink.runtime.testutils.TestingJobGraphStore;
 import org.apache.flink.runtime.util.TestingFatalErrorHandler;
+import org.apache.flink.runtime.util.TestingFatalErrorHandlerResource;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.TestLogger;
@@ -124,11 +125,12 @@ public class DispatcherTest extends TestLogger {
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
 	@Rule
+	public final TestingFatalErrorHandlerResource testingFatalErrorHandlerResource = new TestingFatalErrorHandlerResource();
+
+	@Rule
 	public TestName name = new TestName();
 
 	private JobGraph jobGraph;
-
-	private TestingFatalErrorHandler fatalErrorHandler;
 
 	private TestingLeaderElectionService jobMasterLeaderElectionService;
 
@@ -165,7 +167,6 @@ public class DispatcherTest extends TestLogger {
 		testVertex.setInvokableClass(NoOpInvokable.class);
 		jobGraph = new JobGraph(TEST_JOB_ID, "testJob", testVertex);
 
-		fatalErrorHandler = new TestingFatalErrorHandler();
 		heartbeatServices = new HeartbeatServices(1000L, 10000L);
 
 		jobMasterLeaderElectionService = new TestingLeaderElectionService();
@@ -204,6 +205,9 @@ public class DispatcherTest extends TestLogger {
 
 		private Collection<JobGraph> initialJobGraphs = Collections.emptyList();
 
+		private DispatcherBootstrapFactory dispatcherBootstrapFactory =
+				(dispatcher, scheduledExecutor, errorHandler) -> new NoOpDispatcherBootstrap();
+
 		private HeartbeatServices heartbeatServices = DispatcherTest.this.heartbeatServices;
 
 		private HighAvailabilityServices haServices = DispatcherTest.this.haServices;
@@ -227,6 +231,12 @@ public class DispatcherTest extends TestLogger {
 			return this;
 		}
 
+		TestingDispatcherBuilder setDispatcherBootstrapFactory(
+				DispatcherBootstrapFactory dispatcherBootstrapFactory) {
+			this.dispatcherBootstrapFactory = dispatcherBootstrapFactory;
+			return this;
+		}
+
 		TestingDispatcherBuilder setJobManagerRunnerFactory(JobManagerRunnerFactory jobManagerRunnerFactory) {
 			this.jobManagerRunnerFactory = jobManagerRunnerFactory;
 			return this;
@@ -244,9 +254,9 @@ public class DispatcherTest extends TestLogger {
 
 			return new TestingDispatcher(
 				rpcService,
-				Dispatcher.DISPATCHER_NAME + '_' + name.getMethodName(),
 				DispatcherId.generate(),
 				initialJobGraphs,
+				dispatcherBootstrapFactory,
 				new DispatcherServices(
 					configuration,
 					haServices,
@@ -254,7 +264,7 @@ public class DispatcherTest extends TestLogger {
 					blobServer,
 					heartbeatServices,
 					archivedExecutionGraphStore,
-					fatalErrorHandler,
+					testingFatalErrorHandlerResource.getFatalErrorHandler(),
 					VoidHistoryServerArchivist.INSTANCE,
 					null,
 					UnregisteredMetricGroups.createUnregisteredJobManagerMetricGroup(),
@@ -265,12 +275,8 @@ public class DispatcherTest extends TestLogger {
 
 	@After
 	public void tearDown() throws Exception {
-		try {
-			fatalErrorHandler.rethrowError();
-		} finally {
-			if (dispatcher != null) {
-				RpcUtils.terminateRpcEndpoint(dispatcher, TIMEOUT);
-			}
+		if (dispatcher != null) {
+			RpcUtils.terminateRpcEndpoint(dispatcher, TIMEOUT);
 		}
 
 		if (haServices != null) {
@@ -454,6 +460,8 @@ public class DispatcherTest extends TestLogger {
 			.build();
 
 		dispatcher.start();
+
+		final TestingFatalErrorHandler fatalErrorHandler = testingFatalErrorHandlerResource.getFatalErrorHandler();
 
 		final Throwable error = fatalErrorHandler.getErrorFuture().get(TIMEOUT.toMilliseconds(), TimeUnit.MILLISECONDS);
 

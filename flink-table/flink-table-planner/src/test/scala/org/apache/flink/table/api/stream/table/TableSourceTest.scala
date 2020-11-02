@@ -20,11 +20,12 @@ package org.apache.flink.table.api.stream.table
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.RowTypeInfo
-import org.apache.flink.table.api.{Over, TableSchema, Tumble, Types}
-import org.apache.flink.table.api.scala._
+import org.apache.flink.table.api._
+import org.apache.flink.table.api.internal.TableEnvironmentInternal
 import org.apache.flink.table.utils.TableTestUtil._
 import org.apache.flink.table.utils.{TableTestBase, TestNestedProjectableTableSource, TestProjectableTableSource, TestTableSourceWithTime}
 import org.apache.flink.types.Row
+
 import org.junit.Test
 
 class TableSourceTest extends TableTestBase {
@@ -45,7 +46,7 @@ class TableSourceTest extends TableTestBase {
       "rowTimeT",
       new TestTableSourceWithTime[Row](tableSchema, returnType, Seq(), rowtime = "rowtime"))
 
-    val t = util.tableEnv.scan("rowTimeT").select("rowtime, id, name, val")
+    val t = util.tableEnv.scan("rowTimeT").select($"rowtime", $"id", $"name", $"val")
 
     val expected = "StreamTableSourceScan(table=[[default_catalog, default_database, rowTimeT]], " +
       "fields=[rowtime, id, name, val], " +
@@ -69,7 +70,7 @@ class TableSourceTest extends TableTestBase {
       "rowTimeT",
       new TestTableSourceWithTime[Row](tableSchema, returnType, Seq(), rowtime = "rowtime"))
 
-    val t = util.tableEnv.scan("rowTimeT").select("rowtime, id, name, val")
+    val t = util.tableEnv.scan("rowTimeT").select($"rowtime", $"id", $"name", $"val")
 
     val expected = "StreamTableSourceScan(table=[[default_catalog, default_database, rowTimeT]], " +
       "fields=[rowtime, id, name, val], " +
@@ -94,7 +95,7 @@ class TableSourceTest extends TableTestBase {
       new TestTableSourceWithTime[Row](tableSchema, returnType, Seq(), rowtime = "rowtime"))
 
     val t = util.tableEnv.scan("rowTimeT")
-      .filter("val > 100")
+      .filter($"val" > 100)
       .window(Tumble over 10.minutes on 'rowtime as 'w)
       .groupBy('name, 'w)
       .select('name, 'w.end, 'val.avg)
@@ -136,7 +137,7 @@ class TableSourceTest extends TableTestBase {
       "procTimeT",
       new TestTableSourceWithTime[Row](tableSchema, returnType, Seq(), proctime = "proctime"))
 
-    val t = util.tableEnv.scan("procTimeT").select("proctime, id, name, val")
+    val t = util.tableEnv.scan("procTimeT").select($"proctime", $"id", $"name", $"val")
 
     val expected =
       unaryNode(

@@ -285,6 +285,7 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 						CheckpointRetentionPolicy.NEVER_RETAIN_AFTER_TERMINATION,
 						true,
 						false,
+						false,
 						0),
 				null));
 
@@ -316,7 +317,7 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 
 		private long synchronousSavepointId = Long.MIN_VALUE;
 
-		public ExceptionOnCallbackStreamTask(final Environment environment) {
+		public ExceptionOnCallbackStreamTask(final Environment environment) throws Exception {
 			super(environment);
 		}
 
@@ -351,6 +352,11 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 
 			return super.notifyCheckpointCompleteAsync(checkpointId);
 		}
+
+		@Override
+		public Future<Void> notifyCheckpointAbortAsync(long checkpointId) {
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 
 	/**
@@ -360,7 +366,7 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 
 		private final transient OneShotLatch finishLatch;
 
-		public NoOpBlockingStreamTask(final Environment environment) {
+		public NoOpBlockingStreamTask(final Environment environment) throws Exception {
 			super(environment);
 			this.finishLatch = new OneShotLatch();
 		}
@@ -387,7 +393,7 @@ public class JobMasterStopWithSavepointIT extends AbstractTestBase {
 
 		private final transient OneShotLatch finishLatch;
 
-		public CheckpointCountingTask(final Environment environment) {
+		public CheckpointCountingTask(final Environment environment) throws Exception {
 			super(environment);
 			this.finishLatch = new OneShotLatch();
 		}

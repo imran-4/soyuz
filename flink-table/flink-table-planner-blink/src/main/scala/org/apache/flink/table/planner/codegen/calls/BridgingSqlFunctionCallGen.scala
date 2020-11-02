@@ -22,10 +22,10 @@ import java.lang.reflect.Method
 import java.util.Collections
 
 import org.apache.calcite.rex.{RexCall, RexCallBinding}
-import org.apache.flink.table.dataformat.GenericRow
+import org.apache.flink.table.data.GenericRowData
 import org.apache.flink.table.functions.UserDefinedFunctionHelper.{SCALAR_EVAL, TABLE_EVAL}
 import org.apache.flink.table.functions.{FunctionKind, ScalarFunction, TableFunction, UserDefinedFunction}
-import org.apache.flink.table.planner.codegen.CodeGenUtils.{genToExternalIfNeeded, genToInternalIfNeeded, newName, typeTerm}
+import org.apache.flink.table.planner.codegen.CodeGenUtils._
 import org.apache.flink.table.planner.codegen.GeneratedExpression.NEVER_NULL
 import org.apache.flink.table.planner.codegen._
 import org.apache.flink.table.planner.functions.bridging.BridgingSqlFunction
@@ -33,10 +33,10 @@ import org.apache.flink.table.planner.functions.inference.OperatorBindingCallCon
 import org.apache.flink.table.planner.utils.JavaScalaConversionUtil.toScala
 import org.apache.flink.table.runtime.collector.WrappingCollector
 import org.apache.flink.table.types.DataType
-import org.apache.flink.table.types.extraction.utils.ExtractionUtils
-import org.apache.flink.table.types.extraction.utils.ExtractionUtils.{createMethodSignatureString, isAssignable, isMethodInvokable, primitiveToWrapper}
+import org.apache.flink.table.types.extraction.ExtractionUtils
+import org.apache.flink.table.types.extraction.ExtractionUtils.{createMethodSignatureString, isAssignable, isInvokable, primitiveToWrapper}
 import org.apache.flink.table.types.inference.TypeInferenceUtil
-import org.apache.flink.table.types.logical.utils.LogicalTypeChecks
+import org.apache.flink.table.types.logical.utils.LogicalTypeCasts.supportsAvoidingCast
 import org.apache.flink.table.types.logical.utils.LogicalTypeChecks.{hasRoot, isCompositeType}
 import org.apache.flink.table.types.logical.{LogicalType, LogicalTypeRoot, RowType}
 import org.apache.flink.util.Preconditions
@@ -110,15 +110,15 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
 
     if (function.getDefinition.getKind == FunctionKind.TABLE) {
       Preconditions.checkState(
-        hasRoot(returnType, LogicalTypeRoot.ROW),
-        "Logical output type of function call should be a ROW type.",
+        isCompositeType(returnType),
+        "Logical output type of function call should be a composite type.",
         Seq(): _*)
       generateTableFunctionCall(
         ctx,
         functionTerm,
         externalOperands,
         outputDataType,
-        returnType.asInstanceOf[RowType])
+        returnType)
     } else {
       generateScalarFunctionCall(ctx, functionTerm, externalOperands, outputDataType)
     }
@@ -129,7 +129,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
       functionTerm: String,
       externalOperands: Seq[GeneratedExpression],
       functionOutputDataType: DataType,
-      outputType: RowType)
+      outputType: LogicalType)
     : GeneratedExpression = {
     val resultCollectorTerm = generateResultCollector(ctx, functionOutputDataType, outputType)
 
@@ -160,7 +160,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
   def generateResultCollector(
       ctx: CodeGeneratorContext,
       outputDataType: DataType,
-      returnType: RowType)
+      returnType: LogicalType)
     : String = {
     val outputType = outputDataType.getLogicalType
 
@@ -172,8 +172,8 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
       val resultGenerator = new ExprCodeGenerator(collectorCtx, outputType.isNullable)
         .bindInput(outputType, externalResultTerm)
       val wrappedResult = resultGenerator.generateConverterResultExpression(
-        returnType,
-        classOf[GenericRow])
+        returnType.asInstanceOf[RowType],
+        classOf[GenericRowData])
       s"""
        |${wrappedResult.code}
        |outputResult(${wrappedResult.resultTerm});
@@ -193,7 +193,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
       outputType,
       externalResultTerm,
       // nullability is handled by the expression code generator if necessary
-      CodeGenUtils.genToInternal(ctx, outputDataType),
+      genToInternalConverter(ctx, outputDataType),
       collectorCode)
     val resultCollectorTerm = newName("resultConverterCollector")
     CollectorCodeGenerator.addToContext(ctx, resultCollectorTerm, resultCollector)
@@ -221,7 +221,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
       s"($externalResultTypeTerm) (${typeTerm(externalResultClassBoxed)})"
     }
     val externalResultTerm = ctx.addReusableLocalVariable(externalResultTypeTerm, "externalResult")
-    val internalExpr = genToInternalIfNeeded(ctx, outputDataType, externalResultTerm)
+    val internalExpr = genToInternalConverterAll(ctx, outputDataType, externalResultTerm)
 
     // function call
     internalExpr.copy(code =
@@ -241,7 +241,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
     operands
       .zip(argumentDataTypes)
       .map { case (operand, dataType) =>
-        operand.copy(resultTerm = genToExternalIfNeeded(ctx, dataType, operand))
+        operand.copy(resultTerm = genToExternalConverterAll(ctx, dataType, operand))
       }
   }
 
@@ -252,8 +252,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
     val enrichedTypes = enrichedDataTypes.map(_.getLogicalType)
     operandTypes.zip(enrichedTypes).foreach { case (operandType, enrichedType) =>
       // check that the logical type has not changed during the enrichment
-      // a nullability mismatch is acceptable if the enriched type can handle it
-      if (operandType != enrichedType && operandType.copy(true) != enrichedType) {
+      if (!supportsAvoidingCast(operandType, enrichedType)) {
         throw new CodeGenException(
           s"Mismatch of function's argument data type '$enrichedType' and actual " +
             s"argument type '$operandType'.")
@@ -295,8 +294,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
     : Unit = {
     val enrichedType = enrichedDataType.getLogicalType
     // check that the logical type has not changed during the enrichment
-    // a nullability mismatch is acceptable if the output type can handle it
-    if (returnType != enrichedType && returnType != enrichedType.copy(true)) {
+    if (!supportsAvoidingCast(enrichedType, returnType)) {
       throw new CodeGenException(
         s"Mismatch of expected output data type '$returnType' and function's " +
           s"output type '$enrichedType'.")
@@ -334,7 +332,7 @@ class BridgingSqlFunctionCallGen(call: RexCall) extends CallGenerator {
     val outputClass = outputDataType.map(_.getConversionClass).getOrElse(classOf[Unit])
     // verifies regular JVM calling semantics
     def methodMatches(method: Method): Boolean = {
-      isMethodInvokable(method, argumentClasses: _*) &&
+      isInvokable(method, argumentClasses: _*) &&
         isAssignable(outputClass, method.getReturnType, true)
     }
     if (!methods.exists(methodMatches)) {

@@ -22,12 +22,11 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.runtime.RowSerializer;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.fnexecution.v1.FlinkFnApi;
-import org.apache.flink.python.env.ProcessPythonEnvironmentManager;
-import org.apache.flink.python.env.PythonDependencyInfo;
 import org.apache.flink.python.env.PythonEnvironmentManager;
 import org.apache.flink.table.functions.python.PythonFunctionInfo;
 import org.apache.flink.table.runtime.typeutils.PythonTypeUtils;
 import org.apache.flink.table.runtime.utils.PassThroughPythonScalarFunctionRunner;
+import org.apache.flink.table.runtime.utils.PythonTestUtils;
 import org.apache.flink.table.types.logical.BigIntType;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.Row;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.apache.flink.table.runtime.utils.PythonTestUtils.createTestEnvironmentManager;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -198,11 +198,7 @@ public class PythonScalarFunctionRunnerTest extends AbstractPythonScalarFunction
 			// ignore the execution results
 		};
 
-		final PythonEnvironmentManager environmentManager =
-			new ProcessPythonEnvironmentManager(
-				new PythonDependencyInfo(new HashMap<>(), null, null, new HashMap<>(), null),
-				new String[] {System.getProperty("java.io.tmpdir")},
-				new HashMap<>());
+		final PythonEnvironmentManager environmentManager = createTestEnvironmentManager();
 
 		return new PythonScalarFunctionRunner(
 			"testPythonRunner",
@@ -210,7 +206,9 @@ public class PythonScalarFunctionRunnerTest extends AbstractPythonScalarFunction
 			pythonFunctionInfos,
 			environmentManager,
 			inputType,
-			outputType);
+			outputType,
+			Collections.emptyMap(),
+			PythonTestUtils.createMockFlinkMetricContainer());
 	}
 
 	private AbstractGeneralPythonScalarFunctionRunner<Row> createUDFRunner(
@@ -223,11 +221,7 @@ public class PythonScalarFunctionRunnerTest extends AbstractPythonScalarFunction
 
 		RowType rowType = new RowType(Collections.singletonList(new RowType.RowField("f1", new BigIntType())));
 
-		final PythonEnvironmentManager environmentManager =
-			new ProcessPythonEnvironmentManager(
-				new PythonDependencyInfo(new HashMap<>(), null, null, new HashMap<>(), null),
-				new String[] {System.getProperty("java.io.tmpdir")},
-				new HashMap<>());
+		final PythonEnvironmentManager environmentManager = createTestEnvironmentManager();
 
 		return new PassThroughPythonScalarFunctionRunner<Row>(
 			"testPythonRunner",
@@ -236,7 +230,9 @@ public class PythonScalarFunctionRunnerTest extends AbstractPythonScalarFunction
 			environmentManager,
 			rowType,
 			rowType,
-			jobBundleFactory) {
+			Collections.emptyMap(),
+			jobBundleFactory,
+			PythonTestUtils.createMockFlinkMetricContainer()) {
 			@Override
 			public TypeSerializer<Row> getInputTypeSerializer() {
 				return (RowSerializer) PythonTypeUtils.toFlinkTypeSerializer(getInputType());
