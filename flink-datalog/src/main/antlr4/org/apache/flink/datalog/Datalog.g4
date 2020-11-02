@@ -71,12 +71,21 @@ termList
 term
     : VARIABLE
     | CONSTANT
+    | non_mon_aggr
+    | mon_aggr
     | (UNARY_OPERATOR)? ( integer )+
     | LEFT_BRACE termList RIGHT_BRACE
     | LEFT_BRACKET termList ( OR term )? RIGHT_BRACKET
     | <assoc=right> term OPERATOR term
     | atom
     ;
+non_mon_aggr
+    : (AGGR_FUNC) LEFT_BRACE ( TILDE  )  RIGHT_BRACE
+    ;
+mon_aggr
+    : (AGGR_FUNC) LEFT_BRACE ( VARIABLE ( COMMA VARIABLE )* )  RIGHT_BRACE
+    ;
+
 atom
     : LEFT_BRACE RIGHT_BRACE
     | LEFT_BRACKET RIGHT_BRACKET
@@ -111,6 +120,9 @@ OPERATOR //TODO: add more binary operators
 UNARY_OPERATOR //TODO: add more unary operators
     : '-' | '+'
     ;
+AGGR_FUNC
+	: 'min' | 'max' | 'sum' | 'count' | 'avg'
+	;
 fragment SINGLE_QUOTED_STRING
     : '\'' ( ESC_SEQ | ~( '\\'|'\'' ) )* '\''
     ;

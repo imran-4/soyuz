@@ -36,7 +36,7 @@ under the License.
 
     <properties>
         <antlr.version>4.7.2</antlr.version>
-        <calcite.version>1.21.0</calcite.version>
+        <calcite.version>1.26.0</calcite.version>
     </properties>
 
     <dependencies>
