@@ -29,7 +29,7 @@ public class TriangleCount {
 		BatchDatalogEnvironment datalogEnv = BatchDatalogEnvironment.create(env, settings);
 		DataSet<Tuple2<Integer, Integer>> dataSet = env.readCsvFile(testFilePath).fieldDelimiter(",").types(Integer.class, Integer.class);
 
-		datalogEnv.registerDataSet("Edge", dataSet, "v1,v2");
+		datalogEnv.registerDataSet("arc", dataSet, "v1,v2");
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 		DataSet<Tuple2<Integer, Integer>> resultDS = datalogEnv.toDataSet(queryResult, dataSet.getType());
 
