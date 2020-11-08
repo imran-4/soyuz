@@ -88,6 +88,20 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		}
 	}
 
+	private static class  MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+		@Override
+		public AndNode  visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
+			return null;
+		}
+	}
+
+	private static class  NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+		@Override
+		public AndNode  visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
+			return null;
+		}
+	}
+
 	private static class PredicateListBuilder extends DatalogBaseVisitor<List<OrNode>> {
 		DatalogParser.RulesContext rulesContext;
 		AndNode headPredicateNode;

@@ -71,18 +71,18 @@ termList
 term
     : VARIABLE
     | CONSTANT
-    | non_mon_aggr
-    | mon_aggr
+    | nonMonotonicAggregates
+    | monotonicAggregates
     | (UNARY_OPERATOR)? ( integer )+
     | LEFT_BRACE termList RIGHT_BRACE
     | LEFT_BRACKET termList ( OR term )? RIGHT_BRACKET
     | <assoc=right> term OPERATOR term
     | atom
     ;
-non_mon_aggr
+nonMonotonicAggregates
     : (AGGR_FUNC) LEFT_BRACE ( TILDE  )  RIGHT_BRACE
     ;
-mon_aggr
+monotonicAggregates
     : (AGGR_FUNC) LEFT_BRACE ( VARIABLE ( COMMA VARIABLE )* )  RIGHT_BRACE
     ;
 
