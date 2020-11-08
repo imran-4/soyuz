@@ -22,6 +22,7 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.ExecutorFactory;
 import org.apache.flink.table.descriptors.DescriptorProperties;
+import org.apache.flink.table.planner.delegation.BatchExecutor;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class DatalogExecutorFactory implements ExecutorFactory {
 		if (Boolean.parseBoolean(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
 			return null;
 		} else {
-			return new DatalogBatchExecutor(executionEnvironment);
+			return new BatchExecutor(executionEnvironment);
 		}
 	}
 

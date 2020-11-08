@@ -21,7 +21,10 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
+import org.apache.flink.table.api.ExplainDetail;
 import org.apache.flink.table.api.TableConfig;
+import org.apache.flink.table.api.TableSchema;
+import org.apache.flink.table.api.internal.SelectTableSink;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
@@ -128,10 +131,34 @@ public class FlinkBatchDatalogPlanner implements Planner {
 			.filter(Objects::nonNull).collect(Collectors.toList());
 	}
 
+	/**
+	 * Creates a {@link SelectTableSink} for a select query.
+	 *
+	 * @param tableSchema the table schema of select result.
+	 * @return The {@link SelectTableSink} for the select query.
+	 */
 	@Override
-	public String explain(List<Operation> operations, boolean extended) {
+	public SelectTableSink createSelectTableSink(TableSchema tableSchema) {
 		return null;
 	}
+
+	/**
+	 * Returns the AST of the specified Table API and SQL queries and the execution plan
+	 * to compute the result of the given collection of {@link QueryOperation}s.
+	 *
+	 * @param operations   The collection of relational queries for which the AST
+	 *                     and execution plan will be returned.
+	 * @param extraDetails The extra explain details which the explain result should include,
+	 */
+	@Override
+	public String explain(List<Operation> operations, ExplainDetail... extraDetails) {
+		return null;
+	}
+
+//	@Override
+//	public String explain(List<Operation> operations, boolean extended) {
+//		return null;
+//	}
 
 	@Override
 	public String[] getCompletionHints(String statement, int position) {

@@ -21,25 +21,34 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.java.BatchTableEnvironment;
+import org.apache.flink.table.api.bridge.java.BatchTableEnvironment;
+//import org.apache.flink.table.api.scala.BatchTableEnvironment;
 
 /**
  *
  */
 public interface BatchDatalogEnvironment extends DatalogEnvironment, BatchTableEnvironment {
-    ExecutionEnvironment ENV = null;
+	ExecutionEnvironment ENV = null;
 
-    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings) {
-        return create(executionEnvironment, environmentSettings, new TableConfig());
-    }
+	static BatchDatalogEnvironment create(
+		ExecutionEnvironment executionEnvironment,
+		EnvironmentSettings environmentSettings) {
+		return create(executionEnvironment, environmentSettings, new TableConfig());
+	}
 
-    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
-        return create(executionEnvironment, EnvironmentSettings.newInstance().build());
-    }
+	static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
+		return create(executionEnvironment, EnvironmentSettings.newInstance().build());
+	}
 
-    static BatchDatalogEnvironment create(ExecutionEnvironment executionEnvironment, EnvironmentSettings environmentSettings, TableConfig tableConfig) {
-        return BatchDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
-    }
+	static BatchDatalogEnvironment create(
+		ExecutionEnvironment executionEnvironment,
+		EnvironmentSettings environmentSettings,
+		TableConfig tableConfig) {
+		return BatchDatalogEnvironmentImpl.create(
+			executionEnvironment,
+			environmentSettings,
+			tableConfig);
+	}
 
-    Table datalogQuery(String inputProgram, String query);
+	Table datalogQuery(String inputProgram, String query);
 }

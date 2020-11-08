@@ -20,60 +20,72 @@ package org.apache.flink.datalog.executor;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InputDependencyConstraint;
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.dag.Pipeline;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.streaming.api.transformations.ShuffleMode;
+import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.config.ExecutionConfigOptions;
+import org.apache.flink.table.planner.delegation.BatchExecutor;
 
 import java.util.List;
 
 /**
  *
  */
-public class DatalogBatchExecutor extends ExecutorBase {
+public class DatalogBatchExecutor extends BatchExecutor {
     public DatalogBatchExecutor(StreamExecutionEnvironment executionEnvironment) {
         super(executionEnvironment);
     }
 
-    @Override
-    public void apply(List<Transformation<?>> transformations) {
-        this.transformations.addAll(transformations);
+    //    @Override
+//    public void apply(List<Transformation<?>> transformations) {
+//        this.transformations.addAll(transformations);
+//
+//    }
 
-    }
 
-    @Override
-    public JobExecutionResult execute(String jobName) throws Exception {
-        StreamExecutionEnvironment execEnv = getExecutionEnvironment();
-        StreamGraph streamGraph = generateStreamGraph(jobName);
-        return execEnv.execute(streamGraph);
-    }
+	/**
+	 * Translates the given transformations to a Pipeline.
+	 *
+	 * @param transformations list of transformations
+	 * @param tableConfig
+	 * @param jobName         what should be the name of the job
+	 * @return The pipeline representing the transformations.
+	 */
+	@Override
+	public Pipeline createPipeline(
+		List<Transformation<?>> transformations,
+		TableConfig tableConfig,
+		String jobName) {
+		return null;
+	}
 
-    private void setBatchProperties(StreamExecutionEnvironment execEnv) {
-        ExecutionConfig executionConfig = execEnv.getConfig();
-        executionConfig.enableObjectReuse();
-        executionConfig.setLatencyTrackingInterval(-1);
-        execEnv.setStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
-        execEnv.setBufferTimeout(-1);
-        if (isShuffleModeAllBatch()) {
-            executionConfig.setDefaultInputDependencyConstraint(InputDependencyConstraint.ALL);
-        }
-    }
+//	/**
+//	 * Executes the given pipeline.
+//	 *
+//	 * @param pipeline the pipeline to execute
+//	 * @return The result of the job execution, containing elapsed time and accumulators.
+//	 * @throws Exception which occurs during job execution.
+//	 */
+//	@Override
+//	public JobExecutionResult execute(Pipeline pipeline) throws Exception {
+//		return super.getExecutionEnvironment().execute(pipeline);
+//	}
 
-    @Override
-    public StreamGraph generateStreamGraph(List<Transformation<?>> transformations, String jobName) {
-        throw new UnsupportedOperationException("Not implemented yet.");
-    }
-
-    private boolean isShuffleModeAllBatch() {
-        String value = tableConfig.getConfiguration().getString(ExecutionConfigOptions.TABLE_EXEC_SHUFFLE_MODE);
-        if (value.equalsIgnoreCase(ShuffleMode.BATCH.toString())) {
-            return true;
-        } else if (!value.equalsIgnoreCase(ShuffleMode.PIPELINED.toString())) {
-            throw new IllegalArgumentException(ExecutionConfigOptions.TABLE_EXEC_SHUFFLE_MODE.key() +
-                    " can only be set to " + ShuffleMode.BATCH.toString() + " or " + ShuffleMode.PIPELINED.toString());
-        }
-        return false;
-    }
+	/**
+	 * Executes the given pipeline asynchronously.
+	 *
+	 * @param pipeline the pipeline to execute
+	 * @return A {@link JobClient} that can be used to communicate with the submitted job,
+	 * completed on submission succeeded.
+	 * @throws Exception which occurs during job execution.
+	 */
+	@Override
+	public JobClient executeAsync(Pipeline pipeline) throws Exception {
+		return null;
+	}
 }

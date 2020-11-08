@@ -46,7 +46,6 @@ public abstract class ExecutorBase implements Executor {
 		this.tableConfig = tableConfig;
 	}
 
-	@Override
 	public void apply(List<Transformation<?>> transformations) {
 		this.transformations.addAll(transformations);
 	}
