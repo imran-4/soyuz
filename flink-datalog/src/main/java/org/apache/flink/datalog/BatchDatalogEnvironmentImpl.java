@@ -17,14 +17,9 @@
 
 package org.apache.flink.datalog;
 
-import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.Plan;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.dag.Pipeline;
-import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
@@ -33,46 +28,25 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
-import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.bridge.java.internal.BatchTableEnvironmentImpl;
-import org.apache.flink.table.api.internal.TableImpl;
-import org.apache.flink.table.catalog.Catalog;
-import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
-import org.apache.flink.table.catalog.ConnectorCatalogTable;
 import org.apache.flink.table.catalog.FunctionCatalog;
 import org.apache.flink.table.catalog.GenericInMemoryCatalog;
 import org.apache.flink.table.catalog.ObjectIdentifier;
-import org.apache.flink.table.catalog.QueryOperationCatalogView;
 import org.apache.flink.table.catalog.UnresolvedIdentifier;
-import org.apache.flink.table.catalog.exceptions.DatabaseNotExistException;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.ExecutorFactory;
-import org.apache.flink.table.descriptors.BatchTableDescriptor;
-import org.apache.flink.table.descriptors.ConnectorDescriptor;
 import org.apache.flink.table.expressions.Expression;
 import org.apache.flink.table.expressions.ExpressionBridge;
-import org.apache.flink.table.expressions.ExpressionParser;
 import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.factories.ComponentFactoryService;
-import org.apache.flink.table.functions.AggregateFunction;
-import org.apache.flink.table.functions.ScalarFunction;
-import org.apache.flink.table.functions.TableFunction;
-import org.apache.flink.table.module.Module;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.table.operations.CatalogQueryOperation;
 import org.apache.flink.table.operations.DataSetQueryOperation;
 import org.apache.flink.table.operations.ModifyOperation;
 import org.apache.flink.table.operations.PlannerQueryOperation;
-import org.apache.flink.table.operations.QueryOperation;
-import org.apache.flink.table.operations.TableSourceQueryOperation;
-import org.apache.flink.table.sinks.TableSink;
-import org.apache.flink.table.sources.BatchTableSource;
-import org.apache.flink.table.sources.InputFormatTableSource;
-import org.apache.flink.table.sources.TableSource;
-import org.apache.flink.table.sources.TableSourceValidation;
 import org.apache.flink.table.typeutils.FieldInfoUtils;
 
 import org.apache.calcite.rel.RelNode;
@@ -81,7 +55,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import scala.Option;
 
@@ -196,420 +169,6 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
 			throw new TableException(
 				"Unsupported Datalog query!");
 		}
-	}
-
-	/**
-	 * @param name The name under which the function is registered.
-	 * @param tableFunction The TableFunction to register.
-	 * @param <T>
-	 */
-	@Override
-	public <T> void registerFunction(String name, TableFunction<T> tableFunction) {
-		throw new UnsupportedOperationException("Not supported."); //there are no functions in datalog
-	}
-
-	@Override
-	public <T, ACC> void registerFunction(
-		String name,
-		AggregateFunction<T, ACC> aggregateFunction) {
-		throw new UnsupportedOperationException("Not supported"); //there are no functions in datalog
-	}
-
-	@Override
-	public <T> Table fromDataSet(DataSet<T> dataSet) {
-		return this.createTable(asQueryOperation(dataSet, Optional.ofNullable(null)));
-	}
-
-	@Override
-	public <T> Table fromDataSet(DataSet<T> dataSet, String fields) {
-		List<Expression> exprs = ExpressionParser
-			.parseExpressionList(fields);
-
-		return createTable(asQueryOperation(dataSet, Optional.of(exprs)));
-	}
-
-	@Override
-	public <T> void registerDataSet(String name, DataSet<T> dataSet) {
-		registerTable(name, fromDataSet(dataSet));
-	}
-
-	@Override
-	public <T> void createTemporaryView(String path, DataSet<T> dataSet) {
-
-	}
-
-	@Override
-	public <T> void registerDataSet(String name, DataSet<T> dataSet, String fields) {
-		registerTable(name, fromDataSet(dataSet, fields));
-	}
-
-	@Override
-	public <T> void createTemporaryView(String path, DataSet<T> dataSet, String fields) {
-
-	}
-
-	@Override
-	public <T> DataSet<T> toDataSet(Table table, Class<T> clazz) {
-		return translate(table, TypeExtractor.createTypeInfo(clazz));
-	}
-
-	@Override
-	public <T> DataSet<T> toDataSet(Table table, TypeInformation<T> typeInfo) {
-		return translate(table, typeInfo);
-	}
-//
-//	@Override
-//	public <T> DataSet<T> toDataSet(Table table, Class<T> clazz, BatchQueryConfig queryConfig) {
-//		return translate(table, TypeExtractor.createTypeInfo(clazz));
-//	}
-//
-//	@Override
-//	public <T> DataSet<T> toDataSet(
-//		Table table,
-//		TypeInformation<T> typeInfo,
-//		BatchQueryConfig queryConfig) {
-//		return translate(table, typeInfo);
-//	}
-//
-//	@Override
-//	public void sqlUpdate(String stmt, BatchQueryConfig config) {
-//		throw new UnsupportedOperationException("");
-//	}
-//
-//	@Override
-//	public void insertInto(
-//		Table table,
-//		BatchQueryConfig queryConfig,
-//		String sinkPath,
-//		String... sinkPathContinued) {
-//		throw new UnsupportedOperationException("Not implemented yet. Will implement later.");
-//	}
-
-	@Override
-	public Table fromTableSource(TableSource<?> source) {
-		return createTable(new TableSourceQueryOperation<>(source, true));
-	}
-
-	@Override
-	public void registerCatalog(String catalogName, Catalog catalog) {
-		catalogManager.registerCatalog(catalogName, catalog);
-	}
-
-	@Override
-	public Optional<Catalog> getCatalog(String catalogName) {
-		return catalogManager.getCatalog(catalogName);
-	}
-
-	@Override
-	public void loadModule(String moduleName, Module module) {
-
-	}
-
-	@Override
-	public void unloadModule(String moduleName) {
-
-	}
-
-	@Override
-	public void registerFunction(String name, ScalarFunction function) {
-		throw new UnsupportedOperationException("Not supported");
-	}
-
-	@Override
-	public void registerTable(String name, Table table) {
-		if (((TableImpl) table).getTableEnvironment() != this) {
-			throw new TableException(
-				"Only tables that belong to this TableEnvironment can be registered.");
-		}
-		CatalogBaseTable view = new QueryOperationCatalogView(table.getQueryOperation());
-		catalogManager.createTable(view, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
-			catalogManager.getBuiltInCatalogName(),
-			catalogManager.getBuiltInDatabaseName(),
-			name)
-		), false);
-	}
-
-	@Override
-	public void registerTableSource(String name, TableSource<?> tableSource) {
-		// the implementation of this function is similar to the one in TableEnvImpl, since its purpose is same.
-		TableSourceValidation.validateTableSource(tableSource, tableSource.getTableSchema());
-
-		if (!(tableSource instanceof BatchTableSource<?>
-			|| tableSource instanceof InputFormatTableSource<?>)) {
-			throw new TableException(
-				"Only BatchTableSource or InputFormatTableSource are allowed here.");
-		}
-		//---------------------------------------------------------------------
-		Optional<CatalogManager.TableLookupResult> table =
-			catalogManager.getTable(catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
-				catalogManager.getBuiltInCatalogName(),
-				catalogManager.getBuiltInDatabaseName(),
-				name)));
-		if (table.isPresent()) {
-			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table
-					.get()
-					.getTable();
-				if (sourceSinkTable.getTableSource().isPresent()) {
-					throw new ValidationException(String.format(
-						"Table '%s' already exists. Please choose a different name.",
-						name));
-				} else {
-					ConnectorCatalogTable sourceAndSink = ConnectorCatalogTable.sourceAndSink(
-						tableSource,
-						sourceSinkTable.getTableSink().get(),
-						true);
-					catalogManager.alterTable(
-						sourceAndSink,
-						catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
-							catalogManager.getBuiltInCatalogName(),
-							catalogManager.getBuiltInDatabaseName(),
-							name)),
-						false);
-				}
-			} else {
-				throw new ValidationException(String.format(
-					"Table '%s' already exists. Please choose a different name.", name));
-			}
-		} else {
-			ConnectorCatalogTable source = ConnectorCatalogTable.source(tableSource, true);
-			catalogManager.createTable(source, catalogManager.qualifyIdentifier(
-				UnresolvedIdentifier.of(
-					catalogManager.getBuiltInCatalogName(),
-					catalogManager.getBuiltInDatabaseName(),
-					name)), false);
-		}
-	}
-
-	@Override
-	public void registerTableSink(
-		String name,
-		String[] fieldNames,
-		TypeInformation<?>[] fieldTypes,
-		TableSink<?> tableSink) {
-		registerTableSink(name, tableSink.configure(fieldNames, fieldTypes));
-	}
-
-	@Override
-	public void registerTableSink(String name, TableSink<?> configuredSink) {
-		if (configuredSink.getTableSchema().getFieldCount() == 0) {
-			throw new TableException("Table schema cannot be empty.");
-		}
-		registerTableSinkInternal(name, configuredSink);
-	}
-
-	@Override
-	public Table scan(String... tablePath) {
-		return Optional.ofNullable(scanInternal(tablePath)).map(x -> createTable(x.get()))
-			.orElseThrow(() -> new ValidationException(String.format(
-				"Table '%s' was not found.",
-				String.join(".", tablePath))));
-	}
-
-	@Override
-	public void insertInto(Table table, String sinkPath, String... sinkPathContinued) {
-		throw new UnsupportedOperationException("Not supported yet. It may be implemented later.");
-	}
-
-	@Override
-	public BatchTableDescriptor connect(ConnectorDescriptor connectorDescriptor) {
-		return null;
-	}
-
-	@Override
-	public String[] listCatalogs() {
-		return this.catalogManager.listCatalogs().toArray(new String[0]);
-	}
-
-	@Override
-	public String[] listModules() {
-		return new String[0];
-	}
-
-	@Override
-	public String[] listDatabases() {
-		List<String> databases = new ArrayList<>();
-		for (String c : this.catalogManager.listCatalogs()) {
-			boolean isCatalogPresent = this.catalogManager.getCatalog(c).isPresent();
-			if (isCatalogPresent) {
-				databases.addAll(this.catalogManager.getCatalog(c).get().listDatabases());
-			}
-		}
-		return databases.toArray(new String[0]);
-	}
-
-	@Override
-	public String[] listTables() {
-		List<String> tables = new ArrayList<>();
-		for (String catalog : this.catalogManager.listCatalogs()) {
-			boolean isCatalogPresent = this.catalogManager.getCatalog(catalog).isPresent();
-			if (isCatalogPresent) {
-				for (String database : this.catalogManager
-					.getCatalog(catalog)
-					.get()
-					.listDatabases()) {
-					try {
-						tables.addAll(this.catalogManager
-							.getCatalog(catalog)
-							.get()
-							.listTables(database));
-					} catch (DatabaseNotExistException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-		return tables.toArray(new String[0]);
-	}
-
-	@Override
-	public String[] listUserDefinedFunctions() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public String[] listFunctions() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
-	public String explain(Table table) {
-		return explain(table, false);
-	}
-
-	@Override
-	public Table sqlQuery(String query) {
-		throw new UnsupportedOperationException(
-			"This implementation is only for Datalog queries, not SQL queries. Use Table API for SQL queries.");
-	}
-
-	@Override
-	public void sqlUpdate(String stmt) {
-		throw new UnsupportedOperationException("Not supported.");
-	}
-
-	@Override
-	public String getCurrentCatalog() {
-		return this.catalogManager.getCurrentCatalog();
-	}
-
-	@Override
-	public void useCatalog(String catalogName) {
-		this.catalogManager.setCurrentCatalog(catalogName);
-	}
-
-	@Override
-	public String getCurrentDatabase() {
-		return this.catalogManager.getCurrentDatabase();
-	}
-
-	@Override
-	public void useDatabase(String databaseName) {
-		this.catalogManager.setCurrentDatabase(databaseName);
-	}
-
-	@Override
-	public TableConfig getConfig() {
-		return this.tableConfig;
-	}
-
-	@Override
-	public JobExecutionResult execute(String jobName) {
-		//translate(bufferedModifyOperations);
-		bufferedModifyOperations.clear();
-		try {
-			Pipeline pipeline = executionEnvironment.createProgramPlan(jobName);
-
-			return this.executor.execute(pipeline);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	private ObjectIdentifier getTemporaryObjectIdentifier(String name) {
-		return catalogManager.qualifyIdentifier(
-			UnresolvedIdentifier.of(
-				catalogManager.getBuiltInCatalogName(),
-				catalogManager.getBuiltInDatabaseName(),
-				name)
-		);
-	}
-
-	public void registerTableSinkInternal(String name, TableSink<?> tableSink) {
-		// for now, similar to the one of TableEnvironmentImpl
-		Optional<CatalogManager.TableLookupResult> table = getCatalogTable(
-			catalogManager.getBuiltInCatalogName(),
-			catalogManager.getBuiltInDatabaseName(),
-			name);
-
-		if (table.isPresent()) {
-			if (table.get().getTable() instanceof ConnectorCatalogTable<?, ?>) {
-				ConnectorCatalogTable<?, ?> sourceSinkTable = (ConnectorCatalogTable<?, ?>) table
-					.get()
-					.getTable();
-				if (sourceSinkTable.getTableSink().isPresent()) {
-					throw new ValidationException(String.format(
-						"Table '%s' already exists. Please choose a different name.", name));
-				} else {
-					ConnectorCatalogTable sourceAndSink = ConnectorCatalogTable
-						.sourceAndSink(sourceSinkTable.getTableSource().get(), tableSink, true);
-					catalogManager.alterTable(
-						sourceAndSink,
-						getTemporaryObjectIdentifier(name),
-						false);
-				}
-			} else {
-				throw new ValidationException(String.format(
-					"Table '%s' already exists. Please choose a different name.", name));
-			}
-		} else {
-			ConnectorCatalogTable sink = ConnectorCatalogTable.sink(tableSink, true);
-			catalogManager.createTable(sink, getTemporaryObjectIdentifier(name), false);
-		}
-	}
-
-	private Optional<CatalogManager.TableLookupResult> getCatalogTable(String... name) {
-		ObjectIdentifier objectIdentifier = catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
-			name));
-		return catalogManager.getTable(objectIdentifier);
-	}
-
-	public TableImpl createTable(QueryOperation tableOperation) {
-		return TableImpl.createTable(
-			this,
-			tableOperation,
-			super.operationTreeBuilder(),
-			functionCatalog.asLookup(new Function<String, UnresolvedIdentifier>() {
-				@Override
-				public UnresolvedIdentifier apply(String s) {
-					return null;
-				}
-			}));
-	}
-
-	public void validateTableSource(TableSource<?> tableSource) {
-		TableSourceValidation.validateTableSource(tableSource, tableSource.getTableSchema());
-	}
-
-	private Option<CatalogQueryOperation> scanInternal(String... tablePath) {
-		return super.scanInternal(UnresolvedIdentifier.of(tablePath));
-	}
-
-	private <T> DataSetQueryOperation<T> asQueryOperation(
-		DataSet<T> dataSet,
-		Optional<List<Expression>> fields) {
-		TypeInformation<T> dataSetType = dataSet.getType();
-
-		FieldInfoUtils.TypeInfoSchema typeInfoSchema = fields
-			.map(f -> FieldInfoUtils.getFieldsInfo(
-				dataSetType,
-				f.toArray(new Expression[0])))
-			.orElseGet(() -> FieldInfoUtils.getFieldsInfo(dataSetType));
-		return new DataSetQueryOperation<T>(
-			dataSet,
-			typeInfoSchema.getIndices(),
-			typeInfoSchema.toTableSchema());
 	}
 
 	@Override
