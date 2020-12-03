@@ -19,6 +19,7 @@ package org.apache.flink.datalog.streaming;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.datalog.DatalogEnvironment;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
@@ -33,17 +34,17 @@ public interface StreamingDatalogEnvironment extends DatalogEnvironment, StreamT
 	ExecutionEnvironment ENV = null;
 
 	static StreamingDatalogEnvironment create(
-		ExecutionEnvironment executionEnvironment,
+		StreamExecutionEnvironment executionEnvironment,
 		EnvironmentSettings environmentSettings) {
 		return create(executionEnvironment, environmentSettings, new TableConfig());
 	}
 
-	static StreamingDatalogEnvironment create(ExecutionEnvironment executionEnvironment) {
+	static StreamingDatalogEnvironment create(StreamExecutionEnvironment executionEnvironment) {
 		return create(executionEnvironment, EnvironmentSettings.newInstance().build());
 	}
 
 	static StreamingDatalogEnvironment create(
-		ExecutionEnvironment executionEnvironment,
+		StreamExecutionEnvironment executionEnvironment,
 		EnvironmentSettings environmentSettings,
 		TableConfig tableConfig) {
 		return null;
