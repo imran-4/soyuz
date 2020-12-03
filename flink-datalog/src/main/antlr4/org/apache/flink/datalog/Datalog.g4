@@ -22,45 +22,44 @@ grammar Datalog;
  * Parser Rules
  */
 
-
 compileUnit
-    : rules query EOF
+    : (rules | facts)*  query EOF
     ;
 rules
-    : ruleClause*
+    : ruleClause+
     ;
 ruleClause
     : headPredicate COLON_HYPGHEN predicateList DOT
     ;
 headPredicate
-    : predicate
+    : predicateName  LEFT_PARANTHESES (( termList | VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates) (COMMA ( termList |  VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates))*) RIGH_PARANTHESES
     ;
-fact // facts should be a separate compilation unit. it is similar to defining dataset using list or sequence..
-    :  factName LEFT_PARANTHESES constantList RIGH_PARANTHESES DOT
+query
+	: headPredicate QUESTION_MARK
+	;
+facts
+	: fact+
+	;
+fact
+    :  factName LEFT_PARANTHESES (( VARIABLE | CONSTANT | DECIMAL) (COMMA (VARIABLE | CONSTANT | DECIMAL))*) RIGH_PARANTHESES DOT
     ;
 factName
     : ( CONSTANT | STRING )
-    ;
-constantList
-    : CONSTANT ( COMMA CONSTANT )*
-    ;
-query
-    : predicate QUESTION_MARK
     ;
 retraction //this should also be a separate compilation unit
     : predicate TILDE
     ;
 predicateList
-    : ( predicate | primitivePredicate ) ( COMMA ( predicate | notPredicate | primitivePredicate ) )*
+    : ( predicate  ) ( COMMA ( predicate ))*
     ;
 notPredicate   // only use in predicateList
     : NOT predicate
     ;
 primitivePredicate // only use in predicateList
-    : ( CONSTANT | VARIABLE | DECIMAL ) COMPARISON_OPERATOR ( CONSTANT | VARIABLE | DECIMAL )
+    : ( CONSTANT | VARIABLE | DECIMAL ) (LANGLE_BRACKET | RANGLE_BRACKET | EQUAL | COMPARISON_OPERATOR) ( CONSTANT | VARIABLE | DECIMAL ) (OPERATOR (VARIABLE|CONSTANT| DECIMAL))*
     ;
 predicate
-    : predicateName  LEFT_PARANTHESES termList RIGH_PARANTHESES
+    : ((predicateName  LEFT_PARANTHESES termList RIGH_PARANTHESES) | primitivePredicate | notPredicate )
     ;
 predicateName
     : ( CONSTANT | STRING )
@@ -74,20 +73,19 @@ term
     | nonMonotonicAggregates
     | monotonicAggregates
     | (UNARY_OPERATOR)? ( integer )+
-    | LEFT_BRACE termList RIGHT_BRACE
+    | LANGLE_BRACKET termList RANGLE_BRACKET
     | LEFT_BRACKET termList ( OR term )? RIGHT_BRACKET
     | <assoc=right> term OPERATOR term
     | atom
     ;
 nonMonotonicAggregates
-    : (AGGR_FUNC) LEFT_BRACE ( TILDE  )  RIGHT_BRACE
+    : AGGR_FUNC LANGLE_BRACKET ( TILDE | VARIABLE  | term )  RANGLE_BRACKET
     ;
 monotonicAggregates
-    : (AGGR_FUNC) LEFT_BRACE ( VARIABLE ( COMMA VARIABLE )* )  RIGHT_BRACE
+    : M_AGGR_FUNC LANGLE_BRACKET ( VARIABLE ( COMMA VARIABLE )* )  RANGLE_BRACKET
     ;
-
 atom
-    : LEFT_BRACE RIGHT_BRACE
+    : LANGLE_BRACKET RANGLE_BRACKET
     | LEFT_BRACKET RIGHT_BRACKET
     | SEMICOLON
     | EXCLAMATION
@@ -110,11 +108,16 @@ DATABASE_KEYWORD
 DATATYPE
     : 'Integer' | 'Float' | 'String' | 'Char' | 'Boolean'
     ;
+EQUAL: '=';
+LANGLE_BRACKET: '<' ;
+RANGLE_BRACKET : '>' ;
+
 COMPARISON_OPERATOR
-    : '<' | '>'  | '!=' | '>=' | '<=' | '='
+    : LANGLE_BRACKET | RANGLE_BRACKET | EQUAL | '!=' | '>=' | '<='
     ;
+
 OPERATOR //TODO: add more binary operators
-    : '+' | '*' | '-' | '/'
+    : '+' | '*' | '-' | '/' | EQUAL
     | '>>' | '<<'
     ;
 UNARY_OPERATOR //TODO: add more unary operators
@@ -122,6 +125,9 @@ UNARY_OPERATOR //TODO: add more unary operators
     ;
 AGGR_FUNC
 	: 'min' | 'max' | 'sum' | 'count' | 'avg'
+	;
+M_AGGR_FUNC
+	: 'mmin' | 'mmax' | 'msum' | 'mcount' | 'mavg'
 	;
 fragment SINGLE_QUOTED_STRING
     : '\'' ( ESC_SEQ | ~( '\\'|'\'' ) )* '\''
@@ -194,8 +200,6 @@ HEX
     ;
 LEFT_PARANTHESES: '(' ;
 RIGH_PARANTHESES: ')' ;
-LEFT_BRACE: '{' ;
-RIGHT_BRACE : '}' ;
 LEFT_BRACKET : '[' ;
 RIGHT_BRACKET : ']' ;
 DOT : '.' ;
