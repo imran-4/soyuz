@@ -23,9 +23,8 @@ import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.{RelNode, RelWriter}
-import org.apache.flink.api.java.DataSet
 import org.apache.flink.streaming.api.datastream.DataStream
-import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.codegen.InputFormatCodeGenerator
 import org.apache.flink.table.planner.StreamPlanner
 import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.table.runtime.types.CRow
@@ -34,15 +33,15 @@ import org.apache.flink.types.Row
 import scala.collection.JavaConverters._
 
 class DataStreamRepeatUnion(
-                          cluster: RelOptCluster,
-                          traitSet: RelTraitSet,
-                          seed: RelNode,
-                          iterative: RelNode,
-                          all: Boolean = true,
-                          iterationLimit: Int,
-                          rowRelDataType: RelDataType)
-  extends RepeatUnion(cluster, traitSet, seed, iterative, all, iterationLimit)
-    with DataStreamRel {
+                               cluster: RelOptCluster,
+                               traitSet: RelTraitSet,
+                               seed: RelNode,
+                               iterative: RelNode,
+                               all: Boolean = true,
+                               iterationLimit: Int,
+                               rowRelDataType: RelDataType)
+    extends RepeatUnion(cluster, traitSet, seed, iterative, all, iterationLimit)
+        with DataStreamRel {
 
   override def deriveRowType() = rowRelDataType
 
@@ -63,38 +62,33 @@ class DataStreamRepeatUnion(
   }
 
   override def translateToPlan(planner: StreamPlanner): DataStream[CRow] = {
-    null
+    val config = planner.getConfig
+
+    //    val returnType = CRowTypeInfo(schema.typeInfo)
+    val generator = new InputFormatCodeGenerator(config)
+
+    val seedDs = seed.asInstanceOf[DataStreamRel].translateToPlan(planner)
+
+    val workingSet = seedDs
+    val solutionSet = seedDs
+
+    val iteration = solutionSet.iterate()
+//    updateCatalog(tableEnv, iteration, "__TEMP")
+
+
+    val iterativeDs = iterative.asInstanceOf[DataStreamRel].translateToPlan(planner)
+    val delta = iterativeDs
+        .coGroup(workingSet)
+        .where("*")
+        .equalTo("*")
+        .`with`(new MinusCoGroupFunction[Row](false))
+        .withForwardedFieldsFirst("*")
+    //    workingSet = delta
+
+    iteration.closeWith(delta)
+
+    iterativeDs
 
   }
 
-//  override def translateToPlan(
-//                                tableEnv: BatchTableEnvImpl,
-//                                queryConfig: BatchQueryConfig): DataSet[Row] = {
-//    val config = tableEnv.getConfig
-//    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-//
-//    val workingSet: DataSet[Row] = seedDs
-//    val solutionSet: DataSet[Row] = seedDs
-//
-//    val maxIterations: Int = Int.MaxValue
-//    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
-//    updateCatalog(tableEnv, iteration.getWorkset, "__TEMP")
-//    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
-//    val delta = iterativeDs
-//      .coGroup(iteration.getSolutionSet)
-//      .where("*")
-//      .equalTo("*")
-//      .`with`(new MinusCoGroupFunction[Row](false))
-//      .withForwardedFieldsFirst("*")
-//    val result = iteration.closeWith(delta, delta) //sending first parameter(solutionSet) delta means it will union it with solution set.
-//    result
-//  }
-
-//  private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row], tableName: String): Unit = {
-//    tableEnv match {
-//      case btei: BatchTableEnvironmentImpl =>
-//        btei.registerTable(tableName, btei.fromDataSet(ds))
-//      case _ =>
-//    }
-//  }
 }

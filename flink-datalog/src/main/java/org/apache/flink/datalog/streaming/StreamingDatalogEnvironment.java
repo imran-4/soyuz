@@ -47,7 +47,7 @@ public interface StreamingDatalogEnvironment extends DatalogEnvironment, StreamT
 		StreamExecutionEnvironment executionEnvironment,
 		EnvironmentSettings environmentSettings,
 		TableConfig tableConfig) {
-		return null;
+		return StreamingDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
 	}
 
 	Table datalogQuery(String inputProgram, String query);

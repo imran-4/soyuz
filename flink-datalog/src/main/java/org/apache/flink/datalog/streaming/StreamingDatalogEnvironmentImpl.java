@@ -24,21 +24,28 @@ import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.api.bridge.java.internal.StreamTableEnvironmentImpl;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.GenericInMemoryCatalog;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.Planner;
+import org.apache.flink.table.delegation.PlannerFactory;
 import org.apache.flink.table.expressions.ExpressionBridge;
 import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.expressions.PlannerExpressionConverter;
+import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.table.operations.PlannerQueryOperation;
+
+import java.util.Map;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
@@ -63,7 +70,7 @@ public class StreamingDatalogEnvironmentImpl extends StreamTableEnvironmentImpl 
 			executionEnvironment,
 			planner,
 			executor,
-			true,
+			isStreaming,
 			userClassLoader);
 
 		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(
@@ -71,9 +78,57 @@ public class StreamingDatalogEnvironmentImpl extends StreamTableEnvironmentImpl 
 		this.planningConfigurationBuilder = new DatalogPlanningConfigurationBuilder(
 			tableConfig,
 			functionCatalog,
-			asRootSchema(new CatalogManagerCalciteSchema(catalogManager, tableConfig, false)),
+			asRootSchema(new CatalogManagerCalciteSchema(catalogManager, tableConfig, isStreaming)),
 			expressionBridge,
 			this);
+	}
+
+	public static StreamingDatalogEnvironment create(
+		StreamExecutionEnvironment executionEnvironment,
+		EnvironmentSettings settings,
+		TableConfig tableConfig) {
+
+		if (!settings.isStreamingMode()) {
+			throw new TableException(
+				"StreamTableEnvironment can not run in batch mode for now, please use TableEnvironment.");
+		}
+
+		// temporary solution until FLINK-15635 is fixed
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+		ModuleManager moduleManager = new ModuleManager();
+
+		CatalogManager catalogManager = CatalogManager.newBuilder()
+			.classLoader(classLoader)
+			.config(tableConfig.getConfiguration())
+			.defaultCatalog(
+				settings.getBuiltInCatalogName(),
+				new GenericInMemoryCatalog(
+					settings.getBuiltInCatalogName(),
+					settings.getBuiltInDatabaseName()))
+			.executionConfig(executionEnvironment.getConfig())
+			.build();
+
+		FunctionCatalog functionCatalog = new FunctionCatalog(tableConfig, catalogManager, moduleManager);
+
+		Map<String, String> executorProperties = settings.toExecutorProperties();
+		Executor executor = lookupExecutor(executorProperties, executionEnvironment);
+
+		Map<String, String> plannerProperties = settings.toPlannerProperties();
+		Planner planner = ComponentFactoryService.find(PlannerFactory.class, plannerProperties)
+			.create(plannerProperties, executor, tableConfig, functionCatalog, catalogManager);
+
+		return new StreamingDatalogEnvironmentImpl(
+			catalogManager,
+			moduleManager,
+			functionCatalog,
+			tableConfig,
+			executionEnvironment,
+			planner,
+			executor,
+			settings.isStreamingMode(),
+			classLoader
+		);
 	}
 
 	@Override
