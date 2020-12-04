@@ -27,13 +27,23 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.calcite.schema.TransientTable
 import org.apache.flink.api.java.DataSet
 import org.apache.flink.streaming.api.datastream.DataStream
+import org.apache.flink.table.api.TableException
 import org.apache.flink.table.api.bridge.scala.internal.StreamTableEnvironmentImpl
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
 import org.apache.flink.table.plan.schema.RowSchema
 import org.apache.flink.table.planner.StreamPlanner
 import org.apache.flink.table.runtime.types.CRow
+import org.apache.flink.table.sources.{DefinedFieldMapping, RowtimeAttributeDescriptor, TableSourceUtil}
+import org.apache.flink.table.sources.wmstrategies.{PeriodicWatermarkAssigner, PreserveWatermarks, PunctuatedWatermarkAssigner}
+import org.apache.flink.table.types.utils.TypeConversions
+import org.apache.flink.table.types.utils.TypeConversions.fromLegacyInfoToDataType
+import org.apache.flink.table.typeutils.TimeIndicatorTypeInfo
+import org.apache.flink.table.utils.TypeMappingUtils
 import org.apache.flink.types.Row
+import org.apache.flink.table.sources._
+
 import scala.collection.JavaConverters._
+import scala.compat.java8.JFunction
 
 class DataStreamTransientTableScan(cluster: RelOptCluster,
                                    traitSet: RelTraitSet,
@@ -53,7 +63,8 @@ class DataStreamTransientTableScan(cluster: RelOptCluster,
   }
 
   override def translateToPlan(planner: StreamPlanner): DataStream[CRow] = {
-    null
+
+
 
   }
 }
