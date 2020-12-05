@@ -17,23 +17,19 @@
 
 package org.apache.flink.table.plan.nodes.dataset
 
-import java.util
-
 import org.apache.calcite.plan.{RelOptCluster, RelOptTable, RelTraitSet}
 import org.apache.calcite.rel.RelNode
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.TableScan
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.calcite.schema.TransientTable
-import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.DataSet
-import org.apache.flink.table.api.BatchQueryConfig
+import org.apache.flink.table.api.bridge.java.internal.BatchTableEnvironmentImpl
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
-import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
-import org.apache.flink.table.catalog.ObjectPath
 import org.apache.flink.table.plan.schema.RowSchema
-import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
+
+import java.util
 
 class DataSetTransientTableScan(cluster: RelOptCluster,
                                 traitSet: RelTraitSet,
@@ -52,7 +48,7 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
     new DataSetTransientTableScan(cluster, traitSet, inputs.get(0).getTable, tableSource, selectedFields)
   }
 
-  override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
+  override def translateToPlan(tableEnv: BatchTableEnvImpl): DataSet[Row] = {
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
     val ds = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("__TEMP"), classOf[Row])

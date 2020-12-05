@@ -17,20 +17,17 @@
 
 package org.apache.flink.table.plan.nodes.dataset
 
-import java.util
-
 import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
 import org.apache.calcite.rel.{RelNode, RelWriter}
 import org.apache.flink.api.java.DataSet
-import org.apache.flink.table.api.BatchQueryConfig
+import org.apache.flink.table.api.bridge.java.internal.BatchTableEnvironmentImpl
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
-import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
-import org.apache.flink.table.catalog.ObjectPath
 import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.types.Row
 
+import java.util
 import scala.collection.JavaConverters._
 
 class DataSetRepeatUnion(
@@ -63,10 +60,9 @@ class DataSetRepeatUnion(
   }
 
   override def translateToPlan(
-                                tableEnv: BatchTableEnvImpl,
-                                queryConfig: BatchQueryConfig): DataSet[Row] = {
+                                tableEnv: BatchTableEnvImpl): DataSet[Row] = {
     val config = tableEnv.getConfig
-    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val seedDs = seed.asInstanceOf[DataSetRel].translateToPlan(tableEnv)
 
     val workingSet: DataSet[Row] = seedDs
     val solutionSet: DataSet[Row] = seedDs
@@ -74,7 +70,7 @@ class DataSetRepeatUnion(
     val maxIterations: Int = Int.MaxValue
     val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
     updateCatalog(tableEnv, iteration.getWorkset, "__TEMP")
-    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv)
     val delta = iterativeDs
       .coGroup(iteration.getSolutionSet)
       .where("*")

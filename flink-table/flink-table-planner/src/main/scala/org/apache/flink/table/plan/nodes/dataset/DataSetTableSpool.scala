@@ -23,10 +23,7 @@ import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.Spool
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.flink.api.java.DataSet
-import org.apache.flink.table.api.BatchQueryConfig
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
-import org.apache.flink.table.api.java.internal.BatchTableEnvironmentImpl
-import org.apache.flink.table.catalog.{CatalogTableImpl, ObjectPath}
 import org.apache.flink.table.plan.schema.RowSchema
 import org.apache.flink.types.Row
 
@@ -47,10 +44,10 @@ class DataSetTableSpool(cluster: RelOptCluster,
     planner.getCostFactory.makeCost(rowCnt, rowCnt, 0)
   }
 
-  override def translateToPlan(tableEnv: BatchTableEnvImpl, queryConfig: BatchQueryConfig): DataSet[Row] = {
+  override def translateToPlan(tableEnv: BatchTableEnvImpl): DataSet[Row] = {
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
-    val ds = input.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
+    val ds = input.asInstanceOf[DataSetRel].translateToPlan(tableEnv)
     ds
   }
 
