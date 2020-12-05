@@ -136,14 +136,16 @@ public abstract class YarnTestBase extends TestLogger {
 		Pattern.compile("Association with remote system \\[akka.tcp://flink@[^]]+\\] has failed, address is now gated for \\[50\\] ms. Reason: \\[Association failed with \\[akka.tcp://flink@[^]]+\\]\\] Caused by: \\[java.net.ConnectException: Connection refused: [^]]+\\]"),
 
 		// filter out expected ResourceManagerException caused by intended shutdown request
-		Pattern.compile(YarnResourceManager.ERROR_MASSAGE_ON_SHUTDOWN_REQUEST),
+		Pattern.compile(YarnResourceManagerDriver.ERROR_MESSAGE_ON_SHUTDOWN_REQUEST),
 
 		// this can happen in Akka 2.4 on shutdown.
 		Pattern.compile("java\\.util\\.concurrent\\.RejectedExecutionException: Worker has already been shutdown"),
 
 		Pattern.compile("org\\.apache\\.flink.util\\.FlinkException: Stopping JobMaster"),
 		Pattern.compile("org\\.apache\\.flink.util\\.FlinkException: JobManager is shutting down\\."),
-		Pattern.compile("lost the leadership.")
+		Pattern.compile("lost the leadership."),
+
+		Pattern.compile("akka.remote.transport.netty.NettyTransport.*Remote connection to \\[[^]]+\\] failed with java.io.IOException: Broken pipe")
 	};
 
 	// Temp directory which is deleted after the unit test.
@@ -420,7 +422,7 @@ public abstract class YarnTestBase extends TestLogger {
 							}
 
 							if (!whitelistedFound) {
-								// logging in FATAL to see the actual message in TRAVIS tests.
+								// logging in FATAL to see the actual message in CI tests.
 								Marker fatal = MarkerFactory.getMarker("FATAL");
 								LOG.error(fatal, "Prohibited String '{}' in '{}:{}'", aProhibited, logFile.getAbsolutePath(), lineFromFile);
 
@@ -685,6 +687,7 @@ public abstract class YarnTestBase extends TestLogger {
 
 			map.put("IN_TESTS", "yes we are in tests"); // see YarnClusterDescriptor() for more infos
 			map.put("YARN_CONF_DIR", targetTestClassesFolder.getAbsolutePath());
+			map.put("MAX_LOG_FILE_NUMBER", "10");
 			TestBaseUtils.setEnv(map);
 
 			Assert.assertTrue(yarnCluster.getServiceState() == Service.STATE.STARTED);
@@ -952,7 +955,7 @@ public abstract class YarnTestBase extends TestLogger {
 							CliFrontend cli = new CliFrontend(
 								configuration,
 								CliFrontend.loadCustomCommandLines(configuration, configurationDirectory));
-							returnValue = cli.parseParameters(args);
+							returnValue = cli.parseAndRun(args);
 						} catch (Exception e) {
 							throw new RuntimeException("Failed to execute the following args with CliFrontend: "
 								+ Arrays.toString(args), e);
@@ -1019,11 +1022,10 @@ public abstract class YarnTestBase extends TestLogger {
 			hdfsSiteXML.delete();
 		}
 
-		// When we are on travis, we copy the temp files of JUnit (containing the MiniYARNCluster log files)
+		// When we are on CI, we copy the temp files of JUnit (containing the MiniYARNCluster log files)
 		// to <flinkRoot>/target/flink-yarn-tests-*.
-		// The files from there are picked up by the ./tools/travis_watchdog.sh script
-		// to upload them to Amazon S3.
-		if (isOnTravis()) {
+		// The files from there are picked up by the tools/ci/* scripts to upload them.
+		if (isOnCI()) {
 			File target = new File("../target" + YARN_CONFIGURATION.get(TEST_CLUSTER_NAME_KEY));
 			if (!target.mkdirs()) {
 				LOG.warn("Error creating dirs to {}", target);
@@ -1039,8 +1041,8 @@ public abstract class YarnTestBase extends TestLogger {
 
 	}
 
-	public static boolean isOnTravis() {
-		return System.getenv("TRAVIS") != null && System.getenv("TRAVIS").equals("true");
+	public static boolean isOnCI() {
+		return System.getenv("IS_CI") != null && System.getenv("IS_CI").equals("true");
 	}
 
 	protected void waitApplicationFinishedElseKillIt(

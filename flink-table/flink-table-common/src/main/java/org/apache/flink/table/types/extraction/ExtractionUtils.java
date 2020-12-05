@@ -102,20 +102,30 @@ public final class ExtractionUtils {
 		int currentClass = 0;
 		for (int currentParam = 0; currentParam < paramCount; currentParam++) {
 			final Class<?> param = executable.getParameterTypes()[currentParam];
-			// entire parameter matches
-			if (classes[currentClass] == null || ExtractionUtils.isAssignable(classes[currentClass], param, true)) {
-				currentClass++;
-			}
-			// last parameter is a vararg that consumes remaining classes
-			else if (currentParam == paramCount - 1 && executable.isVarArgs()) {
+			// last parameter is a vararg that needs to consume remaining classes
+			if (currentParam == paramCount - 1 && executable.isVarArgs()) {
 				final Class<?> paramComponent = executable.getParameterTypes()[currentParam].getComponentType();
-				while (currentClass < classCount && ExtractionUtils.isAssignable(classes[currentClass], paramComponent, true)) {
+				// we have more than 1 classes left so the vararg needs to consume them all
+				if (classCount - currentClass > 1) {
+					while (currentClass < classCount && ExtractionUtils.isAssignable(classes[currentClass], paramComponent, true)) {
+						currentClass++;
+					}
+				} else if (parameterMatches(classes[currentClass], param)
+						|| parameterMatches(classes[currentClass], paramComponent)) {
 					currentClass++;
 				}
+			}
+			// entire parameter matches
+			else if (parameterMatches(classes[currentClass], param)) {
+				currentClass++;
 			}
 		}
 		// check if all classes have been consumed
 		return currentClass == classCount;
+	}
+
+	private static boolean parameterMatches(Class<?> clz, Class<?> param) {
+		return clz == null || ExtractionUtils.isAssignable(clz, param, true);
 	}
 
 	/**
@@ -143,6 +153,23 @@ public final class ExtractionUtils {
 					})
 					.collect(Collectors.joining(", ", "(", ")")));
 		return builder.toString();
+	}
+
+	/**
+	 * Validates the characteristics of a class for a {@link StructuredType} such as accessibility.
+	 */
+	public static void validateStructuredClass(Class<?> clazz) {
+		final int m = clazz.getModifiers();
+		if (Modifier.isAbstract(m)) {
+			throw extractionError("Class '%s' must not be abstract.", clazz.getName());
+		}
+		if (!Modifier.isPublic(m)) {
+			throw extractionError("Class '%s' is not public.", clazz.getName());
+		}
+		if (clazz.getEnclosingClass() != null &&
+				(clazz.getDeclaringClass() == null || !Modifier.isStatic(m))) {
+			throw extractionError("Class '%s' is a not a static, globally accessible class.", clazz.getName());
+		}
 	}
 
 	/**
@@ -434,19 +461,17 @@ public final class ExtractionUtils {
 	}
 
 	/**
-	 * Validates the characteristics of a class for a {@link StructuredType} such as accessibility.
+	 * Validates if a given type is not already contained in the type hierarchy of a structured type.
+	 *
+	 * <p>Otherwise this would lead to infinite data type extraction cycles.
 	 */
-	static void validateStructuredClass(Class<?> clazz) {
-		final int m = clazz.getModifiers();
-		if (Modifier.isAbstract(m)) {
-			throw extractionError("Class '%s' must not be abstract.", clazz.getName());
-		}
-		if (!Modifier.isPublic(m)) {
-			throw extractionError("Class '%s' is not public.", clazz.getName());
-		}
-		if (clazz.getEnclosingClass() != null &&
-				(clazz.getDeclaringClass() == null || !Modifier.isStatic(m))) {
-			throw extractionError("Class '%s' is a not a static, globally accessible class.", clazz.getName());
+	static void validateStructuredSelfReference(Type t, List<Type> typeHierarchy) {
+		final Class<?> clazz = toClass(t);
+		if (clazz != null && !clazz.isInterface() && clazz != Object.class && typeHierarchy.contains(t)) {
+			throw extractionError(
+				"Cyclic reference detected for class '%s'. Attributes of structured types must not " +
+					"(transitively) reference the structured type itself.",
+				clazz.getName());
 		}
 	}
 

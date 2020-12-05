@@ -18,10 +18,8 @@
 
 package org.apache.flink.table.api;
 
-import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.table.api.internal.TableEnvironmentImpl;
 import org.apache.flink.table.catalog.Catalog;
 import org.apache.flink.table.descriptors.ConnectTableDescriptor;
@@ -33,7 +31,6 @@ import org.apache.flink.table.module.Module;
 import org.apache.flink.table.sinks.TableSink;
 import org.apache.flink.table.sources.TableSource;
 import org.apache.flink.table.types.AbstractDataType;
-import org.apache.flink.table.types.DataType;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -186,7 +183,7 @@ public interface TableEnvironment {
 	 * <pre>{@code
 	 *  root
 	 *  |-- id: DECIMAL(10, 2)
-	 *  |-- f1: STRING
+	 *  |-- name: STRING
 	 * }</pre>
 	 *
 	 * <p>For more examples see {@link #fromValues(Object...)}.
@@ -225,7 +222,7 @@ public interface TableEnvironment {
 	 * <p>The method will derive the types automatically from the input expressions. If types
 	 * at a certain position differ, the method will try to find a common super type for all types. If a common
 	 * super type does not exist, an exception will be thrown. If you want to specify the requested type explicitly
-	 * see {@link #fromValues(DataType, Expression...)}.
+	 * see {@link #fromValues(AbstractDataType, Expression...)}.
 	 *
 	 * <p>It is also possible to use {@link org.apache.flink.types.Row} object instead of
 	 * {@code row} expressions.
@@ -358,7 +355,7 @@ public interface TableEnvironment {
 
 	/**
 	 * Unloads a {@link Module} with given name.
-	 * ValidationException is thrown when there is no module with the given name
+	 * ValidationException is thrown when there is no module with the given name.
 	 *
 	 * @param moduleName name of the {@link Module}
 	 */
@@ -390,7 +387,6 @@ public interface TableEnvironment {
 	 * @param name The name under which the function will be registered globally.
 	 * @param functionClass The function class containing the implementation.
 	 */
-	@Experimental
 	void createTemporarySystemFunction(String name, Class<? extends UserDefinedFunction> functionClass);
 
 	/**
@@ -411,7 +407,6 @@ public interface TableEnvironment {
 	 * @param name The name under which the function will be registered globally.
 	 * @param functionInstance The (possibly pre-configured) function instance containing the implementation.
 	 */
-	@Experimental
 	void createTemporarySystemFunction(String name, UserDefinedFunction functionInstance);
 
 	/**
@@ -423,7 +418,6 @@ public interface TableEnvironment {
 	 * @param name The name under which the function has been registered globally.
 	 * @return true if a function existed under the given name and was removed
 	 */
-	@Experimental
 	boolean dropTemporarySystemFunction(String name);
 
 	/**
@@ -438,7 +432,6 @@ public interface TableEnvironment {
 	 *             See also the {@link TableEnvironment} class description for the format of the path.
 	 * @param functionClass The function class containing the implementation.
 	 */
-	@Experimental
 	void createFunction(String path, Class<? extends UserDefinedFunction> functionClass);
 
 	/**
@@ -453,7 +446,6 @@ public interface TableEnvironment {
 	 * @param ignoreIfExists If a function exists under the given path and this flag is set, no operation
 	 *                       is executed. An exception is thrown otherwise.
 	 */
-	@Experimental
 	void createFunction(String path, Class<? extends UserDefinedFunction> functionClass, boolean ignoreIfExists);
 
 	/**
@@ -463,7 +455,6 @@ public interface TableEnvironment {
 	 *             See also the {@link TableEnvironment} class description for the format of the path.
 	 * @return true if a function existed in the given path and was removed
 	 */
-	@Experimental
 	boolean dropFunction(String path);
 
 	/**
@@ -480,7 +471,6 @@ public interface TableEnvironment {
 	 *             See also the {@link TableEnvironment} class description for the format of the path.
 	 * @param functionClass The function class containing the implementation.
 	 */
-	@Experimental
 	void createTemporaryFunction(String path, Class<? extends UserDefinedFunction> functionClass);
 
 	/**
@@ -501,7 +491,6 @@ public interface TableEnvironment {
 	 *             See also the {@link TableEnvironment} class description for the format of the path.
 	 * @param functionInstance The (possibly pre-configured) function instance containing the implementation.
 	 */
-	@Experimental
 	void createTemporaryFunction(String path, UserDefinedFunction functionInstance);
 
 	/**
@@ -514,7 +503,6 @@ public interface TableEnvironment {
 	 *             See also the {@link TableEnvironment} class description for the format of the path.
 	 * @return true if a function existed in the given path and was removed
 	 */
-	@Experimental
 	boolean dropTemporaryFunction(String path);
 
 	/**
@@ -544,55 +532,6 @@ public interface TableEnvironment {
 	 * @param view The view to register.
 	 */
 	void createTemporaryView(String path, Table view);
-
-	/**
-	 * Registers an external {@link TableSource} in this {@link TableEnvironment}'s catalog.
-	 * Registered tables can be referenced in SQL queries.
-	 *
-	 * <p>Temporary objects can shadow permanent ones. If a permanent object in a given path exists, it will
-	 * be inaccessible in the current session. To make the permanent object available again one can drop the
-	 * corresponding temporary object.
-	 *
-	 * @param name        The name under which the {@link TableSource} is registered.
-	 * @param tableSource The {@link TableSource} to register.
-	 * @deprecated Use {@link #executeSql(String) executeSql(ddl)} to register a table instead.
-	 */
-	@Deprecated
-	void registerTableSource(String name, TableSource<?> tableSource);
-
-	/**
-	 * Registers an external {@link TableSink} with given field names and types in this
-	 * {@link TableEnvironment}'s catalog.
-	 * Registered sink tables can be referenced in SQL DML statements.
-	 *
-	 * <p>Temporary objects can shadow permanent ones. If a permanent object in a given path exists, it will
-	 * be inaccessible in the current session. To make the permanent object available again one can drop the
-	 * corresponding temporary object.
-	 *
-	 * @param name The name under which the {@link TableSink} is registered.
-	 * @param fieldNames The field names to register with the {@link TableSink}.
-	 * @param fieldTypes The field types to register with the {@link TableSink}.
-	 * @param tableSink The {@link TableSink} to register.
-	 * @deprecated Use {@link #executeSql(String) executeSql(ddl)} to register a table instead.
-	 */
-	@Deprecated
-	void registerTableSink(String name, String[] fieldNames, TypeInformation<?>[] fieldTypes, TableSink<?> tableSink);
-
-	/**
-	 * Registers an external {@link TableSink} with already configured field names and field types in
-	 * this {@link TableEnvironment}'s catalog.
-	 * Registered sink tables can be referenced in SQL DML statements.
-	 *
-	 * <p>Temporary objects can shadow permanent ones. If a permanent object in a given path exists, it will
-	 * be inaccessible in the current session. To make the permanent object available again one can drop the
-	 * corresponding temporary object.
-	 *
-	 * @param name The name under which the {@link TableSink} is registered.
-	 * @param configuredSink The configured {@link TableSink} to register.
-	 * @deprecated Use {@link #executeSql(String) executeSql(ddl)} to register a table instead.
-	 */
-	@Deprecated
-	void registerTableSink(String name, TableSink<?> configuredSink);
 
 	/**
 	 * Scans a registered table and returns the resulting {@link Table}.

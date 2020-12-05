@@ -54,6 +54,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.Matchers.is;
@@ -249,7 +250,8 @@ public class MiniDispatcherTest extends TestLogger {
 				null,
 				UnregisteredMetricGroups.createUnregisteredJobManagerMetricGroup(),
 				highAvailabilityServices.getJobGraphStore(),
-				testingJobManagerRunnerFactory),
+				testingJobManagerRunnerFactory,
+				ForkJoinPool.commonPool()),
 			jobGraph,
 			(dispatcher, scheduledExecutor, errorHandler) -> new NoOpDispatcherBootstrap(),
 			executionMode);

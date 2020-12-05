@@ -24,7 +24,6 @@ import org.apache.flink.api.connector.source.SourceOutput;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SourceSplit;
-import org.apache.flink.api.connector.source.event.NoMoreSplitsEvent;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.base.source.reader.fetcher.SplitFetcherManager;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitReader;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,11 +171,12 @@ public abstract class SourceReaderBase<E, T, SplitT extends SourceSplit, SplitSt
 		final Set<String> finishedSplits = fetch.finishedSplits();
 		if (!finishedSplits.isEmpty()) {
 			LOG.info("Finished reading split(s) {}", finishedSplits);
+			Map<String, SplitStateT> stateOfFinishedSplits = new HashMap<>();
 			for (String finishedSplitId : finishedSplits) {
-				splitStates.remove(finishedSplitId);
+				stateOfFinishedSplits.put(finishedSplitId, splitStates.remove(finishedSplitId).state);
 				output.releaseOutputForSplit(finishedSplitId);
 			}
-			onSplitFinished(finishedSplits);
+			onSplitFinished(stateOfFinishedSplits);
 		}
 
 		fetch.recycle();
@@ -220,13 +219,15 @@ public abstract class SourceReaderBase<E, T, SplitT extends SourceSplit, SplitSt
 	}
 
 	@Override
+	public void notifyNoMoreSplits() {
+		LOG.info("Reader received NoMoreSplits event.");
+		noMoreSplitsAssignment = true;
+		elementsQueue.notifyAvailable();
+	}
+
+	@Override
 	public void handleSourceEvents(SourceEvent sourceEvent) {
-		LOG.trace("Handling source event: {}", sourceEvent);
-		if (sourceEvent instanceof NoMoreSplitsEvent) {
-			LOG.info("Reader received NoMoreSplits event.");
-			noMoreSplitsAssignment = true;
-			elementsQueue.notifyAvailable();
-		}
+		LOG.info("Received unhandled source event: {}", sourceEvent);
 	}
 
 	@Override
@@ -235,13 +236,22 @@ public abstract class SourceReaderBase<E, T, SplitT extends SourceSplit, SplitSt
 		splitFetcherManager.close(options.sourceReaderCloseTimeout);
 	}
 
-
+	/**
+	 * Gets the number of splits the reads has currently assigned.
+	 *
+	 * <p>These are the splits that have been added via {@link #addSplits(List)} and have not
+	 * yet been finished by returning them from the {@link SplitReader#fetch()} as part of
+	 * {@link RecordsWithSplitIds#finishedSplits()}.
+	 */
+	public int getNumberOfCurrentlyAssignedSplits() {
+		return splitStates.size();
+	}
 
 	// -------------------- Abstract method to allow different implementations ------------------
 	/**
 	 * Handles the finished splits to clean the state if needed.
 	 */
-	protected abstract void onSplitFinished(Collection<String> finishedSplitIds);
+	protected abstract void onSplitFinished(Map<String, SplitStateT> finishedSplitIds);
 
 	/**
 	 * When new splits are added to the reader. The initialize the state of the new splits.
@@ -266,9 +276,13 @@ public abstract class SourceReaderBase<E, T, SplitT extends SourceSplit, SplitSt
 			return InputStatus.NOTHING_AVAILABLE;
 		}
 		if (elementsQueue.isEmpty()) {
+			// We may reach here because of exceptional split fetcher, check it.
+			splitFetcherManager.checkErrors();
 			return InputStatus.END_OF_INPUT;
 		} else {
-			throw new IllegalStateException("Called 'finishedOrAvailableLater()' with shut-down fetchers but non-empty queue");
+			// We can reach this case if we just processed all data from the queue and finished a split,
+			// and concurrently the fetcher finished another split, whose data is then in the queue.
+			return InputStatus.MORE_AVAILABLE;
 		}
 	}
 

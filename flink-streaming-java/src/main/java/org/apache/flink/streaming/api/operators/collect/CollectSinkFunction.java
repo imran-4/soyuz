@@ -21,6 +21,7 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.accumulators.SerializedListAccumulator;
 import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -30,7 +31,6 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.runtime.operators.coordination.OperatorEventGateway;
-import org.apache.flink.runtime.state.CheckpointListener;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
 import org.apache.flink.runtime.state.FunctionSnapshotContext;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
@@ -127,15 +127,17 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 	private static final Logger LOG = LoggerFactory.getLogger(CollectSinkFunction.class);
 
 	private final TypeSerializer<IN> serializer;
-	private final int maxResultsPerBatch;
-	private final int maxResultsBuffered;
+	private final long maxBytesPerBatch;
+	private final long bufferSizeLimitBytes;
 	private final String accumulatorName;
 
 	private transient OperatorEventGateway eventGateway;
 
-	private transient LinkedList<IN> bufferedResults;
-	private transient ReentrantLock bufferedResultsLock;
-	private transient Condition bufferNotFullCondition;
+	private transient LinkedList<byte[]> buffer;
+	private transient long currentBufferBytes;
+	private transient ReentrantLock bufferLock;
+	private transient Condition bufferCanAddNextResultCondition;
+	private transient long invokingRecordBytes;
 
 	// this version indicates whether the sink has restarted or not
 	private transient String version;
@@ -146,25 +148,26 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 
 	private transient ServerThread serverThread;
 
-	private transient ListState<IN> bufferedResultsState;
+	private transient ListState<byte[]> bufferState;
 	private transient ListState<Long> offsetState;
 	private transient SortedMap<Long, Long> uncompletedCheckpointMap;
 
-	public CollectSinkFunction(TypeSerializer<IN> serializer, int maxResultsPerBatch, String accumulatorName) {
+	public CollectSinkFunction(TypeSerializer<IN> serializer, long maxBytesPerBatch, String accumulatorName) {
 		this.serializer = serializer;
-		this.maxResultsPerBatch = maxResultsPerBatch;
-		this.maxResultsBuffered = maxResultsPerBatch * 2;
+		this.maxBytesPerBatch = maxBytesPerBatch;
+		this.bufferSizeLimitBytes = maxBytesPerBatch * 2;
 		this.accumulatorName = accumulatorName;
 	}
 
 	private void initBuffer() {
-		if (bufferedResults != null) {
+		if (buffer != null) {
 			return;
 		}
 
-		bufferedResults = new LinkedList<>();
-		bufferedResultsLock = new ReentrantLock();
-		bufferNotFullCondition = bufferedResultsLock.newCondition();
+		buffer = new LinkedList<>();
+		currentBufferBytes = 0;
+		bufferLock = new ReentrantLock();
+		bufferCanAddNextResultCondition = bufferLock.newCondition();
 
 		offset = 0;
 		lastCheckpointedOffset = offset;
@@ -174,35 +177,34 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 	public void initializeState(FunctionInitializationContext context) throws Exception {
 		initBuffer();
 
-		bufferedResultsState =
+		bufferState =
 			context.getOperatorStateStore().getListState(
-				new ListStateDescriptor<>("bufferedResultsState", serializer));
-		bufferedResults.clear();
-		for (IN result : bufferedResultsState.get()) {
-			bufferedResults.add(result);
+				new ListStateDescriptor<>("bufferState", BytePrimitiveArraySerializer.INSTANCE));
+		for (byte[] value : bufferState.get()) {
+			buffer.add(value);
+			currentBufferBytes += value.length;
 		}
 
 		offsetState = context.getOperatorStateStore().getListState(
 			new ListStateDescriptor<>("offsetState", Long.class));
-		offset = 0;
 		// there must be only 1 element in this state when restoring
 		for (long value : offsetState.get()) {
 			offset = value;
 		}
 		lastCheckpointedOffset = offset;
 
-		LOG.info("Initializing collect sink statee with offset = " + lastCheckpointedOffset +
-			", num buffered results = " + bufferedResults.size());
+		LOG.info("Initializing collect sink state with offset = " + lastCheckpointedOffset +
+			", buffered results bytes = " + currentBufferBytes);
 
 		uncompletedCheckpointMap = new TreeMap<>();
 	}
 
 	@Override
 	public void snapshotState(FunctionSnapshotContext context) throws Exception {
-		bufferedResultsLock.lock();
+		bufferLock.lock();
 		try {
-			bufferedResultsState.clear();
-			bufferedResultsState.addAll(bufferedResults);
+			bufferState.clear();
+			bufferState.addAll(buffer);
 
 			offsetState.clear();
 			offsetState.add(offset);
@@ -212,10 +214,10 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("Checkpoint begin with checkpointId = " + context.getCheckpointId() +
 					", lastCheckpointedOffset = " + lastCheckpointedOffset +
-					", num buffered results = " + bufferedResults.size());
+					", buffered results bytes = " + currentBufferBytes);
 			}
 		} finally {
-			bufferedResultsLock.unlock();
+			bufferLock.unlock();
 		}
 	}
 
@@ -245,14 +247,29 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 
 	@Override
 	public void invoke(IN value, Context context) throws Exception {
-		bufferedResultsLock.lock();
+		bufferLock.lock();
 		try {
-			if (bufferedResults.size() >= maxResultsBuffered) {
-				bufferNotFullCondition.await();
+			// TODO this implementation is not very effective,
+			//  optimize this with MemorySegment if needed
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputViewStreamWrapper wrapper = new DataOutputViewStreamWrapper(baos);
+			serializer.serialize(value, wrapper);
+			invokingRecordBytes = baos.size();
+
+			if (invokingRecordBytes > maxBytesPerBatch) {
+				throw new RuntimeException(
+					"Record size is too large for CollectSinkFunction. Record size is " + invokingRecordBytes + " bytes, " +
+						"but max bytes per batch is only " + maxBytesPerBatch + " bytes. " +
+						"Please consider increasing max bytes per batch value.");
 			}
-			bufferedResults.add(value);
+
+			if (currentBufferBytes + invokingRecordBytes > bufferSizeLimitBytes) {
+				bufferCanAddNextResultCondition.await();
+			}
+			buffer.add(baos.toByteArray());
+			currentBufferBytes += baos.size();
 		} finally {
-			bufferedResultsLock.unlock();
+			bufferLock.unlock();
 		}
 	}
 
@@ -260,21 +277,20 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 	public void close() throws Exception {
 		serverThread.close();
 		serverThread.join();
-		bufferedResults = null;
 	}
 
 	public void accumulateFinalResults() throws Exception {
-		bufferedResultsLock.lock();
+		bufferLock.lock();
 		try {
 			// put results not consumed by the client into the accumulator
 			// so that we do not block the closing procedure while not throwing results away
 			SerializedListAccumulator<byte[]> accumulator = new SerializedListAccumulator<>();
 			accumulator.add(
-				serializeAccumulatorResult(offset, version, lastCheckpointedOffset, bufferedResults, serializer),
+				serializeAccumulatorResult(offset, version, lastCheckpointedOffset, buffer),
 				BytePrimitiveArraySerializer.INSTANCE);
 			getRuntimeContext().addAccumulator(accumulatorName, accumulator);
 		} finally {
-			bufferedResultsLock.unlock();
+			bufferLock.unlock();
 		}
 	}
 
@@ -298,27 +314,26 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 	}
 
 	@VisibleForTesting
-	public static <T> byte[] serializeAccumulatorResult(
+	public static byte[] serializeAccumulatorResult(
 			long offset,
 			String version,
 			long lastCheckpointedOffset,
-			List<T> bufferedResults,
-			TypeSerializer<T> serializer) throws IOException {
+			List<byte[]> buffer) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputViewStreamWrapper wrapper = new DataOutputViewStreamWrapper(baos);
 		wrapper.writeLong(offset);
-		CollectCoordinationResponse<T> finalResponse =
-			new CollectCoordinationResponse<>(version, lastCheckpointedOffset, bufferedResults, serializer);
+		CollectCoordinationResponse finalResponse =
+			new CollectCoordinationResponse(version, lastCheckpointedOffset, buffer);
 		finalResponse.serialize(wrapper);
 		return baos.toByteArray();
 	}
 
-	public static <T> Tuple2<Long, CollectCoordinationResponse<T>> deserializeAccumulatorResult(
+	public static Tuple2<Long, CollectCoordinationResponse> deserializeAccumulatorResult(
 			byte[] serializedAccResults) throws IOException {
 		ByteArrayInputStream bais = new ByteArrayInputStream(serializedAccResults);
 		DataInputViewStreamWrapper wrapper = new DataInputViewStreamWrapper(bais);
 		long token = wrapper.readLong();
-		CollectCoordinationResponse<T> finalResponse = new CollectCoordinationResponse<>(wrapper);
+		CollectCoordinationResponse finalResponse = new CollectCoordinationResponse(wrapper);
 		return Tuple2.of(token, finalResponse);
 	}
 
@@ -368,7 +383,8 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 
 					if (!version.equals(requestVersion) || requestOffset < offset) {
 						// invalid request
-						LOG.warn("Invalid request. Received version = " + requestVersion +
+						// this is normal for the 1st request after the sink (re)starts
+						LOG.info("Invalid request. Received version = " + requestVersion +
 							", offset = " + requestOffset + ", while expected version = "
 							+ version + ", offset = " + offset);
 						sendBackResults(Collections.emptyList());
@@ -376,37 +392,42 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 					}
 
 					// valid request, sending out results
-					List<IN> results;
-					bufferedResultsLock.lock();
+					List<byte[]> nextBatch = new ArrayList<>();
+					bufferLock.lock();
 					try {
-						int oldSize = bufferedResults.size();
-						int ackedNum = Math.min((int) (requestOffset - offset), oldSize);
-						int nextBatchSize = Math.min(ackedNum + maxResultsPerBatch, oldSize) - ackedNum;
-
-						if (LOG.isDebugEnabled()) {
-							LOG.debug("Preparing " + nextBatchSize + " results");
-						}
-
 						// drop acked results
-						for (int i = 0; i < ackedNum; i++) {
-							bufferedResults.removeFirst();
+						int ackedNum = (int) (requestOffset - offset);
+						for (int i = 0; i < ackedNum && !buffer.isEmpty(); i++) {
+							byte[] removed = buffer.removeFirst();
+							currentBufferBytes -= removed.length;
 							offset++;
 						}
 
 						// prepare next result batch
-						results = new ArrayList<>(bufferedResults.subList(0, nextBatchSize));
+						long totalBytes = 0;
+						for (byte[] value : buffer) {
+							if (totalBytes + value.length <= maxBytesPerBatch) {
+								nextBatch.add(value);
+								totalBytes += value.length;
+							} else {
+								break;
+							}
+						}
 
-						if (oldSize >= maxResultsBuffered && bufferedResults.size() < maxResultsBuffered) {
-							bufferNotFullCondition.signal();
+						if (currentBufferBytes + invokingRecordBytes <= bufferSizeLimitBytes) {
+							bufferCanAddNextResultCondition.signal();
 						}
 					} finally {
-						bufferedResultsLock.unlock();
+						bufferLock.unlock();
 					}
-					sendBackResults(results);
+					sendBackResults(nextBatch);
 				} catch (Exception e) {
 					// Exception occurs, just close current connection
 					// client will come with the same offset if it needs the same batch of results
-					LOG.warn("Collect sink server encounters an exception", e);
+					if (LOG.isDebugEnabled()) {
+						// this is normal when sink restarts or job ends, so we print a debug log
+						LOG.debug("Collect sink server encounters an exception", e);
+					}
 					closeCurrentConnection();
 				}
 			}
@@ -446,9 +467,12 @@ public class CollectSinkFunction<IN> extends RichSinkFunction<IN> implements Che
 			return null;
 		}
 
-		private void sendBackResults(List<IN> results) throws IOException {
-			CollectCoordinationResponse<IN> response = new CollectCoordinationResponse<>(
-				version, lastCheckpointedOffset, results, serializer);
+		private void sendBackResults(List<byte[]> serializedResults) throws IOException {
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Sending back " + serializedResults.size() + " results");
+			}
+			CollectCoordinationResponse response =
+				new CollectCoordinationResponse(version, lastCheckpointedOffset, serializedResults);
 			response.serialize(outStream);
 		}
 

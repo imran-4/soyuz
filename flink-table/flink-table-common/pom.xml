@@ -23,12 +23,12 @@ under the License.
 	<parent>
 		<groupId>org.apache.flink</groupId>
 		<artifactId>flink-table</artifactId>
-		<version>1.11-SNAPSHOT</version>
+		<version>1.12-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 
 	<artifactId>flink-table-common</artifactId>
-	<name>flink-table-common</name>
+	<name>Flink : Table : Common</name>
 	<description>
 		This module contains extension points of the Table/SQL API.
 		It allows for implementing user-defined functions, custom
@@ -41,6 +41,12 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-files</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

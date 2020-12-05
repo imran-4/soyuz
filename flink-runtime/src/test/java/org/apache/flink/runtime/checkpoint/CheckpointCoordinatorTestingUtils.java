@@ -31,8 +31,10 @@ import org.apache.flink.runtime.concurrent.ScheduledExecutor;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
+import org.apache.flink.runtime.executiongraph.ExecutionGraphTestUtils;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
+import org.apache.flink.runtime.executiongraph.IntermediateResult;
 import org.apache.flink.runtime.executiongraph.utils.SimpleAckingTaskManagerGateway;
 import org.apache.flink.runtime.executiongraph.utils.SimpleAckingTaskManagerGateway.CheckpointConsumer;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -366,6 +368,7 @@ public class CheckpointCoordinatorTestingUtils {
 			operatorIDPairs.add(OperatorIDPair.generatedIDOnly(operatorID));
 		}
 		when(executionJobVertex.getOperatorIDs()).thenReturn(operatorIDPairs);
+		when(executionJobVertex.getProducedDataSets()).thenReturn(new IntermediateResult[0]);
 
 		return executionJobVertex;
 	}
@@ -439,6 +442,8 @@ public class CheckpointCoordinatorTestingUtils {
 		ExecutionState ... successiveStates) {
 
 		ExecutionVertex vertex = mock(ExecutionVertex.class);
+		when(vertex.getID()).thenReturn(ExecutionGraphTestUtils.createRandomExecutionVertexId());
+		when(vertex.getJobId()).thenReturn(new JobID());
 
 		final Execution exec = spy(new Execution(
 			mock(Executor.class),
@@ -482,9 +487,10 @@ public class CheckpointCoordinatorTestingUtils {
 		KeyGroupsStateHandle partitionedKeyGroupState = generateKeyGroupState(jobVertexID, keyGroupRange, false);
 
 		TaskStateSnapshot subtaskStates = spy(new TaskStateSnapshot());
-		OperatorSubtaskState subtaskState = spy(new OperatorSubtaskState(
-			partitionableState, null, partitionedKeyGroupState, null, null, null)
-		);
+		OperatorSubtaskState subtaskState = spy(OperatorSubtaskState.builder()
+			.setManagedOperatorState(partitionableState)
+			.setManagedKeyedState(partitionedKeyGroupState)
+			.build());
 
 		subtaskStates.putSubtaskStateByOperatorID(OperatorID.fromJobVertexID(jobVertexID), subtaskState);
 
@@ -572,6 +578,7 @@ public class CheckpointCoordinatorTestingUtils {
 		when(vertex.getJobVertexId()).thenReturn(id);
 		when(vertex.getTaskVertices()).thenReturn(vertices);
 		when(vertex.getOperatorIDs()).thenReturn(Collections.singletonList(OperatorIDPair.generatedIDOnly(OperatorID.fromJobVertexID(id))));
+		when(vertex.getProducedDataSets()).thenReturn(new IntermediateResult[0]);
 
 		for (ExecutionVertex v : vertices) {
 			when(v.getJobVertex()).thenReturn(vertex);
@@ -605,6 +612,8 @@ public class CheckpointCoordinatorTestingUtils {
 		private StateBackend checkpointStateBackend = new MemoryStateBackend();
 
 		private Executor ioExecutor = Executors.directExecutor();
+
+		private CheckpointsCleaner checkpointsCleaner = new CheckpointsCleaner();
 
 		private ScheduledExecutor timer = new ManuallyTriggeredScheduledExecutor();
 
@@ -717,6 +726,7 @@ public class CheckpointCoordinatorTestingUtils {
 				completedCheckpointStore,
 				checkpointStateBackend,
 				ioExecutor,
+				checkpointsCleaner,
 				timer,
 				sharedStateRegistryFactory,
 				failureManager);
@@ -791,6 +801,8 @@ public class CheckpointCoordinatorTestingUtils {
 		private final BiConsumer<Long, CompletableFuture<byte[]>> onCallingCheckpointCoordinator;
 		private final Consumer<Long> onCallingAfterSourceBarrierInjection;
 		private final OperatorID operatorID;
+		private final List<Long> completedCheckpoints;
+		private final List<Long> abortedCheckpoints;
 
 		private MockOperatorCoordinatorCheckpointContext(
 				BiConsumer<Long, CompletableFuture<byte[]>> onCallingCheckpointCoordinator,
@@ -799,6 +811,8 @@ public class CheckpointCoordinatorTestingUtils {
 			 this.onCallingCheckpointCoordinator = onCallingCheckpointCoordinator;
 			 this.onCallingAfterSourceBarrierInjection = onCallingAfterSourceBarrierInjection;
 			 this.operatorID = operatorID;
+			 this.completedCheckpoints = new ArrayList<>();
+			 this.abortedCheckpoints = new ArrayList<>();
 		}
 
 		@Override
@@ -821,14 +835,20 @@ public class CheckpointCoordinatorTestingUtils {
 		}
 
 		@Override
-		public void checkpointComplete(long checkpointId) {
-
+		public void notifyCheckpointComplete(long checkpointId) {
+			completedCheckpoints.add(checkpointId);
 		}
 
 		@Override
-		public void resetToCheckpoint(byte[] checkpointData) throws Exception {
-
+		public void notifyCheckpointAborted(long checkpointId) {
+			abortedCheckpoints.add(checkpointId);
 		}
+
+		@Override
+		public void resetToCheckpoint(long checkpointId, @Nullable byte[] checkpointData) throws Exception {}
+
+		@Override
+		public void subtaskReset(int subtask, long checkpointId) {}
 
 		@Override
 		public OperatorID operatorId() {
@@ -843,6 +863,14 @@ public class CheckpointCoordinatorTestingUtils {
 		@Override
 		public int currentParallelism() {
 			return 1;
+		}
+
+		public List<Long> getCompletedCheckpoints() {
+			return completedCheckpoints;
+		}
+
+		public List<Long> getAbortedCheckpoints() {
+			return abortedCheckpoints;
 		}
 	}
 

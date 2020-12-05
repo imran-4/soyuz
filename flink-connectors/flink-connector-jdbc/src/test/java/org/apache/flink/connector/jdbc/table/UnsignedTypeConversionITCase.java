@@ -20,24 +20,21 @@ package org.apache.flink.connector.jdbc.table;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.DataTypes;
-import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.table.planner.factories.TestValuesTableFactory;
-import org.apache.flink.table.planner.runtime.utils.TableEnvUtil;
-import org.apache.flink.table.planner.runtime.utils.TestData;
 import org.apache.flink.test.util.AbstractTestBase;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.CollectionUtil;
 
-import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
-
+import ch.vorburger.exec.ManagedProcessException;
+import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
-import ch.vorburger.mariadb4j.junit.MariaDB4jRule;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -52,7 +49,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.apache.flink.connector.jdbc.internal.JdbcTableOutputFormatTest.check;
 import static org.apache.flink.table.api.Expressions.row;
 import static org.junit.Assert.assertEquals;
 
@@ -62,28 +58,58 @@ import static org.junit.Assert.assertEquals;
  */
 public class UnsignedTypeConversionITCase extends AbstractTestBase {
 
+	private static final Logger logger = LoggerFactory.getLogger(UnsignedTypeConversionITCase.class);
 	private static final String DEFAULT_DB_NAME = "test";
 	private static final String TABLE_NAME = "unsigned_test";
-	private static final String USER_TABLE = "user_table";
+	private static final int INITIALIZE_DB_MAX_RETRY = 3;
+	private static DB db;
+	private static String dbUrl;
+	private static Connection connection;
 
 	private StreamTableEnvironment tEnv;
-	private String dbUrl;
-	private Connection connection;
 
-	@ClassRule
-	public static MariaDB4jRule db4jRule = new MariaDB4jRule(
-		DBConfigurationBuilder.newBuilder().build(),
-		DEFAULT_DB_NAME,
-		null);
+	@BeforeClass
+	public static void prepareMariaDB() throws IllegalStateException {
+		boolean initDbSuccess = false;
+		int i = 0;
+		//The initialization of maria db instance is a little unstable according to past CI tests.
+		//Add retry logic here to avoid initialization failure.
+		while (i < INITIALIZE_DB_MAX_RETRY) {
+			try {
+				db = DB.newEmbeddedDB(DBConfigurationBuilder.newBuilder().build());
+				db.start();
+				dbUrl = db.getConfiguration().getURL(DEFAULT_DB_NAME);
+				connection = DriverManager.getConnection(dbUrl);
+				try (Statement statement = connection.createStatement()) {
+					statement.execute("CREATE DATABASE IF NOT EXISTS `" + DEFAULT_DB_NAME + "`;");
+					ResultSet resultSet = statement.executeQuery("SELECT SCHEMA_NAME FROM " +
+						"INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '" + DEFAULT_DB_NAME + "';");
+					if (resultSet.next()) {
+						String dbName = resultSet.getString(1);
+						initDbSuccess = DEFAULT_DB_NAME.equalsIgnoreCase(dbName);
+					}
+				}
+			} catch (Exception e) {
+				logger.warn("Initialize DB fail caused by {}", e);
+				stopDb();
+			}
+			if (initDbSuccess) {
+				break;
+			}
+			i++;
+		}
+		if (!initDbSuccess) {
+			throw new IllegalStateException(String.format("Initialize MySQL database instance failed after {} attempts," +
+				" please open an issue.", INITIALIZE_DB_MAX_RETRY));
+		}
+	}
 
 	@Before
-	public void setUp() throws SQLException, ClassNotFoundException {
+	public void setUp() throws SQLException, IllegalStateException {
+		//dbUrl: jdbc:mysql://localhost:3306/test
+		createMysqlTable();
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		tEnv = StreamTableEnvironment.create(env);
-		//dbUrl: jdbc:mysql://localhost:3306/test
-		dbUrl = db4jRule.getURL();
-		connection = DriverManager.getConnection(dbUrl);
-		createMysqlTable();
 		createFlinkTable();
 		prepareData();
 	}
@@ -91,7 +117,7 @@ public class UnsignedTypeConversionITCase extends AbstractTestBase {
 	@Test
 	public void testUnsignedType() throws Exception {
 		// write data to db
-		TableEnvUtil.execInsertSqlAndWaitResult(tEnv, "insert into jdbc_sink select" +
+		tEnv.executeSql("insert into jdbc_sink select" +
 			" tiny_c," +
 			" tiny_un_c," +
 			" small_c," +
@@ -99,7 +125,7 @@ public class UnsignedTypeConversionITCase extends AbstractTestBase {
 			" int_c," +
 			" int_un_c," +
 			" big_c ," +
-			" big_un_c from data");
+			" big_un_c from data").await();
 
 		// read data from db using jdbc connection and compare
 		PreparedStatement query = connection.prepareStatement(String.format("select tiny_c, tiny_un_c, small_c, small_un_c," +
@@ -120,7 +146,7 @@ public class UnsignedTypeConversionITCase extends AbstractTestBase {
 		Iterator<Row> collected = tEnv.executeSql("select tiny_c, tiny_un_c, small_c, small_un_c," +
 			" int_c, int_un_c, big_c, big_un_c from jdbc_source")
 			.collect();
-		List<String> result = Lists.newArrayList(collected).stream()
+		List<String> result = CollectionUtil.iteratorToList(collected).stream()
 			.map(Row::toString)
 			.sorted()
 			.collect(Collectors.toList());
@@ -130,24 +156,16 @@ public class UnsignedTypeConversionITCase extends AbstractTestBase {
 	}
 
 	private void createMysqlTable() throws SQLException {
-		try (Statement statement = connection.createStatement()) {
-			statement.executeUpdate("create table " + TABLE_NAME + " (" +
-				" tiny_c TINYINT," +
-				" tiny_un_c TINYINT UNSIGNED," +
-				" small_c SMALLINT," +
-				" small_un_c SMALLINT UNSIGNED," +
-				" int_c INTEGER ," +
-				" int_un_c INTEGER UNSIGNED," +
-				" big_c BIGINT," +
-				" big_un_c BIGINT UNSIGNED);");
-			statement.executeUpdate("CREATE TABLE " + USER_TABLE + " (" +
-				"user_id VARCHAR(20) NOT NULL," +
-				"user_name VARCHAR(20) NOT NULL," +
-				"email VARCHAR(255)," +
-				"balance DECIMAL(18,2)," +
-				"balance2 DECIMAL(18,2)," +
-				"PRIMARY KEY (user_id))");
-		}
+		PreparedStatement ddlStatement = connection.prepareStatement("create table " + TABLE_NAME + " (" +
+			" tiny_c TINYINT," +
+			" tiny_un_c TINYINT UNSIGNED," +
+			" small_c SMALLINT," +
+			" small_un_c SMALLINT UNSIGNED," +
+			" int_c INTEGER ," +
+			" int_un_c INTEGER UNSIGNED," +
+			" big_c BIGINT," +
+			" big_un_c BIGINT UNSIGNED);");
+		ddlStatement.execute();
 	}
 
 	private void createFlinkTable() {
@@ -191,51 +209,19 @@ public class UnsignedTypeConversionITCase extends AbstractTestBase {
 		tEnv.createTemporaryView("data", dataTable);
 	}
 
-	@Test
-	public void testReadingFromChangelogSource() throws SQLException {
-		TableEnvironment tEnv = TableEnvironment.create(EnvironmentSettings.newInstance().build());
-		String dataId = TestValuesTableFactory.registerData(TestData.userChangelog());
-		tEnv.executeSql("CREATE TABLE user_logs (\n" +
-			"  user_id STRING,\n" +
-			"  user_name STRING,\n" +
-			"  email STRING,\n" +
-			"  balance DECIMAL(18,2),\n" +
-			"  balance2 AS balance * 2\n" +
-			") WITH (\n" +
-			" 'connector' = 'values',\n" +
-			" 'data-id' = '" + dataId + "',\n" +
-			" 'changelog-mode' = 'I,UA,UB,D'\n" +
-			")");
-		tEnv.executeSql("CREATE TABLE user_sink (\n" +
-			"  user_name STRING,\n" +
-			"  email STRING,\n" +
-			"  balance DECIMAL(18,2),\n" +
-			"  balance2 DECIMAL(18,2),\n" +
-			"  user_id STRING PRIMARY KEY NOT ENFORCED\n" +
-			") WITH (\n" +
-			"  'connector' = 'jdbc'," +
-			"  'url'='" + dbUrl + "'," +
-			"  'table-name' = '" + USER_TABLE + "'," +
-			"  'sink.buffer-flush.max-rows' = '2'," +
-			"  'sink.buffer-flush.interval' = '0'" + // disable async flush
-			")");
-		TableEnvUtil.execInsertSqlAndWaitResult(
-			tEnv,
-			"INSERT INTO user_sink " +
-				"SELECT user_name, email, balance, balance2, user_id FROM user_logs");
-
-		check(new Row[] {
-			Row.of("Tom", "tom123@gmail.com", new BigDecimal("8.10"), new BigDecimal("16.20"), "user1"),
-			Row.of("Bailey", "bailey@qq.com", new BigDecimal("9.99"), new BigDecimal("19.98"), "user3"),
-			Row.of("Tina", "tina@gmail.com", new BigDecimal("11.30"), new BigDecimal("22.60"), "user4")
-		}, dbUrl, USER_TABLE, new String[]{"user_name", "email", "balance", "balance2", "user_id"});
+	@After
+	public void cleanup() {
+		stopDb();
 	}
 
-	@After
-	public void cleanup() throws Exception {
-		try (Statement statement = connection.createStatement()) {
-			statement.executeUpdate(String.format("drop table %s", TABLE_NAME));
-			statement.executeUpdate(String.format("drop table %s", USER_TABLE));
+	private static void stopDb() {
+		if (db == null) {
+			return;
+		}
+		try {
+			db.stop();
+		} catch (ManagedProcessException e1) {
+			logger.warn("Stop DB instance fail caused by {}", e1);
 		}
 	}
 }

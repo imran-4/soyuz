@@ -119,76 +119,85 @@ public final class LogicalTypeCasts {
 		castTo(CHAR)
 			.implicitFrom(CHAR)
 			.explicitFromFamily(PREDEFINED)
-			.explicitNotFromFamily(BINARY_STRING)
 			.build();
 
 		castTo(VARCHAR)
 			.implicitFromFamily(CHARACTER_STRING)
 			.explicitFromFamily(PREDEFINED)
-			.explicitNotFromFamily(BINARY_STRING)
 			.build();
 
 		castTo(BOOLEAN)
 			.implicitFrom(BOOLEAN)
-			.explicitFromFamily(CHARACTER_STRING)
+			.explicitFromFamily(CHARACTER_STRING, NUMERIC)
 			.build();
 
 		castTo(BINARY)
 			.implicitFrom(BINARY)
+			.explicitFromFamily(CHARACTER_STRING)
+			.explicitFrom(VARBINARY)
 			.build();
 
 		castTo(VARBINARY)
 			.implicitFromFamily(BINARY_STRING)
+			.explicitFromFamily(CHARACTER_STRING)
+			.explicitFrom(BINARY)
 			.build();
 
 		castTo(DECIMAL)
 			.implicitFromFamily(NUMERIC)
-			.explicitFromFamily(CHARACTER_STRING)
+			.explicitFromFamily(CHARACTER_STRING, INTERVAL)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(TINYINT)
 			.implicitFrom(TINYINT)
-			.explicitFromFamily(NUMERIC, CHARACTER_STRING)
+			.explicitFromFamily(NUMERIC, CHARACTER_STRING, INTERVAL)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(SMALLINT)
 			.implicitFrom(TINYINT, SMALLINT)
-			.explicitFromFamily(NUMERIC, CHARACTER_STRING)
+			.explicitFromFamily(NUMERIC, CHARACTER_STRING, INTERVAL)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(INTEGER)
 			.implicitFrom(TINYINT, SMALLINT, INTEGER)
-			.explicitFromFamily(NUMERIC, CHARACTER_STRING)
+			.explicitFromFamily(NUMERIC, CHARACTER_STRING, INTERVAL)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(BIGINT)
 			.implicitFrom(TINYINT, SMALLINT, INTEGER, BIGINT)
-			.explicitFromFamily(NUMERIC, CHARACTER_STRING)
+			.explicitFromFamily(NUMERIC, CHARACTER_STRING, INTERVAL)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(FLOAT)
 			.implicitFrom(TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, DECIMAL)
 			.explicitFromFamily(NUMERIC, CHARACTER_STRING)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(DOUBLE)
 			.implicitFromFamily(NUMERIC)
 			.explicitFromFamily(CHARACTER_STRING)
+			.explicitFrom(BOOLEAN, TIMESTAMP_WITHOUT_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.build();
 
 		castTo(DATE)
 			.implicitFrom(DATE, TIMESTAMP_WITHOUT_TIME_ZONE)
-			.explicitFromFamily(TIMESTAMP, CHARACTER_STRING)
+			.explicitFromFamily(TIMESTAMP, CHARACTER_STRING, BINARY_STRING)
 			.build();
 
 		castTo(TIME_WITHOUT_TIME_ZONE)
 			.implicitFrom(TIME_WITHOUT_TIME_ZONE, TIMESTAMP_WITHOUT_TIME_ZONE)
-			.explicitFromFamily(TIME, TIMESTAMP, CHARACTER_STRING)
+			.explicitFromFamily(TIME, TIMESTAMP, CHARACTER_STRING, BINARY_STRING)
 			.build();
 
 		castTo(TIMESTAMP_WITHOUT_TIME_ZONE)
 			.implicitFrom(TIMESTAMP_WITHOUT_TIME_ZONE)
-			.explicitFromFamily(DATETIME, CHARACTER_STRING)
+			.explicitFromFamily(DATETIME, CHARACTER_STRING, BINARY_STRING, NUMERIC)
 			.build();
 
 		castTo(TIMESTAMP_WITH_TIME_ZONE)
@@ -198,7 +207,7 @@ public final class LogicalTypeCasts {
 
 		castTo(TIMESTAMP_WITH_LOCAL_TIME_ZONE)
 			.implicitFrom(TIMESTAMP_WITH_LOCAL_TIME_ZONE)
-			.explicitFromFamily(DATETIME, CHARACTER_STRING)
+			.explicitFromFamily(DATETIME, CHARACTER_STRING, BINARY_STRING, NUMERIC)
 			.build();
 
 		castTo(INTERVAL_YEAR_MONTH)
@@ -278,7 +287,9 @@ public final class LogicalTypeCasts {
 			LogicalType sourceType,
 			LogicalType targetType,
 			boolean allowExplicit) {
-		if (sourceType.isNullable() && !targetType.isNullable()) {
+		// a NOT NULL type cannot store a NULL type
+		// but it might be useful to cast explicitly with knowledge about the data
+		if (sourceType.isNullable() && !targetType.isNullable() && !allowExplicit) {
 			return false;
 		}
 		// ignore nullability during compare
@@ -289,14 +300,9 @@ public final class LogicalTypeCasts {
 		final LogicalTypeRoot sourceRoot = sourceType.getTypeRoot();
 		final LogicalTypeRoot targetRoot = targetType.getTypeRoot();
 
-		if (hasFamily(sourceType, INTERVAL) && hasFamily(targetType, EXACT_NUMERIC)) {
-			// cast between interval and exact numeric is only supported if interval has a single field
-			return isSingleFieldInterval(sourceType);
-		} else if (hasFamily(sourceType, EXACT_NUMERIC) && hasFamily(targetType, INTERVAL)) {
-			// cast between interval and exact numeric is only supported if interval has a single field
-			return isSingleFieldInterval(targetType);
-		} else if (hasFamily(sourceType, CONSTRUCTED) || hasFamily(targetType, CONSTRUCTED)) {
-			return supportsConstructedCasting(sourceType, targetType, allowExplicit);
+		if (sourceRoot == NULL) {
+			// null can be cast to an arbitrary type
+			return true;
 		} else if (sourceRoot == DISTINCT_TYPE && targetRoot == DISTINCT_TYPE) {
 			// the two distinct types are not equal (from initial invariant), casting is not possible
 			return false;
@@ -304,12 +310,17 @@ public final class LogicalTypeCasts {
 			return supportsCasting(((DistinctType) sourceType).getSourceType(), targetType, allowExplicit);
 		} else if (targetRoot == DISTINCT_TYPE) {
 			return supportsCasting(sourceType, ((DistinctType) targetType).getSourceType(), allowExplicit);
+		} else if (hasFamily(sourceType, INTERVAL) && hasFamily(targetType, EXACT_NUMERIC)) {
+			// cast between interval and exact numeric is only supported if interval has a single field
+			return isSingleFieldInterval(sourceType);
+		} else if (hasFamily(sourceType, EXACT_NUMERIC) && hasFamily(targetType, INTERVAL)) {
+			// cast between interval and exact numeric is only supported if interval has a single field
+			return isSingleFieldInterval(targetType);
+		}  else if (hasFamily(sourceType, CONSTRUCTED) || hasFamily(targetType, CONSTRUCTED)) {
+			return supportsConstructedCasting(sourceType, targetType, allowExplicit);
 		} else if (sourceRoot == STRUCTURED_TYPE || targetRoot == STRUCTURED_TYPE) {
 			// inheritance is not supported yet, so structured type must be fully equal
 			return false;
-		} else if (sourceRoot == NULL) {
-			// null can be cast to an arbitrary type
-			return true;
 		} else if (sourceRoot == RAW || targetRoot == RAW) {
 			// the two raw types are not equal (from initial invariant), casting is not possible
 			return false;

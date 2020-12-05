@@ -24,6 +24,7 @@ import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.configuration.UnmodifiableConfiguration;
 import org.apache.flink.tests.util.AutoClosableProcess;
 import org.apache.flink.tests.util.TestUtils;
+import org.apache.flink.tests.util.util.FileUtils;
 import org.apache.flink.util.ExceptionUtils;
 
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
@@ -34,6 +35,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -43,6 +45,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -65,6 +68,8 @@ final class FlinkDistribution {
 	private static final Logger LOG = LoggerFactory.getLogger(FlinkDistribution.class);
 
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+	private static final Pattern ROOT_LOGGER_PATTERN = Pattern.compile("(rootLogger.level =).*");
 
 	private final Path opt;
 	private final Path lib;
@@ -94,6 +99,13 @@ final class FlinkDistribution {
 	public void startTaskManager() throws IOException {
 		LOG.info("Starting Flink TaskManager.");
 		AutoClosableProcess.runBlocking(bin.resolve("taskmanager.sh").toAbsolutePath().toString(), "start");
+	}
+
+	public void setRootLogLevel(Level logLevel) throws IOException {
+		FileUtils.replace(
+			conf.resolve("log4j.properties"),
+			ROOT_LOGGER_PATTERN,
+			matcher -> matcher.group(1) + " " + logLevel.name());
 	}
 
 	public void startFlinkCluster() throws IOException {
@@ -140,7 +152,7 @@ final class FlinkDistribution {
 		AutoClosableProcess.runBlocking(bin.resolve("stop-cluster.sh").toAbsolutePath().toString());
 	}
 
-	public JobID submitJob(final JobSubmission jobSubmission) throws IOException {
+	public JobID submitJob(final JobSubmission jobSubmission, Duration timeout) throws IOException {
 		final List<String> commands = new ArrayList<>(4);
 		commands.add(bin.resolve("flink").toString());
 		commands.add("run");
@@ -179,14 +191,14 @@ final class FlinkDistribution {
 			}
 
 			try {
-				return JobID.fromHexString(rawJobIdFuture.get(1, TimeUnit.MINUTES));
+				return JobID.fromHexString(rawJobIdFuture.get(timeout.getSeconds(), TimeUnit.SECONDS));
 			} catch (Exception e) {
 				throw new IOException("Could not determine Job ID.", e);
 			}
 		}
 	}
 
-	public void submitSQLJob(SQLJobSubmission job) throws IOException {
+	public void submitSQLJob(SQLJobSubmission job, Duration timeout) throws IOException {
 		final List<String> commands = new ArrayList<>();
 		commands.add(bin.resolve("sql-client.sh").toAbsolutePath().toString());
 		commands.add("embedded");
@@ -207,7 +219,7 @@ final class FlinkDistribution {
 			.create(commands.toArray(new String[0]))
 			.setStdInputs(job.getSqlLines().toArray(new String[0]))
 			.setStdoutProcessor(LOG::info) // logging the SQL statements and error message
-			.runBlocking();
+			.runBlocking(timeout);
 	}
 
 	public void performJarOperation(JarOperation operation) throws IOException {

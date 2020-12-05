@@ -176,13 +176,13 @@ Flink treats these data types as black boxes and is not able to access their con
 
 *Value* types describe their serialization and deserialization manually. Instead of going through a
 general purpose serialization framework, they provide custom code for those operations by means of
-implementing the `org.apache.flinktypes.Value` interface with the methods `read` and `write`. Using
+implementing the `org.apache.flink.types.Value` interface with the methods `read` and `write`. Using
 a Value type is reasonable when general purpose serialization would be highly inefficient. An
 example would be a data type that implements a sparse vector of elements as an array. Knowing that
 the array is mostly zero, one can use a special encoding for the non-zero elements, while the
 general purpose serialization would simply write all array elements.
 
-The `org.apache.flinktypes.CopyableValue` interface supports manual internal cloning logic in a
+The `org.apache.flink.types.CopyableValue` interface supports manual internal cloning logic in a
 similar way.
 
 Flink comes with pre-defined Value types that correspond to basic data types. (`ByteValue`,
@@ -260,7 +260,7 @@ The most frequent issues where users need to interact with Flink's data type han
   by itself. Not all types are seamlessly handled by Kryo (and thus by Flink). For example, many Google Guava collection types do not work well
   by default. The solution is to register additional serializers for the types that cause problems.
   Call `.getConfig().addDefaultKryoSerializer(clazz, serializer)` on the `StreamExecutionEnvironment` or `ExecutionEnvironment`.
-  Additional Kryo serializers are available in many libraries. See [Custom Serializers]({{ site.baseurl }}/dev/custom_serializers.html) for more details on working with custom serializers.
+  Additional Kryo serializers are available in many libraries. See [Custom Serializers]({% link dev/custom_serializers.md %}) for more details on working with custom serializers.
 
 * **Adding Type Hints:** Sometimes, when Flink cannot infer the generic types despite all tricks, a user must pass a *type hint*. That is generally
   only necessary in the Java API. The [Type Hints Section](#type-hints-in-the-java-api) describes that in more detail.

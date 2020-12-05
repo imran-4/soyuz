@@ -30,8 +30,8 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+import static org.apache.flink.core.testutils.FlinkMatchers.containsCause;
 import static org.apache.flink.core.testutils.FlinkMatchers.willNotComplete;
-import static org.apache.flink.util.CoreMatchers.containsCause;
 import static org.junit.Assert.assertThat;
 
 /**

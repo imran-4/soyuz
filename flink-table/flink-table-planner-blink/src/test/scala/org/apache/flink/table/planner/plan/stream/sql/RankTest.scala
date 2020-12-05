@@ -123,7 +123,6 @@ class RankTest extends TableTestBase {
 
   @Test
   def testRowNumberWithRankEndLessThan1OrderByRowtimeAsc(): Unit = {
-    // can not be converted to StreamExecDeduplicate
     val sql =
       """
         |SELECT a, b, c
@@ -139,7 +138,6 @@ class RankTest extends TableTestBase {
 
   @Test
   def testRowNumberWithRankEndLessThan1OrderByRowtimeDesc(): Unit = {
-    // can not be converted to StreamExecDeduplicate
     val sql =
       """
         |SELECT a, b, c
@@ -670,6 +668,24 @@ class RankTest extends TableTestBase {
     )
     util.verifyPlanInsert("insert into sink select name, eat, cnt\n"
       + "from view2 where row_num <= 3")
+  }
+
+  @Test
+  def testCorrelateSortToRank(): Unit = {
+    val query =
+      s"""
+         |SELECT a, b
+         |FROM
+         |  (SELECT DISTINCT a FROM MyTable) T1,
+         |  LATERAL (
+         |    SELECT b, c
+         |    FROM MyTable
+         |    WHERE a = T1.a
+         |    ORDER BY c
+         |    DESC LIMIT 3
+         |  )
+      """.stripMargin
+    util.verifyPlan(query)
   }
 
   // TODO add tests about multi-sinks and udf

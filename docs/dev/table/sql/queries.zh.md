@@ -24,14 +24,31 @@ under the License.
 
 * This will be replaced by the TOC
 {:toc}
+<div class="codetabs" data-hide-tabs="1" markdown="1">
+<div data-lang="java/scala" markdown="1">
 
-SELECT 语句和 VALUES 语句需要使用 `TableEnvironment` 的 `sqlQuery()` 方法加以指定。这个方法会以 `Table` 的形式返回 SELECT （或 VALUE）的查询结果。`Table` 可以被用于 [随后的SQL 与 Table API 查询]({{ site.baseurl }}/zh/dev/table/common.html#mixing-table-api-and-sql) 、 [转换为 DataSet 或 DataStream ]({{ site.baseurl }}/zh/dev/table/common.html#integration-with-datastream-and-dataset-api)或 [输出到 TableSink ]({{ site.baseurl }}/zh/dev/table/common.html#emit-a-table)。SQL 与 Table API 的查询可以进行无缝融合、整体优化并翻译为单一的程序。
+SELECT 语句和 VALUES 语句需要使用 `TableEnvironment` 的 `sqlQuery()` 方法加以指定。这个方法会以 `Table` 的形式返回 SELECT （或 VALUE）的查询结果。`Table` 可以被用于 [随后的SQL 与 Table API 查询]({% link dev/table/common.zh.md %}#mixing-table-api-and-sql) 、 [转换为 DataSet 或 DataStream ]({% link dev/table/common.zh.md %}#integration-with-datastream-and-dataset-api)或 [输出到 TableSink ]({% link dev/table/common.zh.md %}#emit-a-table)。SQL 与 Table API 的查询可以进行无缝融合、整体优化并翻译为单一的程序。
 
-为了可以在 SQL 查询中访问到表，你需要先 [在 TableEnvironment 中注册表 ]({{ site.baseurl }}/zh/dev/table/common.html#register-tables-in-the-catalog)。表可以通过 [TableSource]({{ site.baseurl }}/zh/dev/table/common.html#register-a-tablesource)、 [Table]({{ site.baseurl }}/zh/dev/table/common.html#register-a-table)、[CREATE TABLE 语句](create.html)、 [DataStream 或 DataSet]({{ site.baseurl }}/zh/dev/table/common.html#register-a-datastream-or-dataset-as-table) 注册。 用户也可以通过 [向 TableEnvironment 中注册 catalog ]({{ site.baseurl }}/zh/dev/table/catalogs.html) 的方式指定数据源的位置。
+为了可以在 SQL 查询中访问到表，你需要先 [在 TableEnvironment 中注册表 ]({% link dev/table/common.zh.md %}#register-tables-in-the-catalog)。表可以通过 [TableSource]({% link dev/table/common.zh.md %}#register-a-tablesource)、 [Table]({% link dev/table/common.zh.md %}#register-a-table)、[CREATE TABLE 语句](create.html)、 [DataStream 或 DataSet]({% link dev/table/common.zh.md %}#register-a-datastream-or-dataset-as-table) 注册。 用户也可以通过 [向 TableEnvironment 中注册 catalog ]({% link dev/table/catalogs.zh.md %}) 的方式指定数据源的位置。
 
 为方便起见 `Table.toString()` 将会在其 `TableEnvironment` 中自动使用一个唯一的名字注册表并返回表名。 因此， `Table` 对象可以如下文所示样例，直接内联到 SQL 语句中。
 
 **注意：** 查询若包括了不支持的 SQL 特性，将会抛出 `TableException`。批处理和流处理所支持的 SQL 特性将会在下述章节中列出。
+
+</div>
+
+<div data-lang="python" markdown="1">
+
+SELECT 语句和 VALUES 语句需要使用 `TableEnvironment` 的 `sqlQuery()` 方法加以指定。这个方法会以 `Table` 的形式返回 SELECT （或 VALUE）的查询结果。`Table` 可以被用于 [随后的SQL 与 Table API 查询]({% link dev/table/common.zh.md %}#mixing-table-api-and-sql) 或 [输出到 TableSink ]({% link dev/table/common.zh.md %}#emit-a-table)。SQL 与 Table API 的查询可以进行无缝融合、整体优化并翻译为单一的程序。
+
+为了可以在 SQL 查询中访问到表，你需要先 [在 TableEnvironment 中注册表 ]({% link dev/table/common.zh.md %}#register-tables-in-the-catalog)。表可以通过 [TableSource]({% link dev/table/common.zh.md %}#register-a-tablesource)、 [Table]({% link dev/table/common.zh.md %}#register-a-table)、[CREATE TABLE 语句](create.html) 注册。 用户也可以通过 [向 TableEnvironment 中注册 catalog ]({% link dev/table/catalogs.zh.md %}) 的方式指定数据源的位置。
+
+为方便起见 `str(Table)` 将会在其 `TableEnvironment` 中自动使用一个唯一的名字注册表并返回表名。 因此， `Table` 对象可以如下文所示样例，直接内联到 SQL 语句中。
+
+**注意：** 查询若包括了不支持的 SQL 特性，将会抛出 `TableException`。批处理和流处理所支持的 SQL 特性将会在下述章节中列出。
+
+</div>
+</div>
 
 ## 指定查询
 
@@ -140,25 +157,40 @@ table_env \
 {% top %}
 
 ## 执行查询
+
+<div class="codetabs" data-hide-tabs="1" markdown="1">
+<div data-lang="java/scala" markdown="1">
+
 SELECT 语句或者 VALUES 语句可以通过 `TableEnvironment.executeSql()` 方法来执行，将选择的结果收集到本地。该方法返回 `TableResult` 对象用于包装查询的结果。和 SELECT 语句很像，一个 `Table` 对象可以通过 `Table.execute()` 方法执行从而将 `Table` 的内容收集到本地客户端。
 `TableResult.collect()` 方法返回一个可以关闭的行迭代器。除非所有的数据都被收集到本地，否则一个查询作业永远不会结束。所以我们应该通过 `CloseableIterator#close()` 方法主动地关闭作业以防止资源泄露。
 我们还可以通过 `TableResult.print()` 方法将查询结果打印到本地控制台。`TableResult` 中的结果数据只能被访问一次，因此一个 `TableResult` 实例中，`collect()` 方法和 `print()` 方法不能被同时使用。
 
-对于流模式，`TableResult.collect()` 方法或者 `TableResult.print` 方法保证端到端精确一次的数据交付。这就要求开启 checkpointing。默认情况下 checkpointing 是禁止的，我们可以通过 `TableConfig` 设置 checkpointing 相关属性（请参考 <a href="{{ site.baseurl }}/zh/ops/config.html#checkpointing">checkpointing 配置</a>）来开启 checkpointing。
-因此一条结果数据只有在其对应的 checkpointing 完成后才能在客户端被访问。
+`TableResult.collect()` 与 `TableResult.print()` 的行为在不同的 checkpointing 模式下略有不同（流作业开启 checkpointing 的方法可参考 <a href="{% link deployment/config.zh.md %}#checkpointing">checkpointing 配置</a>）。
+* 对于批作业或没有配置任何 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 既不保证精确一次的数据交付、也不保证至少一次的数据交付。查询结果在产生后可被客户端即刻访问，但作业失败并重启时将会报错。
+* 对于配置了精准一次 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 保证端到端精确一次的数据交付。一条结果数据只有在其对应的 checkpointing 完成后才能在客户端被访问。
+* 对于配置了至少一次 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 保证端到端至少一次的数据交付。查询结果在产生后可被客户端即刻访问，但同一条结果可能被多次传递给客户端。
 
-**注意：** 对于流模式，当前仅支持追加模式的查询语句，并且应该开启 checkpoint。因为一条结果只有在其对应的 checkpoint 完成之后才能被客户端访问到。
+</div>
+
+<div data-lang="python" markdown="1">
+
+SELECT 语句或者 VALUES 语句可以通过 `TableEnvironment.execute_sql()` 方法来执行，将选择的结果收集到本地。该方法返回 `TableResult` 对象用于包装查询的结果。和 SELECT 语句很像，一个 `Table` 对象可以通过 `Table.execute()` 方法执行从而将 `Table` 的内容收集到本地客户端。
+`TableResult.collect()` 方法返回一个可以关闭的行迭代器。除非所有的数据都被收集到本地，否则一个查询作业永远不会结束。所以我们应该通过 `CloseableIterator#close()` 方法主动地关闭作业以防止资源泄露。
+我们还可以通过 `TableResult.print()` 方法将查询结果打印到本地控制台。`TableResult` 中的结果数据只能被访问一次，因此一个 `TableResult` 实例中，`collect()` 方法和 `print()` 方法不能被同时使用。
+
+`TableResult.collect()` 与 `TableResult.print()` 的行为在不同的 checkpointing 模式下略有不同（流作业开启 checkpointing 的方法可参考 <a href="{% link deployment/config.zh.md %}#checkpointing">checkpointing 配置</a>）。
+* 对于批作业或没有配置任何 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 既不保证精确一次的数据交付、也不保证至少一次的数据交付。查询结果在产生后可被客户端即刻访问，但作业失败并重启时将会报错。
+* 对于配置了精准一次 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 保证端到端精确一次的数据交付。一条结果数据只有在其对应的 checkpointing 完成后才能在客户端被访问。
+* 对于配置了至少一次 checkpointing 的流作业，`TableResult.collect()` 与 `TableResult.print()` 保证端到端至少一次的数据交付。查询结果在产生后可被客户端即刻访问，但同一条结果可能被多次传递给客户端。
+
+</div>
+</div>
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
 {% highlight java %}
 StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env, settings);
-// enable checkpointing
-tableEnv.getConfig().getConfiguration().set(
-  ExecutionCheckpointingOptions.CHECKPOINTING_MODE, CheckpointingMode.EXACTLY_ONCE);
-tableEnv.getConfig().getConfiguration().set(
-  ExecutionCheckpointingOptions.CHECKPOINTING_INTERVAL, Duration.ofSeconds(10));
 
 tableEnv.executeSql("CREATE TABLE Orders (`user` BIGINT, product STRING, amount INT) WITH (...)");
 
@@ -284,9 +316,15 @@ tableReference:
   [ [ AS ] alias [ '(' columnAlias [, columnAlias ]* ')' ] ]
 
 tablePrimary:
-  [ TABLE ] [ [ catalogName . ] schemaName . ] tableName [ dynamicTableOptions ]
+  [ TABLE ] tablePath [ dynamicTableOptions ] [systemTimePeriod] [[AS] correlationName]
   | LATERAL TABLE '(' functionName '(' expression [, expression ]* ')' ')'
   | UNNEST '(' expression ')'
+
+tablePath:
+  [ [ catalogName . ] schemaName . ] tableName  
+
+systemTimePeriod:
+  FOR SYSTEM_TIME AS OF dateTimeExpression
 
 dynamicTableOptions:
   /*+ OPTIONS(key=val [, key=val]*) */
@@ -423,7 +461,7 @@ SELECT * FROM Orders WHERE a % 2 = 0
         <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
       </td>
       <td>
-      <p>自定义函数必须事先注册到 TableEnvironment 中。 可阅读 <a href="{{ site.baseurl }}/zh/dev/table/functions/udfs.html">自定义函数文档</a> 以获得如何指定和注册自定义函数的详细信息。</p>
+      <p>自定义函数必须事先注册到 TableEnvironment 中。 可阅读 <a href="{% link dev/table/functions/udfs.zh.md %}">自定义函数文档</a> 以获得如何指定和注册自定义函数的详细信息。</p>
 {% highlight sql %}
 SELECT PRETTY_PRINT(user) FROM Orders
 {% endhighlight %}
@@ -453,7 +491,7 @@ SELECT PRETTY_PRINT(user) FROM Orders
         <span class="label label-info">结果更新</span>
       </td>
       <td>
-        <p><b>注意：</b> GroupBy 在流处理表中会产生更新结果（updating result）。详情请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/dynamic_tables.html">动态表流概念</a> 。
+        <p><b>注意：</b> GroupBy 在流处理表中会产生更新结果（updating result）。详情请阅读 <a href="{% link dev/table/streaming/dynamic_tables.zh.md %}">动态表流概念</a> 。
         </p>
 {% highlight sql %}
 SELECT a, SUM(b) as d
@@ -482,7 +520,7 @@ GROUP BY TUMBLE(rowtime, INTERVAL '1' DAY), user
         <span class="label label-primary">流处理</span>
       </td>
       <td>
-        <p><b>注意：</b> 所有的聚合必须定义到同一个窗口中，即相同的分区、排序和区间。当前仅支持 PRECEDING (无界或有界) 到 CURRENT ROW 范围内的窗口、FOLLOWING 所描述的区间并未支持，ORDER BY 必须指定于单个的<a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html">时间属性</a>。</p>
+        <p><b>注意：</b> 所有的聚合必须定义到同一个窗口中，即相同的分区、排序和区间。当前仅支持 PRECEDING (无界或有界) 到 CURRENT ROW 范围内的窗口、FOLLOWING 所描述的区间并未支持，ORDER BY 必须指定于单个的<a href="{% link dev/table/streaming/time_attributes.zh.md %}">时间属性</a>。</p>
 {% highlight sql %}
 SELECT COUNT(amount) OVER (
   PARTITION BY user
@@ -509,7 +547,7 @@ WINDOW w AS (
 {% highlight sql %}
 SELECT DISTINCT users FROM Orders
 {% endhighlight %}
-       <p><b>注意：</b> 对于流处理查询，根据不同字段的数量，计算查询结果所需的状态可能会无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 以获取详细的信息</p>
+       <p><b>注意：</b> 对于流处理查询，根据不同字段的数量，计算查询结果所需的状态可能会无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。请阅读 <a href="{% link dev/table/streaming/query_configuration.zh.md %}">查询配置</a> 以获取详细的信息</p>
       </td>
     </tr>
     <tr>
@@ -547,7 +585,7 @@ HAVING SUM(amount) > 50
         <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
       </td>
       <td>
-        <p>UDAGG 必须注册到 TableEnvironment. 参考<a href="{{ site.baseurl }}/zh/dev/table/functions/udfs.html">自定义函数文档</a> 以了解如何指定和注册 UDAGG 。</p>
+        <p>UDAGG 必须注册到 TableEnvironment. 参考<a href="{% link dev/table/functions/udfs.zh.md %}">自定义函数文档</a> 以了解如何指定和注册 UDAGG 。</p>
 {% highlight sql %}
 SELECT MyAggregate(amount)
 FROM Orders
@@ -584,7 +622,7 @@ GROUP BY users
 SELECT *
 FROM Orders INNER JOIN Product ON Orders.productId = Product.id
 {% endhighlight %}
-        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 页面.</p>
+        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{% link dev/table/streaming/query_configuration.zh.md %}">查询配置</a> 页面.</p>
       </td>
     </tr>
     <tr>
@@ -606,18 +644,18 @@ FROM Orders RIGHT JOIN Product ON Orders.productId = Product.id
 SELECT *
 FROM Orders FULL OUTER JOIN Product ON Orders.productId = Product.id
 {% endhighlight %}
-        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 页面.</p>
+        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{% link dev/table/streaming/query_configuration.zh.md %}">查询配置</a> 页面.</p>
       </td>
     </tr>
     <tr>
-      <td><strong>Interval Join</strong><br>
+      <td><strong>Inner/Outer Interval Join</strong><br>
         <span class="label label-primary">批处理</span>
         <span class="label label-primary">流处理</span>
       </td>
       <td>
         <p><b>注意：</b>Interval join （时间区间关联）是常规 join 的子集，可以使用流的方式进行处理。</p>
 
-        <p>Interval join需要至少一个 equi-join 谓词和一个限制了双方时间的 join 条件。例如使用两个适当的范围谓词（<code>&lt;, &lt;=, &gt;=, &gt;</code>），一个 <code>BETWEEN</code> 谓词或一个比较两个输入表中相同类型的 <a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html">时间属性</a> （即处理时间和事件时间）的相等谓词</p>
+        <p>Interval join需要至少一个 equi-join 谓词和一个限制了双方时间的 join 条件。例如使用两个适当的范围谓词（<code>&lt;, &lt;=, &gt;=, &gt;</code>），一个 <code>BETWEEN</code> 谓词或一个比较两个输入表中相同类型的 <a href="{% link dev/table/streaming/time_attributes.zh.md %}">时间属性</a> （即处理时间和事件时间）的相等谓词</p>
         <p>比如，以下谓词是合法的 interval join 条件：</p>
 
         <ul>
@@ -656,11 +694,14 @@ FROM Orders CROSS JOIN UNNEST(tags) AS t (tag)
       </td>
       <td>
         <p>将表与表函数的结果进行 join 操作。左表（outer）中的每一行将会与调用表函数所产生的所有结果中相关联行进行 join 。</p>
-        <p>用户自定义表函数（ User-defined table functions，UDTFs ） 在执行前必须先注册。请参考 <a href="{{ site.baseurl }}/zh/dev/table/functions/udfs.html">UDF 文档</a> 以获取更多关于指定和注册UDF的信息 </p>
+        <p>用户自定义表函数（ User-defined table functions，UDTFs ） 在执行前必须先注册。请参考 <a href="{% link dev/table/functions/udfs.zh.md %}">UDF 文档</a> 以获取更多关于指定和注册UDF的信息 </p>
 
         <p><b>Inner Join</b></p>
         <p>若表函数返回了空结果，左表（outer）的行将会被删除。</p>
 {% highlight sql %}
+SELECT users, tag
+FROM Orders, LATERAL TABLE(unnest_udtf(tags)) AS t(tag)
+-- 从1.11开始，也可以使用下面的方式：
 SELECT users, tag
 FROM Orders, LATERAL TABLE(unnest_udtf(tags)) AS t(tag)
 {% endhighlight %}
@@ -670,6 +711,9 @@ FROM Orders, LATERAL TABLE(unnest_udtf(tags)) AS t(tag)
 {% highlight sql %}
 SELECT users, tag
 FROM Orders LEFT JOIN LATERAL TABLE(unnest_udtf(tags)) AS t(tag) ON TRUE
+-- 从1.11开始，也可以使用下面的方式：
+SELECT users, tag
+FROM Orders LEFT JOIN LATERAL TABLE(unnest_udtf(tags)) AS t(tag) ON TRUE
 {% endhighlight %}
 
         <p><b>注意：</b> 当前仅支持文本常量 <code>TRUE</code> 作为针对横向表的左外部联接的谓词。</p>
@@ -677,17 +721,42 @@ FROM Orders LEFT JOIN LATERAL TABLE(unnest_udtf(tags)) AS t(tag) ON TRUE
     </tr>
     <tr>
       <td>
+        <strong>Join Temporal Tables </strong><br>
+        <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
+      </td>
+      <td>
+        <p><a href="{% link dev/table/streaming/temporal_tables.zh.md %}">Temporal Tables</a> 是随时间变化而变化的表。
+        <a href="{% link dev/table/streaming/temporal_tables.zh.md %}#temporal-table">Temporal Table</a> 提供访问指定时间点的 temporal table 版本的功能。</p>
+
+        <p>支持基于处理时间 或 基于事件时间 的 temporal table join, 支持 inner 和 left join。 </p>
+        <p>基于事件时间的 temporal table join 在 <span class="label label-primary">批处理</span> 中暂不支持。</p>
+        <p>下述示例中，假设 <strong>LatestRates</strong> 是一个根据最新的 rates 物化的 <a href="{% link dev/table/streaming/temporal_tables.zh.md %}#temporal-table">Temporal Table</a> 。</p>
+{% highlight sql %}
+SELECT
+  o.amount, o.currency, r.rate, o.amount * r.rate
+FROM
+  Orders AS o
+  JOIN LatestRates FOR SYSTEM_TIME AS OF o.proctime AS r
+  ON r.currency = o.currency
+{% endhighlight %}
+        <p>Join 的右表可以使用可选表达式 <code>[[<strong>AS</strong>] correlationName]</code> 取别名，注意 <code><strong>AS</strong></code> 关键词也是可选的。</p>
+        <p>请阅读 <a href="{% link dev/table/streaming/temporal_tables.zh.md %}">Temporal Tables</a> 概念描述以了解详细信息。</p>
+        <p>仅 Blink planner 支持。</p>
+      </td>
+    </tr>    
+    <tr>
+      <td>
         <strong>Join Temporal Table Function</strong><br>
         <span class="label label-primary">流处理</span>
       </td>
       <td>
-        <p><a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html">Temporal Tables</a> 是跟随时间变化而变化的表。</p>
-        <p><a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html#temporal-table-functions"> Temporal Table Function</a> 提供访问 Temporal Tables 在某一时间点的状态的能力。
+        <p><a href="{% link dev/table/streaming/temporal_tables.zh.md %}">Temporal Tables</a> 是跟随时间变化而变化的表。</p>
+        <p><a href="{% link dev/table/streaming/temporal_tables.zh.md %}#temporal-table-functions"> Temporal Table Function</a> 提供访问 Temporal Tables 在某一时间点的状态的能力。
         Join Temporal Table Function 的语法与 <i>Join Table Function</i> 一致。</p>
 
         <p><b>注意：</b> 目前仅支持在 Temporal Tables 上的 inner join 。</p>
 
-        <p>假如 <i>Rates</i> 是一个 <a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html#temporal-table-functions"> Temporal Table Function</a>, join 可以使用 SQL 进行如下的表达:</p>
+        <p>假如 <i>Rates</i> 是一个 <a href="{% link dev/table/streaming/temporal_tables.zh.md %}#temporal-table-functions"> Temporal Table Function</a>, join 可以使用 SQL 进行如下的表达:</p>
 {% highlight sql %}
 SELECT
   o_amount, r_rate
@@ -697,33 +766,9 @@ FROM
 WHERE
   r_currency = o_currency
 {% endhighlight %}
-        <p>请查看 <a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html"> Temporal Tables 概念描述</a> 以了解详细信息。</p>
+        <p>请查看 <a href="{% link dev/table/streaming/temporal_tables.zh.md %}"> Temporal Tables 概念描述</a> 以了解详细信息。</p>
       </td>
     </tr>
-    <tr>
-      <td>
-        <strong>Join Temporal Tables </strong><br>
-        <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
-      </td>
-      <td>
-        <p><a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html">Temporal Tables</a> 是随时间变化而变化的表。
-        <a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html#temporal-table">Temporal Table</a> 提供访问指定时间点的 temporal table 版本的功能。</p>
-
-        <p>仅支持带有处理时间的 temporal tables 的 inner 和 left join。</p>
-        <p>下述示例中，假设 <strong>LatestRates</strong> 是一个根据最新的 rates 物化的 <a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html#temporal-table">Temporal Table</a> 。</p>
-{% highlight sql %}
-SELECT
-  o.amout, o.currency, r.rate, o.amount * r.rate
-FROM
-  Orders AS o
-  JOIN LatestRates FOR SYSTEM_TIME AS OF o.proctime AS r
-  ON r.currency = o.currency
-{% endhighlight %}
-        <p>请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/temporal_tables.html">Temporal Tables</a> 概念描述以了解详细信息。</p>
-        <p>仅 Blink planner 支持。</p>
-      </td>
-    </tr>
-
   </tbody>
 </table>
 </div>
@@ -813,7 +858,7 @@ WHERE product IN (
     SELECT product FROM NewProducts
 )
 {% endhighlight %}
-        <p><b>注意：</b> 在流查询中，这一操作将会被重写为 join 和 group 操作。该查询所需要的状态可能会由于不同的输入行数而导致无限增长。请在查询配置中提合理的保留间隔以避免产生状态过大。请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 以了解详细信息</p>
+        <p><b>注意：</b> 在流查询中，这一操作将会被重写为 join 和 group 操作。该查询所需要的状态可能会由于不同的输入行数而导致无限增长。请在查询配置中提合理的保留间隔以避免产生状态过大。请阅读 <a href="{% link dev/table/streaming/query_configuration.zh.md %}">查询配置</a> 以了解详细信息</p>
       </td>
     </tr>
 
@@ -831,7 +876,7 @@ WHERE product EXISTS (
     SELECT product FROM NewProducts
 )
 {% endhighlight %}
-        <p><b>注意：</b> 在流查询中，这一操作将会被重写为 join 和 group 操作。该查询所需要的状态可能会由于不同的输入行数而导致无限增长。请在查询配置中提合理的保留间隔以避免产生状态过大。请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 以了解详细信息</p>
+        <p><b>注意：</b> 在流查询中，这一操作将会被重写为 join 和 group 操作。该查询所需要的状态可能会由于不同的输入行数而导致无限增长。请在查询配置中提合理的保留间隔以避免产生状态过大。请阅读 <a href="{% link dev/table/streaming/query_configuration.zh.md %}">查询配置</a> 以了解详细信息</p>
       </td>
     </tr>
   </tbody>
@@ -857,7 +902,7 @@ WHERE product EXISTS (
         <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
       </td>
       <td>
-<b>注意：</b> 流处理结果需主要根据 <a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html">时间属性</a> 按照升序进行排序。支持使用其他排序属性。  
+<b>注意：</b> 流处理结果需主要根据 <a href="{% link dev/table/streaming/time_attributes.zh.md %}">时间属性</a> 按照升序进行排序。支持使用其他排序属性。  
 
 {% highlight sql %}
 SELECT *
@@ -929,7 +974,7 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
 StreamTableEnvironment tableEnv = TableEnvironment.getTableEnvironment(env);
 
 // 接收来自外部数据源的 DataStream
-DataStream<Tuple3<String, String, String, Long>> ds = env.addSource(...);
+DataStream<Tuple4<String, String, String, Long>> ds = env.addSource(...);
 // 把 DataStream 注册为表，表名是 “ShopSales”
 tableEnv.createTemporaryView("ShopSales", ds, "product_id, category, product_name, sales");
 
@@ -984,7 +1029,7 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
 StreamTableEnvironment tableEnv = TableEnvironment.getTableEnvironment(env);
 
 // 从外部数据源读取 DataStream
-DataStream<Tuple3<String, String, String, Long>> ds = env.addSource(...);
+DataStream<Tuple4<String, String, String, Long>> ds = env.addSource(...);
 // 把 DataStream 注册为表，表名是 “ShopSales”
 tableEnv.createTemporaryView("ShopSales", ds, $("product_id"), $("category"), $("product_name"), $("sales"));
 
@@ -1051,7 +1096,7 @@ WHERE rownum = 1
 
 - `ROW_NUMBER()`: 从第一行开始，依次为每一行分配一个唯一且连续的号码。
 - `PARTITION BY col1[, col2...]`: 指定分区的列，例如去重的键。
-- `ORDER BY time_attr [asc|desc]`: 指定排序的列。所制定的列必须为 [时间属性]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html)。目前仅支持 [proctime attribute]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html#processing-time)，在未来版本中将会支持 [Rowtime atttribute]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html#event-time) 。升序（ ASC ）排列指只保留第一行，而降序排列（ DESC ）则指保留最后一行。
+- `ORDER BY time_attr [asc|desc]`: 指定排序的列。所指定的列必须为 [时间属性]({% link dev/table/streaming/time_attributes.zh.md %}), 目前 Flink 支持 [处理时间属性]({% link dev/table/streaming/time_attributes.zh.md %}#处理时间) 和 [事件时间属性]({% link dev/table/streaming/time_attributes.zh.md %}#事件时间) 。升序（ ASC ）排列指只保留第一行，而降序排列（ DESC ）则指保留最后一行。
 - `WHERE rownum = 1`: Flink 需要 `rownum = 1` 以确定该查询是否为去重查询。
 
 以下的例子描述了如何指定 SQL 查询以在一个流计算表中进行去重操作。
@@ -1063,7 +1108,7 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironm
 StreamTableEnvironment tableEnv = TableEnvironment.getTableEnvironment(env);
 
 // 从外部数据源读取 DataStream
-DataStream<Tuple3<String, String, String, Integer>> ds = env.addSource(...);
+DataStream<Tuple4<String, String, String, Integer>> ds = env.addSource(...);
 // 注册名为 “Orders” 的 DataStream
 tableEnv.createTemporaryView("Orders", ds, $("order_id"), $("user"), $("product"), $("number"), $("proctime").proctime());
 
@@ -1104,6 +1149,9 @@ val result1 = tableEnv.sqlQuery(
 
 {% top %}
 
+去重能够保留输入流的时间属性，当下游操作是 window 聚合 或 join 关联操作时非常有用。
+基于处理时间的去重和基于事件时间的去重都支持 mini-batch 模式，这对性能更加友好, 查看 [mini-batch 配置]({% link dev/table/config.zh.md %}#table-exec-mini-batch-enabled) 了解如何开启 mini-batch 模式。
+
 ### 分组窗口
 
 SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用常规 `GROUP BY` 语句的查询，窗口分组语句的 `GROUP BY` 子句中带有一个窗口函数为每个分组计算出一个结果。以下是批处理表和流处理表支持的分组窗口函数：
@@ -1134,7 +1182,7 @@ SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用�
 
 #### 时间属性
 
-在流处理表中的 SQL 查询中，分组窗口函数的 `time_attr` 参数必须引用一个合法的时间属性，且该属性需要指定行的处理时间或事件时间。可参考 [时间属性文档]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html) 以了解如何定义时间属性。
+在流处理表中的 SQL 查询中，分组窗口函数的 `time_attr` 参数必须引用一个合法的时间属性，且该属性需要指定行的处理时间或事件时间。可参考 [时间属性文档]({% link dev/table/streaming/time_attributes.zh.md %}) 以了解如何定义时间属性。
 
 对于批处理的 SQL 查询，分组窗口函数的 `time_attr` 参数必须是一个 `TIMESTAMP` 类型的属性。
 
@@ -1166,7 +1214,7 @@ SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用�
         <code>SESSION_END(time_attr, interval)</code><br/>
       </td>
       <td><p>返回相对应的滚动、滑动和会话窗口<i>范围以外</i>的上界时间戳。</p>
-        <p><b>注意：</b> 范围以外的上界时间戳<i>不可以</i> 在随后基于时间的操作中，作为 <a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html">行时间属性</a> 使用，比如 <a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>。</p></td>
+        <p><b>注意：</b> 范围以外的上界时间戳<i>不可以</i> 在随后基于时间的操作中，作为 <a href="{% link dev/table/streaming/time_attributes.zh.md %}">行时间属性</a> 使用，比如 <a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>。</p></td>
     </tr>
     <tr>
       <td>
@@ -1175,7 +1223,7 @@ SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用�
         <code>SESSION_ROWTIME(time_attr, interval)</code><br/>
       </td>
       <td><p>返回相对应的滚动、滑动和会话窗口<i>范围以内</i>的上界时间戳。</p>
-      <p>返回的是一个可用于后续需要基于时间的操作的<a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html">时间属性（rowtime attribute）</a>，比如<a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>。</p></td>
+      <p>返回的是一个可用于后续需要基于时间的操作的<a href="{% link dev/table/streaming/time_attributes.zh.md %}">时间属性（rowtime attribute）</a>，比如<a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>。</p></td>
     </tr>
     <tr>
       <td>
@@ -1183,7 +1231,7 @@ SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用�
         <code>HOP_PROCTIME(time_attr, interval, interval)</code><br/>
         <code>SESSION_PROCTIME(time_attr, interval)</code><br/>
       </td>
-      <td><p>返回一个可用于后续需要基于时间的操作的 <a href="{{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html#processing-time">处理时间参数</a>，比如<a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>.</p></td>
+      <td><p>返回一个可用于后续需要基于时间的操作的 <a href="{% link dev/table/streaming/time_attributes.zh.md %}#processing-time">处理时间参数</a>，比如<a href="#joins">interval join</a> 以及 <a href="#aggregations">分组窗口或分组窗口上的聚合</a>.</p></td>
     </tr>
   </tbody>
 </table>
@@ -1295,7 +1343,7 @@ val result4 = tableEnv.sqlQuery(
       </td>
       <td>
         <p>根据 <code>MATCH_RECOGNIZE</code> <a href="https://standards.iso.org/ittf/PubliclyAvailableStandards/c065143_ISO_IEC_TR_19075-5_2016.zip">ISO 标准</a>在流处理表中搜索给定的模式。 这样就可以在SQL查询中描述复杂的事件处理（CEP）逻辑。</p>
-        <p>更多详情请参考 <a href="{{ site.baseurl }}/zh/dev/table/streaming/match_recognize.html">检测表中的模式</a>.</p>
+        <p>更多详情请参考 <a href="{% link dev/table/streaming/match_recognize.zh.md %}">检测表中的模式</a>.</p>
 
 {% highlight sql %}
 SELECT T.aid, T.bid, T.cid

@@ -50,8 +50,11 @@ import org.apache.flink.sql.parser.ddl.constraint.SqlTableConstraint;
 import org.apache.flink.sql.parser.dml.RichSqlInsert;
 import org.apache.flink.sql.parser.dql.SqlRichDescribeTable;
 import org.apache.flink.sql.parser.dql.SqlShowCatalogs;
+import org.apache.flink.sql.parser.dql.SqlShowCurrentCatalog;
+import org.apache.flink.sql.parser.dql.SqlShowCurrentDatabase;
 import org.apache.flink.sql.parser.dql.SqlShowDatabases;
 import org.apache.flink.sql.parser.dql.SqlShowFunctions;
+import org.apache.flink.sql.parser.dql.SqlShowPartitions;
 import org.apache.flink.sql.parser.dql.SqlShowTables;
 import org.apache.flink.sql.parser.dql.SqlShowViews;
 import org.apache.flink.table.api.TableException;
@@ -79,8 +82,11 @@ import org.apache.flink.table.operations.DescribeTableOperation;
 import org.apache.flink.table.operations.ExplainOperation;
 import org.apache.flink.table.operations.Operation;
 import org.apache.flink.table.operations.ShowCatalogsOperation;
+import org.apache.flink.table.operations.ShowCurrentCatalogOperation;
+import org.apache.flink.table.operations.ShowCurrentDatabaseOperation;
 import org.apache.flink.table.operations.ShowDatabasesOperation;
 import org.apache.flink.table.operations.ShowFunctionsOperation;
+import org.apache.flink.table.operations.ShowPartitionsOperation;
 import org.apache.flink.table.operations.ShowTablesOperation;
 import org.apache.flink.table.operations.ShowViewsOperation;
 import org.apache.flink.table.operations.UseCatalogOperation;
@@ -186,54 +192,60 @@ public class SqlToOperationConverter {
 		// validate the query
 		final SqlNode validated = flinkPlanner.validate(sqlNode);
 		SqlToOperationConverter converter = new SqlToOperationConverter(flinkPlanner, catalogManager);
-		if (validated instanceof SqlCreateTable) {
-			return Optional.of(converter.createTableConverter.convertCreateTable((SqlCreateTable) validated));
-		} else if (validated instanceof SqlDropTable) {
-			return Optional.of(converter.convertDropTable((SqlDropTable) validated));
-		} else if (validated instanceof SqlAlterTable) {
-			return Optional.of(converter.convertAlterTable((SqlAlterTable) validated));
-		} else if (validated instanceof SqlAlterView) {
-			return Optional.of(converter.convertAlterView((SqlAlterView) validated));
-		} else if (validated instanceof SqlCreateFunction) {
-			return Optional.of(converter.convertCreateFunction((SqlCreateFunction) validated));
-		} else if (validated instanceof SqlAlterFunction) {
-			return Optional.of(converter.convertAlterFunction((SqlAlterFunction) validated));
-		} else if (validated instanceof SqlDropFunction) {
-			return Optional.of(converter.convertDropFunction((SqlDropFunction) validated));
-		} else if (validated instanceof RichSqlInsert) {
-			return Optional.of(converter.convertSqlInsert((RichSqlInsert) validated));
+		if (validated instanceof SqlCreateCatalog) {
+			return Optional.of(converter.convertCreateCatalog((SqlCreateCatalog) validated));
+		} else if (validated instanceof SqlDropCatalog) {
+			return Optional.of(converter.convertDropCatalog((SqlDropCatalog) validated));
+		} else if (validated instanceof SqlShowCatalogs) {
+			return Optional.of(converter.convertShowCatalogs((SqlShowCatalogs) validated));
+		} else if (validated instanceof SqlShowCurrentCatalog){
+			return Optional.of(converter.convertShowCurrentCatalog((SqlShowCurrentCatalog) validated));
 		} else if (validated instanceof SqlUseCatalog) {
 			return Optional.of(converter.convertUseCatalog((SqlUseCatalog) validated));
-		} else if (validated instanceof SqlUseDatabase) {
-			return Optional.of(converter.convertUseDatabase((SqlUseDatabase) validated));
 		} else if (validated instanceof SqlCreateDatabase) {
 			return Optional.of(converter.convertCreateDatabase((SqlCreateDatabase) validated));
 		} else if (validated instanceof SqlDropDatabase) {
 			return Optional.of(converter.convertDropDatabase((SqlDropDatabase) validated));
 		} else if (validated instanceof SqlAlterDatabase) {
 			return Optional.of(converter.convertAlterDatabase((SqlAlterDatabase) validated));
-		} else if (validated instanceof SqlCreateCatalog) {
-			return Optional.of(converter.convertCreateCatalog((SqlCreateCatalog) validated));
-		} else if (validated instanceof SqlDropCatalog) {
-			return Optional.of(converter.convertDropCatalog((SqlDropCatalog) validated));
-		} else if (validated instanceof SqlShowCatalogs) {
-			return Optional.of(converter.convertShowCatalogs((SqlShowCatalogs) validated));
 		} else if (validated instanceof SqlShowDatabases) {
 			return Optional.of(converter.convertShowDatabases((SqlShowDatabases) validated));
+		} else if (validated instanceof SqlShowCurrentDatabase) {
+			return Optional.of(converter.convertShowCurrentDatabase((SqlShowCurrentDatabase) validated));
+		} else if (validated instanceof SqlUseDatabase) {
+			return Optional.of(converter.convertUseDatabase((SqlUseDatabase) validated));
+		} else if (validated instanceof SqlCreateTable) {
+			return Optional.of(converter.createTableConverter.convertCreateTable((SqlCreateTable) validated));
+		} else if (validated instanceof SqlDropTable) {
+			return Optional.of(converter.convertDropTable((SqlDropTable) validated));
+		} else if (validated instanceof SqlAlterTable) {
+			return Optional.of(converter.convertAlterTable((SqlAlterTable) validated));
 		} else if (validated instanceof SqlShowTables) {
 			return Optional.of(converter.convertShowTables((SqlShowTables) validated));
-		} else if (validated instanceof SqlShowFunctions) {
-			return Optional.of(converter.convertShowFunctions((SqlShowFunctions) validated));
 		} else if (validated instanceof SqlCreateView) {
 			return Optional.of(converter.convertCreateView((SqlCreateView) validated));
 		} else if (validated instanceof SqlDropView) {
 			return Optional.of(converter.convertDropView((SqlDropView) validated));
+		} else if (validated instanceof SqlAlterView) {
+			return Optional.of(converter.convertAlterView((SqlAlterView) validated));
 		} else if (validated instanceof SqlShowViews) {
 			return Optional.of(converter.convertShowViews((SqlShowViews) validated));
+		} else if (validated instanceof SqlCreateFunction) {
+			return Optional.of(converter.convertCreateFunction((SqlCreateFunction) validated));
+		} else if (validated instanceof SqlDropFunction) {
+			return Optional.of(converter.convertDropFunction((SqlDropFunction) validated));
+		} else if (validated instanceof SqlAlterFunction) {
+			return Optional.of(converter.convertAlterFunction((SqlAlterFunction) validated));
+		} else if (validated instanceof SqlShowFunctions) {
+			return Optional.of(converter.convertShowFunctions((SqlShowFunctions) validated));
+		} else if (validated instanceof SqlShowPartitions) {
+			return Optional.of(converter.convertShowPartitions((SqlShowPartitions) validated));
 		} else if (validated instanceof SqlExplain) {
 			return Optional.of(converter.convertExplain((SqlExplain) validated));
 		} else if (validated instanceof SqlRichDescribeTable) {
 			return Optional.of(converter.convertDescribeTable((SqlRichDescribeTable) validated));
+		} else if (validated instanceof RichSqlInsert) {
+			return Optional.of(converter.convertSqlInsert((RichSqlInsert) validated));
 		} else if (validated.getKind().belongsTo(SqlKind.QUERY)) {
 			return Optional.of(converter.convertSqlQuery(validated));
 		} else {
@@ -538,7 +550,7 @@ public class SqlToOperationConverter {
 
 	/** Convert use catalog statement. */
 	private Operation convertUseCatalog(SqlUseCatalog useCatalog) {
-		return new UseCatalogOperation(useCatalog.getCatalogName());
+		return new UseCatalogOperation(useCatalog.catalogName());
 	}
 
 	/** Convert CREATE CATALOG statement. */
@@ -563,7 +575,7 @@ public class SqlToOperationConverter {
 	private Operation convertUseDatabase(SqlUseDatabase useDatabase) {
 		String[] fullDatabaseName = useDatabase.fullDatabaseName();
 		if (fullDatabaseName.length > 2) {
-			throw new SqlConversionException("use database identifier format error");
+			throw new ValidationException("use database identifier format error");
 		}
 		String catalogName = fullDatabaseName.length == 2 ? fullDatabaseName[0] : catalogManager.getCurrentCatalog();
 		String databaseName = fullDatabaseName.length == 2 ? fullDatabaseName[1] : fullDatabaseName[0];
@@ -574,7 +586,7 @@ public class SqlToOperationConverter {
 	private Operation convertCreateDatabase(SqlCreateDatabase sqlCreateDatabase) {
 		String[] fullDatabaseName = sqlCreateDatabase.fullDatabaseName();
 		if (fullDatabaseName.length > 2) {
-			throw new SqlConversionException("create database identifier format error");
+			throw new ValidationException("create database identifier format error");
 		}
 		String catalogName = (fullDatabaseName.length == 1) ? catalogManager.getCurrentCatalog() : fullDatabaseName[0];
 		String databaseName = (fullDatabaseName.length == 1) ? fullDatabaseName[0] : fullDatabaseName[1];
@@ -593,7 +605,7 @@ public class SqlToOperationConverter {
 	private Operation convertDropDatabase(SqlDropDatabase sqlDropDatabase) {
 		String[] fullDatabaseName = sqlDropDatabase.fullDatabaseName();
 		if (fullDatabaseName.length > 2) {
-			throw new SqlConversionException("drop database identifier format error");
+			throw new ValidationException("drop database identifier format error");
 		}
 		String catalogName = (fullDatabaseName.length == 1) ? catalogManager.getCurrentCatalog() : fullDatabaseName[0];
 		String databaseName = (fullDatabaseName.length == 1) ? fullDatabaseName[0] : fullDatabaseName[1];
@@ -608,7 +620,7 @@ public class SqlToOperationConverter {
 	private Operation convertAlterDatabase(SqlAlterDatabase sqlAlterDatabase) {
 		String[] fullDatabaseName = sqlAlterDatabase.fullDatabaseName();
 		if (fullDatabaseName.length > 2) {
-			throw new SqlConversionException("alter database identifier format error");
+			throw new ValidationException("alter database identifier format error");
 		}
 		String catalogName = (fullDatabaseName.length == 1) ? catalogManager.getCurrentCatalog() : fullDatabaseName[0];
 		String databaseName = (fullDatabaseName.length == 1) ? fullDatabaseName[0] : fullDatabaseName[1];
@@ -620,10 +632,10 @@ public class SqlToOperationConverter {
 				originCatalogDatabase = catalog.get().getDatabase(databaseName);
 				properties = new HashMap<>(originCatalogDatabase.getProperties());
 			} catch (DatabaseNotExistException e) {
-				throw new SqlConversionException(String.format("Database %s not exists", databaseName), e);
+				throw new ValidationException(String.format("Database %s not exists", databaseName), e);
 			}
 		} else {
-			throw new SqlConversionException(String.format("Catalog %s not exists", catalogName));
+			throw new ValidationException(String.format("Catalog %s not exists", catalogName));
 		}
 		// set with properties
 		sqlAlterDatabase.getPropertyList().getList().forEach(p ->
@@ -637,9 +649,19 @@ public class SqlToOperationConverter {
 		return new ShowCatalogsOperation();
 	}
 
+	/** Convert SHOW CURRENT CATALOG statement. */
+	private Operation convertShowCurrentCatalog(SqlShowCurrentCatalog sqlShowCurrentCatalog) {
+		return new ShowCurrentCatalogOperation();
+	}
+
 	/** Convert SHOW DATABASES statement. */
 	private Operation convertShowDatabases(SqlShowDatabases sqlShowDatabases) {
 		return new ShowDatabasesOperation();
+	}
+
+	/** Convert SHOW CURRENT DATABASE statement. */
+	private Operation convertShowCurrentDatabase(SqlShowCurrentDatabase sqlShowCurrentDatabase) {
+		return new ShowCurrentDatabaseOperation();
 	}
 
 	/** Convert SHOW TABLES statement. */
@@ -650,6 +672,18 @@ public class SqlToOperationConverter {
 	/** Convert SHOW FUNCTIONS statement. */
 	private Operation convertShowFunctions(SqlShowFunctions sqlShowFunctions) {
 		return new ShowFunctionsOperation();
+	}
+
+	/** Convert SHOW PARTITIONS statement. */
+	private Operation convertShowPartitions(SqlShowPartitions sqlShowPartitions) {
+		UnresolvedIdentifier unresolvedIdentifier = UnresolvedIdentifier.of(sqlShowPartitions.fullTableName());
+		ObjectIdentifier tableIdentifier = catalogManager.qualifyIdentifier(unresolvedIdentifier);
+		LinkedHashMap<String, String> partitionKVs = sqlShowPartitions.getPartitionKVs();
+		if (partitionKVs != null) {
+			CatalogPartitionSpec partitionSpec = new CatalogPartitionSpec(partitionKVs);
+			return new ShowPartitionsOperation(tableIdentifier, partitionSpec);
+		}
+		return new ShowPartitionsOperation(tableIdentifier, null);
 	}
 
 	/** Convert CREATE VIEW statement. */
@@ -706,7 +740,7 @@ public class SqlToOperationConverter {
 					.toArray(String[]::new);
 
 			if (inputFieldNames.length != aliasFieldNames.length) {
-				throw new SqlConversionException(String.format(
+				throw new ValidationException(String.format(
 						"VIEW definition and input fields not match:\n\tDef fields: %s.\n\tInput fields: %s.",
 						Arrays.toString(aliasFieldNames), Arrays.toString(inputFieldNames)));
 			}

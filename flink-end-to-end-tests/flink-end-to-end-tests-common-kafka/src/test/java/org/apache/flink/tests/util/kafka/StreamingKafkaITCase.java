@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -58,8 +59,6 @@ public class StreamingKafkaITCase extends TestLogger {
 	@Parameterized.Parameters(name = "{index}: kafka-version:{1}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][]{
-			{"flink-streaming-kafka010-test.*", "0.10.2.2"},
-			{"flink-streaming-kafka011-test.*", "0.11.0.2"},
 			{"flink-streaming-kafka-test.*", "2.4.1"}
 		});
 	}
@@ -82,7 +81,7 @@ public class StreamingKafkaITCase extends TestLogger {
 	}
 
 	public StreamingKafkaITCase(final String kafkaExampleJarPattern, final String kafkaVersion) {
-		this.kafkaExampleJar = TestUtils.getResourceJar(kafkaExampleJarPattern);
+		this.kafkaExampleJar = TestUtils.getResource(kafkaExampleJarPattern);
 		this.kafka = KafkaResource.get(kafkaVersion);
 		this.kafkaVersion = kafkaVersion;
 	}
@@ -99,17 +98,19 @@ public class StreamingKafkaITCase extends TestLogger {
 			kafka.createTopic(1, 1, outputTopic);
 
 			// run the Flink job (detached mode)
-			clusterController.submitJob(new JobSubmission.JobSubmissionBuilder(kafkaExampleJar)
-				.setDetached(true)
-				.addArgument("--input-topic", inputTopic)
-				.addArgument("--output-topic", outputTopic)
-				.addArgument("--prefix", "PREFIX")
-				.addArgument("--bootstrap.servers", kafka.getBootstrapServerAddresses().stream().map(address -> address.getHostString() + ':' + address.getPort()).collect(Collectors.joining(",")))
-				.addArgument("--group.id", "myconsumer")
-				.addArgument("--auto.offset.reset", "earliest")
-				.addArgument("--transaction.timeout.ms", "900000")
-				.addArgument("--flink.partition-discovery.interval-millis", "1000")
-				.build());
+			clusterController.submitJob(
+				new JobSubmission.JobSubmissionBuilder(kafkaExampleJar)
+					.setDetached(true)
+					.addArgument("--input-topic", inputTopic)
+					.addArgument("--output-topic", outputTopic)
+					.addArgument("--prefix", "PREFIX")
+					.addArgument("--bootstrap.servers", kafka.getBootstrapServerAddresses().stream().map(address -> address.getHostString() + ':' + address.getPort()).collect(Collectors.joining(",")))
+					.addArgument("--group.id", "myconsumer")
+					.addArgument("--auto.offset.reset", "earliest")
+					.addArgument("--transaction.timeout.ms", "900000")
+					.addArgument("--flink.partition-discovery.interval-millis", "1000")
+					.build(),
+				Duration.ofMinutes(2L));
 
 			LOG.info("Sending messages to Kafka topic [{}] ...", inputTopic);
 			// send some data to Kafka
@@ -163,10 +164,10 @@ public class StreamingKafkaITCase extends TestLogger {
 				final List<String> bees = filterMessages(messages, "bee");
 				final List<String> giraffes = filterMessages(messages, "giraffe");
 
-				Assert.assertEquals(Arrays.asList("elephant,27,64213"), elephants);
-				Assert.assertEquals(Arrays.asList("squirrel,52,66413"), squirrels);
-				Assert.assertEquals(Arrays.asList("bee,18,65647"), bees);
-				Assert.assertEquals(Arrays.asList("giraffe,9,65555"), giraffes);
+				Assert.assertEquals(String.format("Messages from Kafka %s: %s", kafkaVersion, messages), Arrays.asList("elephant,27,64213"), elephants);
+				Assert.assertEquals(String.format("Messages from Kafka %s: %s", kafkaVersion, messages), Arrays.asList("squirrel,52,66413"), squirrels);
+				Assert.assertEquals(String.format("Messages from Kafka %s: %s", kafkaVersion, messages), Arrays.asList("bee,18,65647"), bees);
+				Assert.assertEquals(String.format("Messages from Kafka %s: %s", kafkaVersion, messages), Arrays.asList("giraffe,9,65555"), giraffes);
 			}
 		}
 	}

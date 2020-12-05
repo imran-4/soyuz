@@ -51,6 +51,9 @@ function run_test {
     # set a trap to catch a test execution error
     trap 'test_error' ERR
 
+    # Always enable unaligned checkpoint
+    set_config_key "execution.checkpointing.unaligned" "true"
+
     ${command}
     exit_code="$?"
     # remove trap for test execution
@@ -108,10 +111,19 @@ function post_test_validation {
 }
 
 function log_environment_info {
+    echo "##[group]Environment Information"
     echo "Jps"
     jps
+
     echo "Disk information"
     df -hH
+
+    echo "Allocated ports"
+    sudo netstat -tulpn
+
+    echo "Running docker containers"
+    docker ps -a
+    echo "##[endgroup]"
 }
 
 # Shuts down cluster and reverts changes to cluster configs

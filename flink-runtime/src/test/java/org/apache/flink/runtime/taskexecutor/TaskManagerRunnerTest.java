@@ -21,6 +21,7 @@ package org.apache.flink.runtime.taskexecutor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.configuration.TaskManagerOptionsInternal;
 import org.apache.flink.core.plugin.PluginManager;
 import org.apache.flink.core.plugin.PluginUtils;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
@@ -37,12 +38,15 @@ import org.junit.rules.Timeout;
 
 import javax.annotation.Nonnull;
 
+import java.net.InetAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.apache.flink.core.testutils.FlinkMatchers.willNotComplete;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -91,6 +95,59 @@ public class TaskManagerRunnerTest extends TestLogger {
 
 		Integer statusCode = systemExitTrackingSecurityManager.getSystemExitFuture().get();
 		assertThat(statusCode, is(equalTo(TaskManagerRunner.RUNTIME_FAILURE_RETURN_CODE)));
+	}
+
+	@Test
+	public void testGenerateTaskManagerResourceIDWithMetaData() throws Exception {
+		final Configuration configuration = createConfiguration();
+		final String metadata = "test";
+		configuration.set(TaskManagerOptionsInternal.TASK_MANAGER_RESOURCE_ID_METADATA, metadata);
+		final ResourceID taskManagerResourceID = TaskManagerRunner.getTaskManagerResourceID(configuration, "", -1);
+
+		assertThat(taskManagerResourceID.getMetadata(), equalTo(metadata));
+	}
+
+	@Test
+	public void testGenerateTaskManagerResourceIDWithoutMetaData() throws Exception {
+		final Configuration configuration = createConfiguration();
+		final String resourceID = "test";
+		configuration.set(TaskManagerOptions.TASK_MANAGER_RESOURCE_ID, resourceID);
+		final ResourceID taskManagerResourceID = TaskManagerRunner.getTaskManagerResourceID(configuration, "", -1);
+
+		assertThat(taskManagerResourceID.getMetadata(), equalTo(""));
+		assertThat(taskManagerResourceID.getStringWithMetadata(), equalTo("test"));
+	}
+
+	@Test
+	public void testGenerateTaskManagerResourceIDWithConfig() throws Exception {
+		final Configuration configuration = createConfiguration();
+		final String resourceID = "test";
+		configuration.set(TaskManagerOptions.TASK_MANAGER_RESOURCE_ID, resourceID);
+		final ResourceID taskManagerResourceID = TaskManagerRunner.getTaskManagerResourceID(configuration, "", -1);
+
+		assertThat(taskManagerResourceID.getResourceIdString(), equalTo(resourceID));
+	}
+
+	@Test
+	public void testGenerateTaskManagerResourceIDWithRemoteRpcService() throws Exception {
+		final Configuration configuration = createConfiguration();
+		final String rpcAddress = "flink";
+		final int rpcPort = 9090;
+		final ResourceID taskManagerResourceID = TaskManagerRunner.getTaskManagerResourceID(configuration, rpcAddress, rpcPort);
+
+		assertThat(taskManagerResourceID, notNullValue());
+		assertThat(taskManagerResourceID.getResourceIdString(), containsString(rpcAddress + ":" + rpcPort));
+	}
+
+	@Test
+	public void testGenerateTaskManagerResourceIDWithLocalRpcService() throws Exception {
+		final Configuration configuration = createConfiguration();
+		final String rpcAddress = "";
+		final int rpcPort = -1;
+		final ResourceID taskManagerResourceID = TaskManagerRunner.getTaskManagerResourceID(configuration, rpcAddress, rpcPort);
+
+		assertThat(taskManagerResourceID, notNullValue());
+		assertThat(taskManagerResourceID.getResourceIdString(), containsString(InetAddress.getLocalHost().getHostName()));
 	}
 
 	@Test
@@ -156,7 +213,7 @@ public class TaskManagerRunnerTest extends TestLogger {
 
 	private static TaskManagerRunner createTaskManagerRunner(final Configuration configuration, TaskManagerRunner.TaskExecutorServiceFactory taskExecutorServiceFactory) throws Exception {
 		final PluginManager pluginManager = PluginUtils.createPluginManagerFromRootFolder(configuration);
-		TaskManagerRunner taskManagerRunner = new TaskManagerRunner(configuration, ResourceID.generate(), pluginManager, taskExecutorServiceFactory);
+		TaskManagerRunner taskManagerRunner = new TaskManagerRunner(configuration, pluginManager, taskExecutorServiceFactory);
 		taskManagerRunner.start();
 		return taskManagerRunner;
 	}

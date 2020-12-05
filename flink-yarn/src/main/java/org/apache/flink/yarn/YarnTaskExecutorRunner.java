@@ -23,14 +23,13 @@ import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.SecurityOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.core.plugin.PluginManager;
 import org.apache.flink.runtime.clusterframework.BootstrapTools;
-import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.taskexecutor.TaskManagerRunner;
 import org.apache.flink.runtime.util.EnvironmentInformation;
 import org.apache.flink.runtime.util.JvmShutdownSafeguard;
 import org.apache.flink.runtime.util.SignalHandler;
 import org.apache.flink.util.ExceptionUtils;
-import org.apache.flink.util.Preconditions;
 
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
@@ -73,7 +72,7 @@ public class YarnTaskExecutorRunner {
 
 	/**
 	 * The instance entry point for the YARN task executor. Obtains user group information and calls
-	 * the main work method {@link TaskManagerRunner#runTaskManager(Configuration, ResourceID)} as a
+	 * the main work method {@link TaskManagerRunner#runTaskManager(Configuration, PluginManager)} as a
 	 * privileged action.
 	 *
 	 * @param args The command line arguments.
@@ -88,11 +87,7 @@ public class YarnTaskExecutorRunner {
 			final Configuration configuration = TaskManagerRunner.loadConfiguration(args);
 			setupAndModifyConfiguration(configuration, currDir, ENV);
 
-			final String containerId = ENV.get(YarnResourceManager.ENV_FLINK_CONTAINER_ID);
-			Preconditions.checkArgument(containerId != null,
-				"ContainerId variable %s not set", YarnResourceManager.ENV_FLINK_CONTAINER_ID);
-
-			TaskManagerRunner.runTaskManagerSecurely(configuration, new ResourceID(containerId));
+			TaskManagerRunner.runTaskManagerSecurely(configuration);
 		}
 		catch (Throwable t) {
 			final Throwable strippedThrowable = ExceptionUtils.stripException(t, UndeclaredThrowableException.class);
@@ -137,7 +132,7 @@ public class YarnTaskExecutorRunner {
 		}
 
 		// use the hostname passed by job manager
-		final String taskExecutorHostname = variables.get(YarnResourceManager.ENV_FLINK_NODE_ID);
+		final String taskExecutorHostname = variables.get(YarnResourceManagerDriver.ENV_FLINK_NODE_ID);
 		if (taskExecutorHostname != null) {
 			configuration.setString(TaskManagerOptions.HOST, taskExecutorHostname);
 		}

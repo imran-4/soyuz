@@ -45,7 +45,7 @@ Catalog 提供了元数据信息，例如数据库、表、分区、视图以及
 ### HiveCatalog
 
 `HiveCatalog` 有两个用途：作为原生 Flink 元数据的持久化存储，以及作为读写现有 Hive 元数据的接口。 
-Flink 的 [Hive 文档]({{ site.baseurl }}/zh/dev/table/hive/index.html) 提供了有关设置 `HiveCatalog` 以及访问现有 Hive 元数据的详细信息。
+Flink 的 [Hive 文档]({% link dev/table/connectors/hive/index.zh.md %}) 提供了有关设置 `HiveCatalog` 以及访问现有 Hive 元数据的详细信息。
 
 
 <span class="label label-danger">警告</span> Hive Metastore 以小写形式存储所有元数据对象名称。而 `GenericInMemoryCatalog` 区分大小写。
@@ -140,7 +140,7 @@ mytable
 </div>
 
 
-更多详细信息，请参考[Flink SQL CREATE DDL]({{ site.baseurl }}/zh/dev/table/sql/create.html)。
+更多详细信息，请参考[Flink SQL CREATE DDL]({% link dev/table/sql/create.zh.md %})。
 
 ### 使用 Java/Scala
 
@@ -246,15 +246,8 @@ catalog = HiveCatalog("myhive", None, "<path_of_hive_conf>")
 # Register the catalog
 t_env.register_catalog("myhive", catalog)
 
-from pyflink.java_gateway import get_gateway
-gateway = get_gateway()
-database_properties = {"k1": "v1"}
-database_comment = None
-j_database = gateway.jvm.org.apache.flink.table.catalog.CatalogDatabaseImpl(
-database_properties, database_comment)
-database = CatalogDatabase(j_database)
-
 # Create a catalog database
+database = CatalogDatabase.create_instance({"k1": "v1"}, None)
 catalog.create_database("mydb", database)
 
 # Create a catalog table
@@ -268,11 +261,8 @@ table_properties = Kafka() \
     .start_from_earlist() \
     .to_properties()
 
-j_catalog_table = gateway.jvm.org.apache.flink.table.catalog.CatalogTableImpl(
-    table_schema._j_table_schema,
-    table_properties,
-    "my comment")
-catalog_table = CatalogBaseTable(j_catalog_table)
+catalog_table = CatalogBaseTable.create_table(
+    schema=table_schema, properties=table_properties, comment="my comment")
 
 catalog.create_table(
     ObjectPath("mydb", "mytable"),
@@ -289,7 +279,7 @@ tables = catalog.list_tables("mydb")
 ## Catalog API
 
 注意：这里只列出了编程方式的 Catalog API，用户可以使用 SQL DDL 实现许多相同的功能。
-关于 DDL 的详细信息请参考 [SQL CREATE DDL]({{ site.baseurl }}/zh/dev/table/sql/create.html)。
+关于 DDL 的详细信息请参考 [SQL CREATE DDL]({% link dev/table/sql/create.zh.md %})。
 
 
 ### 数据库操作
@@ -319,15 +309,9 @@ catalog.listDatabases("mycatalog");
 <div data-lang="Python" markdown="1">
 {% highlight python %}
 from pyflink.table.catalog import CatalogDatabase
-from pyflink.java_gateway import get_gateway
-gateway = get_gateway()
 
 # create database
-database_properties = {"k1": "v1"}
-database_comment = None
-j_catalog_database = gateway.jvm.org.apache.flink.table.catalog.CatalogDatabaseImpl(
-    database_properties, database_comment)
-catalog_database = CatalogDatabase(j_catalog_database)
+catalog_database = CatalogDatabase.create_instance({"k1": "v1"}, None)
 catalog.create_database("mydb", catalog_database, False)
 
 # drop database
@@ -378,7 +362,6 @@ catalog.listTables("mydb");
 <div data-lang="Python" markdown="1">
 {% highlight python %}
 from pyflink.table import *
-from pyflink.java_gateway import get_gateway
 from pyflink.table.catalog import CatalogBaseTable, ObjectPath
 from pyflink.table.descriptors import Kafka
 
@@ -392,12 +375,7 @@ table_properties = Kafka() \
     .start_from_earlist() \
     .to_properties()
 
-gateway = get_gateway()
-j_catalog_table = gateway.jvm.org.apache.flink.table.catalog.CatalogTableImpl(
-    table_schema._j_table_schema,
-    table_properties,
-    "my comment")
-catalog_table = CatalogBaseTable(j_catalog_table)
+catalog_table = CatalogBaseTable.create_table(schema=table_schema, properties=table_properties, comment="my comment")
 
 # create table
 catalog.create_table(ObjectPath("mydb", "mytable"), catalog_table, False)
@@ -454,21 +432,19 @@ catalog.listViews("mydb");
 {% highlight python %}
 from pyflink.table import *
 from pyflink.table.catalog import CatalogBaseTable, ObjectPath
-from pyflink.java_gateway import get_gateway
 
 table_schema = TableSchema.builder() \
     .field("name", DataTypes.STRING()) \
     .field("age", DataTypes.INT()) \
     .build()
 
-gateway = get_gateway()
-j_view = gateway.jvm.org.apache.flink.table.catalog.CatalogViewImpl(
-            "select * from t1",
-            "select * from test-catalog.db1.t1",
-            table_schema._j_table_schema,
-            {},
-            "This is a view")
-catalog_table = CatalogBaseTable(j_view)
+catalog_table = CatalogBaseTable.create_view(
+    original_query="select * from t1",
+    expanded_query="select * from test-catalog.db1.t1",
+    schema=table_schema,
+    properties={},
+    comment="This is a view"
+)
 
 catalog.create_table(ObjectPath("mydb", "myview"), catalog_table, False)
 
@@ -535,14 +511,8 @@ catalog.listPartitions(new ObjectPath("mydb", "mytable"), Arrays.asList(epr1, ..
 <div data-lang="Python" markdown="1">
 {% highlight python %}
 from pyflink.table.catalog import ObjectPath, CatalogPartitionSpec, CatalogPartition
-from pyflink.java_gateway import get_gateway
 
-gateway = get_gateway()
-partition_properties = {}
-partition_comments = "my partition"
-j_partition = gateway.jvm.org.apache.flink.table.catalog.CatalogPartitionImpl(
-    partition_properties, partition_comments)
-catalog_partition = CatalogPartition(j_partition)
+catalog_partition = CatalogPartition.create_instance({}, "my partition")
 
 catalog_partition_spec = CatalogPartitionSpec({"third": "2010", "second": "bob"})
 catalog.create_partition(
@@ -604,13 +574,8 @@ catalog.listFunctions("mydb");
 <div data-lang="Python" markdown="1">
 {% highlight python %}
 from pyflink.table.catalog import ObjectPath, CatalogFunction
-from pyflink.java_gateway import get_gateway
 
-gateway = get_gateway()
-j_function = gateway.jvm.org.apache.flink.table.catalog.CatalogFunctionImpl(
-    "my.python.udf",
-    gateway.jvm.org.apache.flink.table.catalog.FunctionLanguage.PYTHON)
-catalog_function = CatalogFunction(j_function)
+catalog_function = CatalogFunction.create_instance(class_name="my.python.udf")
 
 # create function
 catalog.create_function(ObjectPath("mydb", "myfunc"), catalog_function, False)

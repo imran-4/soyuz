@@ -40,12 +40,14 @@ import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.ExecutorUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,6 +97,11 @@ public class MetricRegistryImpl implements MetricRegistry {
 	 * Creates a new MetricRegistry and starts the configured reporter.
 	 */
 	public MetricRegistryImpl(MetricRegistryConfiguration config, Collection<ReporterSetup> reporterConfigurations) {
+		this(config, reporterConfigurations, Executors.newSingleThreadScheduledExecutor(new ExecutorThreadFactory("Flink-MetricRegistry")));
+	}
+
+	@VisibleForTesting
+	MetricRegistryImpl(MetricRegistryConfiguration config, Collection<ReporterSetup> reporterConfigurations, ScheduledExecutorService scheduledExecutor) {
 		this.maximumFramesize = config.getQueryServiceMessageSizeLimit();
 		this.scopeFormats = config.getScopeFormats();
 		this.globalDelimiter = config.getDelimiter();
@@ -104,7 +111,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 		// second, instantiate any custom configured reporters
 		this.reporters = new ArrayList<>(4);
 
-		this.executor = Executors.newSingleThreadScheduledExecutor(new ExecutorThreadFactory("Flink-MetricRegistry"));
+		this.executor = scheduledExecutor;
 
 		this.queryService = null;
 		this.metricQueryServiceRpcService = null;
@@ -118,31 +125,16 @@ public class MetricRegistryImpl implements MetricRegistry {
 				final String namedReporter = reporterSetup.getName();
 
 				try {
-					Optional<String> configuredPeriod = reporterSetup.getIntervalSettings();
-					TimeUnit timeunit = TimeUnit.SECONDS;
-					long period = MetricOptions.REPORTER_INTERVAL.defaultValue().getSeconds();
-
-					if (configuredPeriod.isPresent()) {
-						try {
-							String[] interval = configuredPeriod.get().split(" ");
-							period = Long.parseLong(interval[0]);
-							timeunit = TimeUnit.valueOf(interval[1]);
-						}
-						catch (Exception e) {
-							LOG.error("Cannot parse report interval from config: " + configuredPeriod +
-									" - please use values like '10 SECONDS' or '500 MILLISECONDS'. " +
-									"Using default reporting interval.");
-						}
-					}
-
 					final MetricReporter reporterInstance = reporterSetup.getReporter();
 					final String className = reporterInstance.getClass().getName();
 
 					if (reporterInstance instanceof Scheduled) {
-						LOG.info("Periodically reporting metrics in intervals of {} {} for reporter {} of type {}.", period, timeunit.name(), namedReporter, className);
+						final Duration period = getConfiguredIntervalOrDefault(reporterSetup);
+
+						LOG.info("Periodically reporting metrics in intervals of {} for reporter {} of type {}.", TimeUtils.formatWithHighestUnit(period), namedReporter, className);
 
 						executor.scheduleWithFixedDelay(
-								new MetricRegistryImpl.ReporterTask((Scheduled) reporterInstance), period, period, timeunit);
+								new MetricRegistryImpl.ReporterTask((Scheduled) reporterInstance), period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
 					} else {
 						LOG.info("Reporting metrics for reporter {} of type {}.", namedReporter, className);
 					}
@@ -165,6 +157,23 @@ public class MetricRegistryImpl implements MetricRegistry {
 				}
 			}
 		}
+	}
+
+	private static Duration getConfiguredIntervalOrDefault(ReporterSetup reporterSetup) {
+		final Optional<String> configuredPeriod = reporterSetup.getIntervalSettings();
+		Duration period = MetricOptions.REPORTER_INTERVAL.defaultValue();
+
+		if (configuredPeriod.isPresent()) {
+			try {
+				period = TimeUtils.parseDuration(configuredPeriod.get());
+			}
+			catch (Exception e) {
+				LOG.error("Cannot parse report interval from config: " + configuredPeriod +
+					" - please use values like '10 SECONDS' or '500 MILLISECONDS'. " +
+					"Using default reporting interval.");
+			}
+		}
+		return period;
 	}
 
 	/**

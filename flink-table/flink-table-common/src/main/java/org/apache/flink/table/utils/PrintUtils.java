@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -54,6 +55,7 @@ public class PrintUtils {
 	public static final int MAX_COLUMN_WIDTH = 30;
 	public static final String NULL_COLUMN = "(NULL)";
 	private static final String COLUMN_TRUNCATED_FLAG = "...";
+	private static final String ROW_KIND_COLUMN = "op";
 
 	private PrintUtils() {
 	}
@@ -70,14 +72,12 @@ public class PrintUtils {
 	 * |      (NULL) |  (NULL) |      (NULL) |
 	 * +-------------+---------+-------------+
 	 * 3 rows in result
-	 *
-	 * <p>Changelog is not supported until FLINK-16998 is finished.
 	 */
 	public static void printAsTableauForm(
 			TableSchema tableSchema,
 			Iterator<Row> it,
 			PrintWriter printWriter) {
-		printAsTableauForm(tableSchema, it, printWriter, MAX_COLUMN_WIDTH, NULL_COLUMN, false);
+		printAsTableauForm(tableSchema, it, printWriter, MAX_COLUMN_WIDTH, NULL_COLUMN, false, false);
 	}
 
 	/**
@@ -86,15 +86,17 @@ public class PrintUtils {
 	 * <p><b>NOTE:</b> please make sure the data to print is small enough to be stored in java heap memory
 	 * if the column width is derived from content (`deriveColumnWidthByType` is false).
 	 *
-	 * <p>For example:
+	 * <p>For example: (printRowKind is true)
 	 * <pre>
-	 * +-------------+---------+-------------+
-	 * | boolean_col | int_col | varchar_col |
-	 * +-------------+---------+-------------+
-	 * |        true |       1 |         abc |
-	 * |       false |       2 |         def |
-	 * |      (NULL) |  (NULL) |      (NULL) |
-	 * +-------------+---------+-------------+
+	 * +----+-------------+---------+-------------+
+	 * | op | boolean_col | int_col | varchar_col |
+	 * +----+-------------+---------+-------------+
+	 * | +I |        true |       1 |         abc |
+	 * | -U |       false |       2 |         def |
+	 * | +U |       false |       3 |         def |
+	 * | -D |      (NULL) |  (NULL) |      (NULL) |
+	 * +----+-------------+---------+-------------+
+	 * 4 rows in result
 	 * </pre>
 	 *
 	 * @param tableSchema The schema of the data to print
@@ -104,6 +106,7 @@ public class PrintUtils {
 	 * @param nullColumn The string representation of a null value
 	 * @param deriveColumnWidthByType A flag to indicate whether the column width
 	 *        is derived from type (true) or content (false).
+	 * @param printRowKind A flag to indicate whether print row kind info
 	 */
 	public static void printAsTableauForm(
 			TableSchema tableSchema,
@@ -111,13 +114,21 @@ public class PrintUtils {
 			PrintWriter printWriter,
 			int maxColumnWidth,
 			String nullColumn,
-			boolean deriveColumnWidthByType) {
+			boolean deriveColumnWidthByType,
+			boolean printRowKind) {
 		final List<TableColumn> columns = tableSchema.getTableColumns();
-		final String[] columnNames = columns.stream().map(TableColumn::getName).toArray(String[]::new);
+		String[] columnNames = columns.stream().map(TableColumn::getName).toArray(String[]::new);
+		if (printRowKind) {
+			columnNames = Stream.concat(Stream.of(ROW_KIND_COLUMN), Arrays.stream(columnNames)).toArray(String[]::new);
+		}
 
 		final int[] colWidths;
 		if (deriveColumnWidthByType) {
-			colWidths = columnWidthsByType(columns, maxColumnWidth, nullColumn, null);
+			colWidths = columnWidthsByType(
+					columns,
+					maxColumnWidth,
+					nullColumn,
+					printRowKind ? ROW_KIND_COLUMN : null);
 		} else {
 			final List<Row> rows = new ArrayList<>();
 			final List<String[]> content = new ArrayList<>();
@@ -125,13 +136,13 @@ public class PrintUtils {
 			while (it.hasNext()) {
 				Row row = it.next();
 				rows.add(row);
-				content.add(rowToString(row, nullColumn));
+				content.add(rowToString(row, nullColumn, printRowKind));
 			}
 			colWidths = columnWidthsByContent(columnNames, content, maxColumnWidth);
 			it = rows.iterator();
 		}
 
-		final String borderline = genBorderLine(colWidths);
+		final String borderline = PrintUtils.genBorderLine(colWidths);
 		// print border line
 		printWriter.println(borderline);
 		// print field names
@@ -142,7 +153,7 @@ public class PrintUtils {
 
 		long numRows = 0;
 		while (it.hasNext()) {
-			String[] cols = rowToString(it.next(), nullColumn);
+			String[] cols = rowToString(it.next(), nullColumn, printRowKind);
 
 			// print content
 			printSingleRow(colWidths, cols, printWriter);
@@ -165,20 +176,34 @@ public class PrintUtils {
 	}
 
 	public static String[] rowToString(Row row) {
-		return rowToString(row, NULL_COLUMN);
+		return rowToString(row, NULL_COLUMN, false);
 	}
 
-	public static String[] rowToString(Row row, String nullColumn) {
-		final String[] fields = new String[row.getArity()];
+	public static String[] rowToString(Row row, String nullColumn, boolean printRowKind) {
+		final int len = printRowKind ? row.getArity() + 1 : row.getArity();
+		final List<String> fields = new ArrayList<>(len);
+		if (printRowKind) {
+			fields.add(row.getKind().shortString());
+		}
 		for (int i = 0; i < row.getArity(); i++) {
 			final Object field = row.getField(i);
 			if (field == null) {
-				fields[i] = nullColumn;
+				fields.add(nullColumn);
 			} else {
-				fields[i] = StringUtils.arrayAwareToString(field);
+				fields.add(StringUtils.arrayAwareToString(field));
 			}
 		}
-		return fields;
+		return fields.toArray(new String[0]);
+	}
+
+	public static String genBorderLine(int[] colWidths) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("+");
+		for (int width : colWidths) {
+			sb.append(EncodingUtils.repeat('-', width + 1));
+			sb.append("-+");
+		}
+		return sb.toString();
 	}
 
 	private static int[] columnWidthsByContent(
@@ -201,16 +226,6 @@ public class PrintUtils {
 		}
 
 		return colWidths;
-	}
-
-	public static String genBorderLine(int[] colWidths) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("+");
-		for (int width : colWidths) {
-			sb.append(EncodingUtils.repeat('-', width + 1));
-			sb.append("-+");
-		}
-		return sb.toString();
 	}
 
 	/**

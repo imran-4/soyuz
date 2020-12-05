@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.connectors.gcp.pubsub.emulator;
 
+import org.apache.flink.util.TestLogger;
+
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
@@ -36,7 +38,7 @@ import static org.apache.flink.streaming.connectors.gcp.pubsub.emulator.GCloudEm
 /**
  * The base class from which unit tests should inherit if they need to use the Google cloud emulators.
  */
-public class GCloudUnitTestBase implements Serializable {
+public class GCloudUnitTestBase extends TestLogger implements Serializable {
 	@BeforeClass
 	public static void launchGCloudEmulator() throws Exception {
 		// Separated out into separate class so the entire test class to be serializable
@@ -62,7 +64,7 @@ public class GCloudUnitTestBase implements Serializable {
 			//noinspection deprecation
 			channel = ManagedChannelBuilder
 				.forTarget(getPubSubHostPort())
-				.usePlaintext(true)
+				.usePlaintext()
 				.build();
 			channelProvider = FixedTransportChannelProvider
 				.create(GrpcTransportChannel.create(channel));

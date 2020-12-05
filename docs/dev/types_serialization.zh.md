@@ -176,13 +176,13 @@ Flink treats these data types as black boxes and is not able to access their con
 
 *Value* types describe their serialization and deserialization manually. Instead of going through a
 general purpose serialization framework, they provide custom code for those operations by means of
-implementing the `org.apache.flinktypes.Value` interface with the methods `read` and `write`. Using
+implementing the `org.apache.flink.types.Value` interface with the methods `read` and `write`. Using
 a Value type is reasonable when general purpose serialization would be highly inefficient. An
 example would be a data type that implements a sparse vector of elements as an array. Knowing that
 the array is mostly zero, one can use a special encoding for the non-zero elements, while the
 general purpose serialization would simply write all array elements.
 
-The `org.apache.flinktypes.CopyableValue` interface supports manual internal cloning logic in a
+The `org.apache.flink.types.CopyableValue` interface supports manual internal cloning logic in a
 similar way.
 
 Flink comes with pre-defined Value types that correspond to basic data types. (`ByteValue`,
@@ -257,7 +257,7 @@ Flink 会尽力推断有关数据类型的大量信息，这些数据会在分�
   并非所有的类型都可以被 Kryo (或者 Flink ) 处理。例如谷歌的 Guava 集合类型默认情况下是没办法很好处理的。
   解决方案是为这些引起问题的类型注册额外的序列化器。调用 `StreamExecutionEnvironment` 或者 `ExecutionEnvironment` 
   的 `.getConfig().addDefaultKryoSerializer(clazz, serializer)` 方法注册 Kryo 序列化器。存在很多的额外 Kryo 序列化器类库
-  具体细节可以参看 [自定义序列化器]({{ site.baseurl }}/zh/dev/custom_serializers.html) 以了解更多的自定义序列化器。
+  具体细节可以参看 [自定义序列化器]({% link dev/custom_serializers.zh.md %}) 以了解更多的自定义序列化器。
 
 * **添加类型提示** 有时， Flink 用尽一切手段也无法推断出泛型类型，用户需要提供*类型提示*。通常只在 Java API 中需要。
   [类型提示部分](#java-api-中的类型提示) 描述了更多的细节。

@@ -20,11 +20,13 @@ package org.apache.flink.formats.avro;
 
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.formats.avro.generated.Address;
+import org.apache.flink.formats.avro.generated.UnionLogicalType;
 import org.apache.flink.formats.avro.utils.TestDataGenerator;
 
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Random;
 
 import static org.apache.flink.formats.avro.utils.AvroTestUtils.writeRecord;
@@ -56,5 +58,16 @@ public class AvroSerializationSchemaTest {
 		byte[] encodedAddress = writeRecord(address, Address.getClassSchema());
 		byte[] serializedAddress = serializer.serialize(address);
 		assertArrayEquals(encodedAddress, serializedAddress);
+	}
+
+	@Test
+	public void testSpecificRecordWithUnionLogicalType() throws Exception {
+		Random rnd = new Random();
+		UnionLogicalType data = new UnionLogicalType(Instant.ofEpochMilli(rnd.nextLong()));
+		AvroSerializationSchema<UnionLogicalType> serializer = AvroSerializationSchema.forSpecific(UnionLogicalType.class);
+
+		byte[] encodedData = writeRecord(data);
+		byte[] serializedData = serializer.serialize(data);
+		assertArrayEquals(encodedData, serializedData);
 	}
 }

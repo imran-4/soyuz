@@ -105,7 +105,7 @@ readFromConfig() {
 # conf/flink-conf.yaml
 
 DEFAULT_ENV_PID_DIR="/tmp"                          # Directory to store *.pid files to
-DEFAULT_ENV_LOG_MAX=5                               # Maximum number of old log files to keep
+DEFAULT_ENV_LOG_MAX=10                              # Maximum number of old log files to keep
 DEFAULT_ENV_JAVA_OPTS=""                            # Optional JVM args
 DEFAULT_ENV_JAVA_OPTS_JM=""                         # Optional JVM args (JobManager)
 DEFAULT_ENV_JAVA_OPTS_TM=""                         # Optional JVM args (TaskManager)
@@ -114,6 +114,7 @@ DEFAULT_ENV_JAVA_OPTS_CLI=""                        # Optional JVM args (Client)
 DEFAULT_ENV_SSH_OPTS=""                             # Optional SSH parameters running in cluster mode
 DEFAULT_YARN_CONF_DIR=""                            # YARN Configuration Directory, if necessary
 DEFAULT_HADOOP_CONF_DIR=""                          # Hadoop Configuration Directory, if necessary
+DEFAULT_HBASE_CONF_DIR=""                           # HBase Configuration Directory, if necessary
 
 ########################################################################################################################
 # CONFIG KEYS: The default values can be overwritten by the following keys in conf/flink-conf.yaml
@@ -126,6 +127,7 @@ KEY_ENV_LOG_DIR="env.log.dir"
 KEY_ENV_LOG_MAX="env.log.max"
 KEY_ENV_YARN_CONF_DIR="env.yarn.conf.dir"
 KEY_ENV_HADOOP_CONF_DIR="env.hadoop.conf.dir"
+KEY_ENV_HBASE_CONF_DIR="env.hbase.conf.dir"
 KEY_ENV_JAVA_HOME="env.java.home"
 KEY_ENV_JAVA_OPTS="env.java.opts"
 KEY_ENV_JAVA_OPTS_JM="env.java.opts.jobmanager"
@@ -239,6 +241,7 @@ fi
 
 if [ -z "${MAX_LOG_FILE_NUMBER}" ]; then
     MAX_LOG_FILE_NUMBER=$(readFromConfig ${KEY_ENV_LOG_MAX} ${DEFAULT_ENV_LOG_MAX} "${YAML_CONF}")
+    export MAX_LOG_FILE_NUMBER
 fi
 
 if [ -z "${FLINK_LOG_DIR}" ]; then
@@ -251,6 +254,10 @@ fi
 
 if [ -z "${HADOOP_CONF_DIR}" ]; then
     HADOOP_CONF_DIR=$(readFromConfig ${KEY_ENV_HADOOP_CONF_DIR} "${DEFAULT_HADOOP_CONF_DIR}" "${YAML_CONF}")
+fi
+
+if [ -z "${HBASE_CONF_DIR}" ]; then
+    HBASE_CONF_DIR=$(readFromConfig ${KEY_ENV_HBASE_CONF_DIR} "${DEFAULT_HBASE_CONF_DIR}" "${YAML_CONF}")
 fi
 
 if [ -z "${FLINK_PID_DIR}" ]; then
@@ -344,6 +351,24 @@ if [ -z "$HADOOP_CONF_DIR" ] && [ -z "$HADOOP_CLASSPATH" ]; then
     fi
 fi
 
+# Check if deprecated HBASE_HOME is set, and specify config path to HBASE_CONF_DIR if it's empty.
+if [ -z "$HBASE_CONF_DIR" ]; then
+    if [ -n "$HBASE_HOME" ]; then
+        # HBASE_HOME is set.
+        if [ -d "$HBASE_HOME/conf" ]; then
+            HBASE_CONF_DIR="$HBASE_HOME/conf"
+        fi
+    fi
+fi
+
+# try and set HBASE_CONF_DIR to some common default if it's not set
+if [ -z "$HBASE_CONF_DIR" ]; then
+    if [ -d "/etc/hbase/conf" ]; then
+        echo "Setting HBASE_CONF_DIR=/etc/hbase/conf because no HBASE_CONF_DIR was set."
+        HBASE_CONF_DIR="/etc/hbase/conf"
+    fi
+fi
+
 INTERNAL_HADOOP_CLASSPATHS="${HADOOP_CLASSPATH}:${HADOOP_CONF_DIR}:${YARN_CONF_DIR}"
 
 if [ -n "${HBASE_CONF_DIR}" ]; then
@@ -362,29 +387,6 @@ extractHostName() {
     fi
 
     echo $WORKER
-}
-
-# Auxilliary functions for log file rotation
-rotateLogFilesWithPrefix() {
-    dir=$1
-    prefix=$2
-    while read -r log ; do
-        rotateLogFile "$log"
-    # find distinct set of log file names, ignoring the rotation number (trailing dot and digit)
-    done < <(find "$dir" ! -type d -path "${prefix}*" | sed s/\.[0-9][0-9]*$// | sort | uniq)
-}
-
-rotateLogFile() {
-    log=$1;
-    num=$MAX_LOG_FILE_NUMBER
-    if [ -f "$log" -a "$num" -gt 0 ]; then
-        while [ $num -gt 1 ]; do
-            prev=`expr $num - 1`
-            [ -f "$log.$prev" ] && mv "$log.$prev" "$log.$num"
-            num=$prev
-        done
-        mv "$log" "$log.$num";
-    fi
 }
 
 readMasters() {
@@ -522,10 +524,10 @@ extractLoggingOutputs() {
     echo "${output}" | grep -v ${EXECUTION_PREFIX}
 }
 
-parseJmJvmArgsAndExportLogs() {
+parseJmArgsAndExportLogs() {
   java_utils_output=$(runBashJavaUtilsCmd GET_JM_RESOURCE_PARAMS "${FLINK_CONF_DIR}" "${FLINK_BIN_DIR}/bash-java-utils.jar:$(findFlinkDistJar)" "$@")
   logging_output=$(extractLoggingOutputs "${java_utils_output}")
-  jvm_params=$(extractExecutionResults "${java_utils_output}" 1)
+  params_output=$(extractExecutionResults "${java_utils_output}" 2)
 
   if [[ $? -ne 0 ]]; then
     echo "[ERROR] Could not get JVM parameters and dynamic configurations properly."
@@ -534,7 +536,9 @@ parseJmJvmArgsAndExportLogs() {
     exit 1
   fi
 
+  jvm_params=$(echo "${params_output}" | head -n1)
   export JVM_ARGS="${JVM_ARGS} ${jvm_params}"
+  export DYNAMIC_PARAMETERS=$(IFS=" " echo "${params_output}" | tail -n1)
 
   export FLINK_INHERITED_LOGS="
 $FLINK_INHERITED_LOGS

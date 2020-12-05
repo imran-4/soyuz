@@ -38,14 +38,15 @@ resources:
   containers:
   # Container with Maven 3.2.5, SSL to have the same environment everywhere.
   - container: flink-build-container
-    image: rmetzger/flink-ci:ubuntu-amd64-bcef226
+    image: rmetzger/flink-ci:ubuntu-amd64-f009d96
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  E2E_CACHE_FOLDER: $(Pipeline.Workspace)/e2e_cache
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   CACHE_KEY: maven | $(Agent.OS) | **/pom.xml, !**/target/**
   CACHE_FALLBACK_KEY: maven | $(Agent.OS)
-  CACHE_FLINK_DIR: $(Pipeline.Workspace)/flink_cache
+  FLINK_ARTIFACT_DIR: $(Pipeline.Workspace)/flink_artifact
   SECRET_S3_BUCKET: $[variables.IT_CASE_S3_BUCKET]
   SECRET_S3_ACCESS_KEY: $[variables.IT_CASE_S3_ACCESS_KEY]
   SECRET_S3_SECRET_KEY: $[variables.IT_CASE_S3_SECRET_KEY]
@@ -78,6 +79,17 @@ stages:
           stage_name: cron_snapshot_deployment
           environment: PROFILE=""
           container: flink-build-container
+      - template: jobs-template.yml
+        parameters:
+          stage_name: cron_azure
+          test_pool_definition:
+            vmImage: 'ubuntu-16.04'
+          e2e_pool_definition:
+            vmImage: 'ubuntu-16.04'
+          environment: PROFILE="-Dhadoop.version=2.8.3 -Dinclude_hadoop_aws -Dscala-2.11"
+          run_end_to_end: true
+          container: flink-build-container
+          jdk: jdk8
       - template: jobs-template.yml
         parameters:
           stage_name: cron_hadoop241

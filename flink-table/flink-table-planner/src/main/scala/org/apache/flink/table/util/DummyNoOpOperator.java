@@ -41,7 +41,8 @@ public class DummyNoOpOperator<IN> extends NoOpOperator<IN> {
 	}
 
 	/**
-	 * Dummy file input format implementation.
+	 * Provides a {@link FileInputFormat} for {@link DummyNoOpOperator}.
+	 * All the data it reads is NULL.
 	 */
 	public static class DummyInputFormat<IN> extends FileInputFormat<IN> {
 
