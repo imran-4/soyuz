@@ -151,7 +151,7 @@ public class StreamTableEnvironmentImpl extends TableEnvironmentImpl implements 
 		);
 	}
 
-	private static Executor lookupExecutor(
+	protected static Executor lookupExecutor(
 			Map<String, String> executorProperties,
 			StreamExecutionEnvironment executionEnvironment) {
 		try {
