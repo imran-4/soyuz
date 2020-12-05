@@ -79,8 +79,6 @@ public class MemoryManager {
 
 	private final UnsafeMemoryBudget memoryBudget;
 
-	private final MemorySegmentObjectPoolMap memorySegmentObjectPool;
-
 	private final SharedResources sharedResources;
 
 	/** Flag whether the close() has already been invoked. */
@@ -103,12 +101,7 @@ public class MemoryManager {
 		this.allocatedSegments = new ConcurrentHashMap<>();
 		this.reservedMemory = new ConcurrentHashMap<>();
 		this.sharedResources = new SharedResources();
-<<<<<<< HEAD
-		this.memorySegmentObjectPool = new MemorySegmentObjectPoolMap();
-		verifyIntTotalNumberOfPages(memorySizeByType, budgetByType.maxTotalNumberOfPages());
-=======
 		verifyIntTotalNumberOfPages(memorySize, totalNumberOfPages);
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 
 		LOG.debug(
 			"Initialized MemoryManager with total memory size {} and page size {}.",
@@ -159,8 +152,6 @@ public class MemoryManager {
 				segments.clear();
 			}
 			allocatedSegments.clear();
-			memorySegmentObjectPool.freeAllAndClear();
-
 		}
 	}
 
@@ -279,17 +270,8 @@ public class MemoryManager {
 		// remove the reference in the map for the owner
 		try {
 			allocatedSegments.computeIfPresent(segment.getOwner(), (o, segsForOwner) -> {
-<<<<<<< HEAD
-//				segment.free();
-				if (segsForOwner.remove(segment)) {
-					budgetByType.releasePageForKey(getSegmentType(segment));
-				}
-				memorySegmentObjectPool.returnToPool(segment);
-				//noinspection ReturnOfNull
-=======
 				segment.free();
 				segsForOwner.remove(segment);
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 				return segsForOwner.isEmpty() ? null : segsForOwner;
 			});
 		}
@@ -371,23 +353,11 @@ public class MemoryManager {
 		return nextOwnerMemorySegment.get();
 	}
 
-<<<<<<< HEAD
-	private void freeSegment(
-			MemorySegment segment,
-			@Nullable Collection<MemorySegment> segments,
-			EnumMap<MemoryType, Long> releasedMemory) {
-//		segment.free();
-		if (segments != null && segments.remove(segment)) {
-			memorySegmentObjectPool.returnToPool(segment);
-			releaseSegment(segment, releasedMemory);
-=======
 	private static void freeSegment(MemorySegment segment, @Nullable Collection<MemorySegment> segments) {
 		segment.free();
 		if (segments != null) {
 			segments.remove(segment);
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 		}
-
 	}
 
 	/**
@@ -411,16 +381,8 @@ public class MemoryManager {
 		}
 
 		// free each segment
-<<<<<<< HEAD
-		EnumMap<MemoryType, Long> releasedMemory = new EnumMap<>(MemoryType.class);
-		for (MemorySegment segment : segments) {
-//			segment.free();
-			memorySegmentObjectPool.returnToPool(segment); ////////////////// todo: itt meg lehet, hogy baj lesz a sorrenddel a synchronized kivevese utan, mivel kesobb van a segments.clear()
-			releaseSegment(segment, releasedMemory);
-=======
 		for (MemorySegment segment: segments) {
 			segment.free();
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 		}
 
 		segments.clear();
@@ -666,126 +628,6 @@ public class MemoryManager {
 		return (long) Math.floor(memoryBudget.getTotalMemorySize() * fraction);
 	}
 
-<<<<<<< HEAD
-	private MemorySegment allocateManagedSegment(MemoryType memoryType, Object owner) {
-		switch (memoryType) {
-			case HEAP:
-//				return allocateUnpooledSegment(getPageSize(), owner);
-				return memorySegmentObjectPool.getOrCreateUnpooledSegment(getPageSize(), owner);
-			case OFF_HEAP:
-//				return allocateOffHeapUnsafeMemory(getPageSize(), owner);
-				return memorySegmentObjectPool.getOrCreateOffHeapUnsafeMemory(getPageSize(), owner);
-			default:
-				throw new IllegalArgumentException("unrecognized memory type: " + memoryType);
-		}
-	}
-
-	private void releaseSegment(MemorySegment segment, EnumMap<MemoryType, Long> releasedMemory) {
-		releasedMemory.compute(getSegmentType(segment), (t, v) -> v == null ? getPageSize() : v + getPageSize());
-	}
-
-	private static MemoryType getSegmentType(MemorySegment segment) {
-		return segment.isOffHeap() ? MemoryType.OFF_HEAP : MemoryType.HEAP;
-	}
-
-	/** Memory segment allocation request. */
-	@SuppressWarnings("WeakerAccess")
-	public static class AllocationRequest {
-		/** Owner of the segment to track by. */
-		private final Object owner;
-
-		/** Collection to add the allocated segments to. */
-		private final Collection<MemorySegment> output;
-
-		/** Number of pages to allocate. */
-		private final int numberOfPages;
-
-		/** Allowed types of memory to allocate. */
-		private final Set<MemoryType> types;
-
-		private AllocationRequest(
-				Object owner,
-				Collection<MemorySegment> output,
-				int numberOfPages,
-				Set<MemoryType> types) {
-			this.owner = owner;
-			this.output = output;
-			this.numberOfPages = numberOfPages;
-			this.types = types;
-		}
-
-		public Object getOwner() {
-			return owner;
-		}
-
-		public int getNumberOfPages() {
-			return numberOfPages;
-		}
-
-		public Set<MemoryType> getTypes() {
-			return Collections.unmodifiableSet(types);
-		}
-
-		public static Builder newBuilder(Object owner) {
-			return new Builder(owner);
-		}
-
-		public static AllocationRequest ofAllTypes(Object owner, int numberOfPages) {
-			return newBuilder(owner).ofAllTypes().numberOfPages(numberOfPages).build();
-		}
-
-		public static AllocationRequest ofType(Object owner, int numberOfPages, MemoryType type) {
-			return newBuilder(owner).ofType(type).numberOfPages(numberOfPages).build();
-		}
-	}
-
-	/** A builder for the {@link AllocationRequest}. */
-	@SuppressWarnings("WeakerAccess")
-	public static class Builder {
-		private final Object owner;
-		private Collection<MemorySegment> output = new ArrayList<>();
-		private int numberOfPages = 1;
-		private Set<MemoryType> types = EnumSet.noneOf(MemoryType.class);
-
-		public Builder(Object owner) {
-			this.owner = owner;
-		}
-
-		public Builder withOutput(Collection<MemorySegment> output) {
-			//noinspection AssignmentOrReturnOfFieldWithMutableType
-			this.output = output;
-			return this;
-		}
-
-		public Builder numberOfPages(int numberOfPages) {
-			this.numberOfPages = numberOfPages;
-			return this;
-		}
-
-		public Builder ofType(MemoryType type) {
-			types.add(type);
-			return this;
-		}
-
-		public Builder ofAllTypes() {
-			types = EnumSet.allOf(MemoryType.class);
-			return this;
-		}
-
-		public AllocationRequest build() {
-			return new AllocationRequest(owner, output, numberOfPages, types);
-		}
-	}
-
-	// ------------------------------------------------------------------------
-	//  factories for testing
-	// ------------------------------------------------------------------------
-
-	public static MemoryManager forDefaultPageSize(long size) {
-		final Map<MemoryType, Long> memorySizes = new HashMap<>();
-		memorySizes.put(MemoryType.OFF_HEAP, size);
-		return new MemoryManager(memorySizes, DEFAULT_PAGE_SIZE);
-=======
 	/**
 	 * Creates a memory manager with the given capacity and given page size.
 	 *
@@ -797,6 +639,5 @@ public class MemoryManager {
 	 */
 	public static MemoryManager create(long memorySize, int pageSize) {
 		return new MemoryManager(memorySize, pageSize, UnsafeMemoryBudget.MAX_SLEEPS_VERIFY_EMPTY);
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 	}
 }
