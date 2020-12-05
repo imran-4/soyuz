@@ -95,15 +95,8 @@ under the License.
 		</dependency>
 
 		<dependency>
-<<<<<<< HEAD
-			<groupId>com.github.spotbugs</groupId>
-			<artifactId>spotbugs</artifactId>
-			<version>3.1.10</version>
-			<scope>provided</scope>
-=======
 			<groupId>org.apache.beam</groupId>
 			<artifactId>beam-runners-core-java</artifactId>
->>>>>>> 6b1f7e0dde1b89880634baf4836244aba9356691
 		</dependency>
 
 		<!-- Protobuf dependencies -->
