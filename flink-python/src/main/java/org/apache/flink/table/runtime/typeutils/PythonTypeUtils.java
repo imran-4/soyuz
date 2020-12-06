@@ -309,7 +309,7 @@ public final class PythonTypeUtils {
 				.stream()
 				.map(f -> f.getType().accept(this))
 				.toArray(TypeSerializer[]::new);
-			return new RowSerializer(fieldTypeSerializers, true);
+			return new RowSerializer(fieldTypeSerializers);
 		}
 
 		@Override
