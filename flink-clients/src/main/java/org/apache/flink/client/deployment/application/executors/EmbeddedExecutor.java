@@ -49,7 +49,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A base class for {@link PipelineExecutor executors} that invoke directly methods of the
- * {@link DispatcherGateway Dispatcher} and do
+ * {@link org.apache.flink.runtime.dispatcher.DispatcherGateway Dispatcher} and do
  * not go through the REST API.
  */
 @Internal
