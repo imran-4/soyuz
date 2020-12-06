@@ -51,7 +51,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *   <li>{@link FileSource#forBulkFileFormat(BulkFormat, Path...)}</li>
  *   <li>{@link FileSource#forRecordFileFormat(FileRecordFormat, Path...)}</li>
  * </ul>
- * This creates a {@link FileSource.FileSourceBuilder} on which you can configure all the
+ * This creates a {@link FileSourceBuilder} on which you can configure all the
  * properties of the file source.
  *
  * <h2>Batch and Streaming</h2>
@@ -61,9 +61,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * In the continuous/streaming case, the source periodically checks the paths for new files
  * and will start reading those.
  *
- * <p>When you start creating a file source (via the {@link FileSource.FileSourceBuilder} created
+ * <p>When you start creating a file source (via the {@link FileSourceBuilder} created
  * through one of the above-mentioned methods) the source is by default in bounded/batch mode.
- * Call {@link FileSource.FileSourceBuilder#monitorContinuously(Duration)} to put the source
+ * Call {@link FileSourceBuilder#monitorContinuously(Duration)} to put the source
  * into continuous streaming mode.
  *
  * <h2>Format Types</h2>

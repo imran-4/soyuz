@@ -133,7 +133,7 @@ public class CopyableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class CopyableSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<SimpleCopyable> {
+	public static final class CopyableSerializerSetup implements PreUpgradeSetup<SimpleCopyable> {
 		@Override
 		public TypeSerializer<SimpleCopyable> createPriorSerializer() {
 			return new CopyableValueSerializer<>(SimpleCopyable.class);
@@ -148,7 +148,7 @@ public class CopyableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class CopyableSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<SimpleCopyable> {
+	public static final class CopyableSerializerVerifier implements UpgradeVerifier<SimpleCopyable> {
 		@Override
 		public TypeSerializer<SimpleCopyable> createUpgradedSerializer() {
 			return new CopyableValueSerializer<>(SimpleCopyable.class);

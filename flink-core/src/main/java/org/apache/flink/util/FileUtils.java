@@ -76,7 +76,7 @@ public final class FileUtils {
 
 	/**
 	 * The maximum size of array to allocate for reading. See
-	 * {@code MAX_BUFFER_SIZE} in {@link java.nio.file.Files} for more.
+	 * {@code MAX_BUFFER_SIZE} in {@link Files} for more.
 	 */
 	private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 8;
 
@@ -157,9 +157,9 @@ public final class FileUtils {
 	 * closed when all bytes have been read or an I/O error, or other runtime
 	 * exception, is thrown.
 	 *
-	 * <p>This is an implementation that follow {@link java.nio.file.Files#readAllBytes(java.nio.file.Path)},
+	 * <p>This is an implementation that follow {@link Files#readAllBytes(java.nio.file.Path)},
 	 * and the difference is that it limits the size of the direct buffer to avoid
-	 * direct-buffer OutOfMemoryError. When {@link java.nio.file.Files#readAllBytes(java.nio.file.Path)}
+	 * direct-buffer OutOfMemoryError. When {@link Files#readAllBytes(java.nio.file.Path)}
 	 * or other interfaces in java API can do this in the future, we should remove it.
 	 *
 	 * @param path

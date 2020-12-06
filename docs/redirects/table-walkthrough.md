@@ -1,8 +1,8 @@
 ---
-title: "Python API 教程"
-nav-title: Python API
-nav-parent_id: try-flink
-nav-pos: 4
+title: Table Walkthrough
+layout: redirect
+redirect: /try-flink/table_api.html
+permalink: /getting-started/walkthroughs/table_api.html
 ---
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -22,11 +22,3 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-
-* This will be replaced by the TOC
-{:toc}
-
-
-## Python Table API 教程
-
-详细信息请参考 [Python Table API 教程]({% link dev/python/table_api_tutorial.zh.md %})文档

@@ -149,8 +149,8 @@ public class TypeSerializerSerializationUtilTest implements Serializable {
 	 */
 	@Test
 	public void testSerializeConfigurationSnapshots() throws Exception {
-		TypeSerializerSerializationUtilTest.TestConfigSnapshot<String> configSnapshot1 =
-			new TypeSerializerSerializationUtilTest.TestConfigSnapshot<>(1, "foo");
+		TestConfigSnapshot<String> configSnapshot1 =
+			new TestConfigSnapshot<>(1, "foo");
 
 		byte[] serializedConfig;
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -180,7 +180,7 @@ public class TypeSerializerSerializationUtilTest implements Serializable {
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 			TypeSerializerSnapshotSerializationUtil.writeSerializerSnapshot(
 				new DataOutputViewStreamWrapper(out),
-				new TypeSerializerSerializationUtilTest.TestConfigSnapshot<>(123, "foobar"),
+				new TestConfigSnapshot<>(123, "foobar"),
 				StringSerializer.INSTANCE);
 			serializedConfig = out.toByteArray();
 		}
@@ -308,9 +308,9 @@ public class TypeSerializerSerializationUtilTest implements Serializable {
 				return false;
 			}
 
-			if (obj instanceof TypeSerializerSerializationUtilTest.TestConfigSnapshot) {
-				return val == ((TypeSerializerSerializationUtilTest.TestConfigSnapshot) obj).val
-					&& msg.equals(((TypeSerializerSerializationUtilTest.TestConfigSnapshot) obj).msg);
+			if (obj instanceof TestConfigSnapshot) {
+				return val == ((TestConfigSnapshot) obj).val
+					&& msg.equals(((TestConfigSnapshot) obj).msg);
 			} else {
 				return false;
 			}

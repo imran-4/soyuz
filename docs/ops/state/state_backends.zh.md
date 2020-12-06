@@ -96,8 +96,6 @@ FsStateBackend 适用场景:
 
 <a name="the-rocksdbstatebackend" />
 
-<a name="the-rocksdbstatebackend" />
-
 ### RocksDBStateBackend
 
 *RocksDBStateBackend* 需要配置一个文件系统的 URL （类型、地址、路径），例如："hdfs://namenode:40010/flink/checkpoints" 或 "file:///data/flink/checkpoints"。

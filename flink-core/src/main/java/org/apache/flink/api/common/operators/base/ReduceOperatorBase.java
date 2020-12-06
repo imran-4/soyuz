@@ -47,7 +47,7 @@ import java.util.Map;
  * Base data flow operator for Reduce user-defined functions. Accepts reduce functions
  * and key positions. The key positions are expected in the flattened common data model.
  * 
- * @see org.apache.flink.api.common.functions.ReduceFunction
+ * @see ReduceFunction
  *
  * @param <T> The type (parameters and return type) of the reduce function.
  * @param <FT> The type of the reduce function.

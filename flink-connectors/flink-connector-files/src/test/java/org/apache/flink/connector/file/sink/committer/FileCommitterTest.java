@@ -117,7 +117,7 @@ public class FileCommitterTest {
 		private int numCleanUp;
 
 		@Override
-		public BucketWriter.PendingFile recoverPendingFile(
+		public PendingFile recoverPendingFile(
 				InProgressFileWriter.PendingFileRecoverable pendingFileRecoverable) throws IOException {
 			RecordingPendingFile pendingFile = new RecordingPendingFile();
 			recoveredPendingFiles.add(pendingFile);

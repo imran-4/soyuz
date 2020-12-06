@@ -285,7 +285,7 @@ public class KafkaDynamicSink implements DynamicTableSink, SupportsWritingMetada
 	}
 
 	private @Nullable SerializationSchema<RowData> createSerialization(
-			DynamicTableSink.Context context,
+			Context context,
 			@Nullable EncodingFormat<SerializationSchema<RowData>> format,
 			int[] projection,
 			@Nullable String prefix) {

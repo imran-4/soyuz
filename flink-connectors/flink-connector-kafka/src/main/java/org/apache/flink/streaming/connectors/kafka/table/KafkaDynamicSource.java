@@ -387,7 +387,7 @@ public class KafkaDynamicSource implements ScanTableSource, SupportsReadingMetad
 	}
 
 	private @Nullable DeserializationSchema<RowData> createDeserialization(
-			DynamicTableSource.Context context,
+			Context context,
 			@Nullable DecodingFormat<DeserializationSchema<RowData>> format,
 			int[] projection,
 			@Nullable String prefix) {

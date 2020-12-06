@@ -25,7 +25,7 @@ import java.io.OutputStream;
 
 /**
  * An output stream to a file that is created via a {@link FileSystem}.
- * This class extends the base {@link java.io.OutputStream} with some additional important methods.
+ * This class extends the base {@link OutputStream} with some additional important methods.
  *
  * <h2>Data Persistence Guarantees</h2>
  *

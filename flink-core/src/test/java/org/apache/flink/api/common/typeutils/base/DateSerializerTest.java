@@ -25,7 +25,7 @@ import java.util.Date;
 import java.util.Random;
 
 /**
- * A test for the {@link org.apache.flink.api.common.typeutils.base.DateSerializer}.
+ * A test for the {@link DateSerializer}.
  */
 public class DateSerializerTest extends SerializerTestBase<Date> {
 	

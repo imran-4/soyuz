@@ -30,29 +30,29 @@ public class LongValueSequenceIteratorTest extends TestLogger {
 
 	@Test
 	public void testSplitRegular() {
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(0, 10), 2);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(100, 100000), 7);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(-100, 0), 5);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(-100, 100), 3);
+		testSplitting(new LongValueSequenceIterator(0, 10), 2);
+		testSplitting(new LongValueSequenceIterator(100, 100000), 7);
+		testSplitting(new LongValueSequenceIterator(-100, 0), 5);
+		testSplitting(new LongValueSequenceIterator(-100, 100), 3);
 	}
 
 	@Test
 	public void testSplittingLargeRangesBy2() {
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(0, Long.MAX_VALUE), 2);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(-1000000000L, Long.MAX_VALUE), 2);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(Long.MIN_VALUE, Long.MAX_VALUE), 2);
+		testSplitting(new LongValueSequenceIterator(0, Long.MAX_VALUE), 2);
+		testSplitting(new LongValueSequenceIterator(-1000000000L, Long.MAX_VALUE), 2);
+		testSplitting(new LongValueSequenceIterator(Long.MIN_VALUE, Long.MAX_VALUE), 2);
 	}
 
 	@Test
 	public void testSplittingTooSmallRanges() {
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(0, 0), 2);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(-5, -5), 2);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(-5, -4), 3);
-		testSplitting(new org.apache.flink.util.LongValueSequenceIterator(10, 15), 10);
+		testSplitting(new LongValueSequenceIterator(0, 0), 2);
+		testSplitting(new LongValueSequenceIterator(-5, -5), 2);
+		testSplitting(new LongValueSequenceIterator(-5, -4), 3);
+		testSplitting(new LongValueSequenceIterator(10, 15), 10);
 	}
 
-	private static void testSplitting(org.apache.flink.util.LongValueSequenceIterator iter, int numSplits) {
-		org.apache.flink.util.LongValueSequenceIterator[] splits = iter.split(numSplits);
+	private static void testSplitting(LongValueSequenceIterator iter, int numSplits) {
+		LongValueSequenceIterator[] splits = iter.split(numSplits);
 
 		assertEquals(numSplits, splits.length);
 
@@ -68,7 +68,7 @@ public class LongValueSequenceIteratorTest extends TestLogger {
 		testMaxSplitDiff(splits);
 	}
 
-	private static void testMaxSplitDiff(org.apache.flink.util.LongValueSequenceIterator[] iters) {
+	private static void testMaxSplitDiff(LongValueSequenceIterator[] iters) {
 		long minSplitSize = Long.MAX_VALUE;
 		long maxSplitSize = Long.MIN_VALUE;
 

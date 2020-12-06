@@ -52,11 +52,11 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
   }
 
    private int num;
-   private java.lang.String street;
-   private java.lang.String city;
-   private java.lang.String state;
-   private java.lang.String zip;
-   private java.lang.String appno;
+   private String street;
+   private String city;
+   private String state;
+   private String zip;
+   private String appno;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -74,7 +74,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * @param zip The new value for zip
    * @param appno The new value for appno
    */
-  public Address(java.lang.Integer num, java.lang.String street, java.lang.String city, java.lang.String state, java.lang.String zip, java.lang.String appno) {
+  public Address(Integer num, String street, String city, String state, String zip, String appno) {
     this.num = num;
     this.street = street;
     this.city = city;
@@ -85,7 +85,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
 
   public org.apache.avro.Schema getSchema() { return SCHEMA$; }
   // Used by DatumWriter.  Applications should not call.
-  public java.lang.Object get(int field$) {
+  public Object get(int field$) {
     switch (field$) {
     case 0: return num;
     case 1: return street;
@@ -99,14 +99,14 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
 
   // Used by DatumReader.  Applications should not call.
   @SuppressWarnings(value="unchecked")
-  public void put(int field$, java.lang.Object value$) {
+  public void put(int field$, Object value$) {
     switch (field$) {
-    case 0: num = (java.lang.Integer)value$; break;
-    case 1: street = (java.lang.String)value$; break;
-    case 2: city = (java.lang.String)value$; break;
-    case 3: state = (java.lang.String)value$; break;
-    case 4: zip = (java.lang.String)value$; break;
-    case 5: appno = (java.lang.String)value$; break;
+    case 0: num = (Integer)value$; break;
+    case 1: street = (String)value$; break;
+    case 2: city = (String)value$; break;
+    case 3: state = (String)value$; break;
+    case 4: zip = (String)value$; break;
+    case 5: appno = (String)value$; break;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
@@ -115,7 +115,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'num' field.
    * @return The value of the 'num' field.
    */
-  public java.lang.Integer getNum() {
+  public Integer getNum() {
     return num;
   }
 
@@ -123,7 +123,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'num' field.
    * @param value the value to set.
    */
-  public void setNum(java.lang.Integer value) {
+  public void setNum(Integer value) {
     this.num = value;
   }
 
@@ -131,7 +131,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'street' field.
    * @return The value of the 'street' field.
    */
-  public java.lang.String getStreet() {
+  public String getStreet() {
     return street;
   }
 
@@ -139,7 +139,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'street' field.
    * @param value the value to set.
    */
-  public void setStreet(java.lang.String value) {
+  public void setStreet(String value) {
     this.street = value;
   }
 
@@ -147,7 +147,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'city' field.
    * @return The value of the 'city' field.
    */
-  public java.lang.String getCity() {
+  public String getCity() {
     return city;
   }
 
@@ -155,7 +155,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'city' field.
    * @param value the value to set.
    */
-  public void setCity(java.lang.String value) {
+  public void setCity(String value) {
     this.city = value;
   }
 
@@ -163,7 +163,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'state' field.
    * @return The value of the 'state' field.
    */
-  public java.lang.String getState() {
+  public String getState() {
     return state;
   }
 
@@ -171,7 +171,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'state' field.
    * @param value the value to set.
    */
-  public void setState(java.lang.String value) {
+  public void setState(String value) {
     this.state = value;
   }
 
@@ -179,7 +179,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'zip' field.
    * @return The value of the 'zip' field.
    */
-  public java.lang.String getZip() {
+  public String getZip() {
     return zip;
   }
 
@@ -187,7 +187,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'zip' field.
    * @param value the value to set.
    */
-  public void setZip(java.lang.String value) {
+  public void setZip(String value) {
     this.zip = value;
   }
 
@@ -195,7 +195,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'appno' field.
    * @return The value of the 'appno' field.
    */
-  public java.lang.String getAppno() {
+  public String getAppno() {
     return appno;
   }
 
@@ -203,7 +203,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'appno' field.
    * @param value the value to set.
    */
-  public void setAppno(java.lang.String value) {
+  public void setAppno(String value) {
     this.appno = value;
   }
 
@@ -211,8 +211,8 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * Creates a new Address RecordBuilder.
    * @return A new Address RecordBuilder
    */
-  public static org.apache.flink.avro.generated.Address.Builder newBuilder() {
-    return new org.apache.flink.avro.generated.Address.Builder();
+  public static Builder newBuilder() {
+    return new Builder();
   }
 
   /**
@@ -220,8 +220,8 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * @param other The existing builder to copy.
    * @return A new Address RecordBuilder
    */
-  public static org.apache.flink.avro.generated.Address.Builder newBuilder(org.apache.flink.avro.generated.Address.Builder other) {
-    return new org.apache.flink.avro.generated.Address.Builder(other);
+  public static Builder newBuilder(Builder other) {
+    return new Builder(other);
   }
 
   /**
@@ -229,8 +229,8 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
    * @param other The existing instance to copy.
    * @return A new Address RecordBuilder
    */
-  public static org.apache.flink.avro.generated.Address.Builder newBuilder(org.apache.flink.avro.generated.Address other) {
-    return new org.apache.flink.avro.generated.Address.Builder(other);
+  public static Builder newBuilder(Address other) {
+    return new Builder(other);
   }
 
   /**
@@ -240,11 +240,11 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
     implements org.apache.avro.data.RecordBuilder<Address> {
 
     private int num;
-    private java.lang.String street;
-    private java.lang.String city;
-    private java.lang.String state;
-    private java.lang.String zip;
-    private java.lang.String appno;
+    private String street;
+    private String city;
+    private String state;
+    private String zip;
+    private String appno;
 
     /** Creates a new Builder */
     private Builder() {
@@ -255,7 +255,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(org.apache.flink.avro.generated.Address.Builder other) {
+    private Builder(Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.num)) {
         this.num = data().deepCopy(fields()[0].schema(), other.num);
@@ -287,7 +287,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
      * Creates a Builder by copying an existing Address instance
      * @param other The existing instance to copy.
      */
-    private Builder(org.apache.flink.avro.generated.Address other) {
+    private Builder(Address other) {
             super(SCHEMA$);
       if (isValidValue(fields()[0], other.num)) {
         this.num = data().deepCopy(fields()[0].schema(), other.num);
@@ -319,7 +319,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'num' field.
       * @return The value.
       */
-    public java.lang.Integer getNum() {
+    public Integer getNum() {
       return num;
     }
 
@@ -328,7 +328,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'num'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setNum(int value) {
+    public Builder setNum(int value) {
       validate(fields()[0], value);
       this.num = value;
       fieldSetFlags()[0] = true;
@@ -348,7 +348,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'num' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearNum() {
+    public Builder clearNum() {
       fieldSetFlags()[0] = false;
       return this;
     }
@@ -357,7 +357,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'street' field.
       * @return The value.
       */
-    public java.lang.String getStreet() {
+    public String getStreet() {
       return street;
     }
 
@@ -366,7 +366,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'street'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setStreet(java.lang.String value) {
+    public Builder setStreet(String value) {
       validate(fields()[1], value);
       this.street = value;
       fieldSetFlags()[1] = true;
@@ -386,7 +386,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'street' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearStreet() {
+    public Builder clearStreet() {
       street = null;
       fieldSetFlags()[1] = false;
       return this;
@@ -396,7 +396,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'city' field.
       * @return The value.
       */
-    public java.lang.String getCity() {
+    public String getCity() {
       return city;
     }
 
@@ -405,7 +405,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'city'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setCity(java.lang.String value) {
+    public Builder setCity(String value) {
       validate(fields()[2], value);
       this.city = value;
       fieldSetFlags()[2] = true;
@@ -425,7 +425,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'city' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearCity() {
+    public Builder clearCity() {
       city = null;
       fieldSetFlags()[2] = false;
       return this;
@@ -435,7 +435,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'state' field.
       * @return The value.
       */
-    public java.lang.String getState() {
+    public String getState() {
       return state;
     }
 
@@ -444,7 +444,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'state'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setState(java.lang.String value) {
+    public Builder setState(String value) {
       validate(fields()[3], value);
       this.state = value;
       fieldSetFlags()[3] = true;
@@ -464,7 +464,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'state' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearState() {
+    public Builder clearState() {
       state = null;
       fieldSetFlags()[3] = false;
       return this;
@@ -474,7 +474,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'zip' field.
       * @return The value.
       */
-    public java.lang.String getZip() {
+    public String getZip() {
       return zip;
     }
 
@@ -483,7 +483,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'zip'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setZip(java.lang.String value) {
+    public Builder setZip(String value) {
       validate(fields()[4], value);
       this.zip = value;
       fieldSetFlags()[4] = true;
@@ -503,7 +503,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'zip' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearZip() {
+    public Builder clearZip() {
       zip = null;
       fieldSetFlags()[4] = false;
       return this;
@@ -513,7 +513,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'appno' field.
       * @return The value.
       */
-    public java.lang.String getAppno() {
+    public String getAppno() {
       return appno;
     }
 
@@ -522,7 +522,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'appno'.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder setAppno(java.lang.String value) {
+    public Builder setAppno(String value) {
       validate(fields()[5], value);
       this.appno = value;
       fieldSetFlags()[5] = true;
@@ -542,7 +542,7 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
       * Clears the value of the 'appno' field.
       * @return This builder.
       */
-    public org.apache.flink.avro.generated.Address.Builder clearAppno() {
+    public Builder clearAppno() {
       appno = null;
       fieldSetFlags()[5] = false;
       return this;
@@ -553,14 +553,14 @@ public class Address extends org.apache.avro.specific.SpecificRecordBase impleme
     public Address build() {
       try {
         Address record = new Address();
-        record.num = fieldSetFlags()[0] ? this.num : (java.lang.Integer) defaultValue(fields()[0]);
-        record.street = fieldSetFlags()[1] ? this.street : (java.lang.String) defaultValue(fields()[1]);
-        record.city = fieldSetFlags()[2] ? this.city : (java.lang.String) defaultValue(fields()[2]);
-        record.state = fieldSetFlags()[3] ? this.state : (java.lang.String) defaultValue(fields()[3]);
-        record.zip = fieldSetFlags()[4] ? this.zip : (java.lang.String) defaultValue(fields()[4]);
-        record.appno = fieldSetFlags()[5] ? this.appno : (java.lang.String) defaultValue(fields()[5]);
+        record.num = fieldSetFlags()[0] ? this.num : (Integer) defaultValue(fields()[0]);
+        record.street = fieldSetFlags()[1] ? this.street : (String) defaultValue(fields()[1]);
+        record.city = fieldSetFlags()[2] ? this.city : (String) defaultValue(fields()[2]);
+        record.state = fieldSetFlags()[3] ? this.state : (String) defaultValue(fields()[3]);
+        record.zip = fieldSetFlags()[4] ? this.zip : (String) defaultValue(fields()[4]);
+        record.appno = fieldSetFlags()[5] ? this.appno : (String) defaultValue(fields()[5]);
         return record;
-      } catch (java.lang.Exception e) {
+      } catch (Exception e) {
         throw new org.apache.avro.AvroRuntimeException(e);
       }
     }

@@ -197,7 +197,7 @@ public class HadoopInputFormatTest {
 		public DummyVoidKeyInputFormat() {}
 
 		@Override
-		public org.apache.hadoop.mapred.RecordReader<Void, T> getRecordReader(org.apache.hadoop.mapred.InputSplit inputSplit, JobConf jobConf, Reporter reporter) throws IOException {
+		public RecordReader<Void, T> getRecordReader(InputSplit inputSplit, JobConf jobConf, Reporter reporter) throws IOException {
 			return null;
 		}
 	}

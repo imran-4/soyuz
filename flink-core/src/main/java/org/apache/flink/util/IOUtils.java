@@ -30,8 +30,6 @@ import java.nio.file.Path;
 
 import static java.util.Arrays.asList;
 
-import static java.util.Arrays.asList;
-
 /**
  * An utility class for I/O related functionality.
  */

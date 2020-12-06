@@ -37,7 +37,7 @@ import java.io.Serializable;
  * are formats like ORC or Parquet.
  *
  * <p>The outer {@code 'BulkFormat'} class acts mainly as a configuration holder and factory for the reader.
- * The actual reading is done by the {@link BulkFormat.Reader}, which is created in the
+ * The actual reading is done by the {@link Reader}, which is created in the
  * {@link BulkFormat#createReader(Configuration, FileSourceSplit)} method. If a bulk reader is created
  * based on a checkpoint during checkpointed streaming execution, then the reader is re-created in
  * the {@link BulkFormat#restoreReader(Configuration, FileSourceSplit)} method.
@@ -87,7 +87,7 @@ import java.io.Serializable;
  * do the streaming and batch data processing. Passing records in batches (rather than one-at-a-time)
  * much reduce the thread-to-thread handover overhead.
  *
- * <p>For the {@code BulkFormat}, one batch (as returned by {@link BulkFormat.Reader#readBatch()}) is
+ * <p>For the {@code BulkFormat}, one batch (as returned by {@link Reader#readBatch()}) is
  * handed over as one.
  */
 @PublicEvolving
@@ -98,7 +98,7 @@ public interface BulkFormat<T, SplitT extends FileSourceSplit> extends Serializa
 	 * starting at the {@link FileSourceSplit#offset()} split's offset} and reads
 	 * {@link FileSourceSplit#length() length} bytes after the offset.
 	 */
-	BulkFormat.Reader<T> createReader(Configuration config, SplitT split) throws IOException;
+	Reader<T> createReader(Configuration config, SplitT split) throws IOException;
 
 	/**
 	 * Creates a new reader that reads from {@code split.path()} starting at {@code offset} and reads
@@ -106,7 +106,7 @@ public interface BulkFormat<T, SplitT extends FileSourceSplit> extends Serializa
 	 * read and discarded after the offset. This is typically part of restoring a reader to a checkpointed
 	 * position.
 	 */
-	BulkFormat.Reader<T> restoreReader(Configuration config, SplitT split) throws IOException;
+	Reader<T> restoreReader(Configuration config, SplitT split) throws IOException;
 
 	/**
 	 * Checks whether this format is splittable. Splittable formats allow Flink to create multiple splits

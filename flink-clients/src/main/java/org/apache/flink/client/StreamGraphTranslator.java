@@ -33,7 +33,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * {@link FlinkPipelineTranslator} for DataStream API {@link StreamGraph StreamGraphs}.
  *
  * <p>Note: this is used through reflection in
- * {@link org.apache.flink.client.FlinkPipelineTranslationUtil}.
+ * {@link FlinkPipelineTranslationUtil}.
  */
 @SuppressWarnings("unused")
 public class StreamGraphTranslator implements FlinkPipelineTranslator {

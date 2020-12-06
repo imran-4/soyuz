@@ -26,7 +26,7 @@ import java.io.InputStream;
 /**
  * Interface for a data input stream to a file on a {@link FileSystem}.
  *
- * <p>This extends the {@link java.io.InputStream} with methods for accessing
+ * <p>This extends the {@link InputStream} with methods for accessing
  * the stream's {@link #getPos() current position} and
  * {@link #seek(long) seeking} to a desired position.
  */

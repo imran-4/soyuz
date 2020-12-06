@@ -53,8 +53,8 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link org.apache.flink.client.program.PackagedProgramRetriever PackagedProgramRetriever}
- * which creates the {@link org.apache.flink.client.program.PackagedProgram PackagedProgram} containing
+ * A {@link PackagedProgramRetriever PackagedProgramRetriever}
+ * which creates the {@link PackagedProgram PackagedProgram} containing
  * the user's {@code main()} from a class on the class path.
  */
 @Internal

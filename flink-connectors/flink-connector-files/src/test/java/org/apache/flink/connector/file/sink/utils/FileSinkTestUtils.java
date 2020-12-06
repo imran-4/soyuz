@@ -95,7 +95,7 @@ public class FileSinkTestUtils {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public String getBucketId(String element, BucketAssigner.Context context) {
+		public String getBucketId(String element, Context context) {
 			return element;
 		}
 

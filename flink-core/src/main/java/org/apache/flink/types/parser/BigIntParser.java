@@ -24,7 +24,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.ConfigConstants;
 
 /**
- * Parses a text field into a {@link java.math.BigInteger}.
+ * Parses a text field into a {@link BigInteger}.
  */
 @PublicEvolving
 public class BigIntParser extends FieldParser<BigInteger> {

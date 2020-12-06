@@ -56,12 +56,12 @@ public class KafkaPartitionDiscoverer extends AbstractPartitionDiscoverer {
 	}
 
 	@Override
-	protected List<String> getAllTopics() throws AbstractPartitionDiscoverer.WakeupException {
+	protected List<String> getAllTopics() throws WakeupException {
 		try {
 			return new ArrayList<>(kafkaConsumer.listTopics().keySet());
 		} catch (org.apache.kafka.common.errors.WakeupException e) {
 			// rethrow our own wakeup exception
-			throw new AbstractPartitionDiscoverer.WakeupException();
+			throw new WakeupException();
 		}
 	}
 

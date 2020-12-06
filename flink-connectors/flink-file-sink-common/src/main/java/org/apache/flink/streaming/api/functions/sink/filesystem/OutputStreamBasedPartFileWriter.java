@@ -32,7 +32,7 @@ import org.apache.flink.util.IOUtils;
 import java.io.IOException;
 
 /**
- * The base class for all the part file writer that use {@link org.apache.flink.core.fs.RecoverableFsDataOutputStream}.
+ * The base class for all the part file writer that use {@link RecoverableFsDataOutputStream}.
  * @param <IN> the element type
  * @param <BucketID> the bucket type
  */

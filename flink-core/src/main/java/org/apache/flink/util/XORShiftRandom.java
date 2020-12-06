@@ -24,7 +24,7 @@ import java.util.Random;
 
 /**
  * Implement a random number generator based on the XORShift algorithm discovered by George Marsaglia.
- * This RNG is observed 4.5 times faster than {@link java.util.Random} in benchmark, with the cost
+ * This RNG is observed 4.5 times faster than {@link Random} in benchmark, with the cost
  * that abandon thread-safety. So it's recommended to create a new {@link XORShiftRandom} for each
  * thread.
  *

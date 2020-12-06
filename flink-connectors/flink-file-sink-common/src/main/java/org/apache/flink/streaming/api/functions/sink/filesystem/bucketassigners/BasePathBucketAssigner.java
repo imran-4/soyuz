@@ -32,7 +32,7 @@ public class BasePathBucketAssigner<T> implements BucketAssigner<T, String> {
 	private static final long serialVersionUID = -6033643155550226022L;
 
 	@Override
-	public String getBucketId(T element, BucketAssigner.Context context) {
+	public String getBucketId(T element, Context context) {
 		return "";
 	}
 

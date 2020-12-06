@@ -23,12 +23,12 @@ import com.datastax.driver.mapping.Mapper;
 import java.io.Serializable;
 
 /**
- * This class is used to configure a {@link com.datastax.driver.mapping.Mapper} after deployment.
+ * This class is used to configure a {@link Mapper} after deployment.
  */
 public interface MapperOptions extends Serializable {
 
 	/**
-	 * Returns an array of {@link com.datastax.driver.mapping.Mapper.Option} that are used configure the mapper.
+	 * Returns an array of {@link Mapper.Option} that are used configure the mapper.
 	 *
 	 * @return array of options used to configure the mapper.
 	 */

@@ -330,7 +330,7 @@ public class Plan implements Visitable<Operator<?>>, Pipeline {
 	 *
 	 * @param entry contains all relevant information
 	 * @param name user defined name of that file
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	public void registerCachedFile(String name, DistributedCacheEntry entry) throws IOException {
 		if (!this.cacheFile.containsKey(name)) {

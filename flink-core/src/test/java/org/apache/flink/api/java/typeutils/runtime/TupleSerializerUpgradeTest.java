@@ -69,7 +69,7 @@ public class TupleSerializerUpgradeTest
 	// ----------------------------------------------------------------------------------------------
 
 	public static final class TupleSerializerSetup
-			implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Tuple3<String, String, Integer>> {
+			implements PreUpgradeSetup<Tuple3<String, String, Integer>> {
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
 		@Override
@@ -89,7 +89,7 @@ public class TupleSerializerUpgradeTest
 	}
 
 	public static final class TupleSerializerVerifier
-			implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Tuple3<String, String, Integer>> {
+			implements UpgradeVerifier<Tuple3<String, String, Integer>> {
 
 		@SuppressWarnings({"unchecked", "rawtypes"})
 		@Override

@@ -72,7 +72,7 @@ public class SafetyNetCloseableRegistryTest
 	}
 
 	@Override
-	protected AbstractCloseableRegistryTest.ProducerThread<
+	protected ProducerThread<
 		WrappingProxyCloseable<? extends Closeable>,
 		SafetyNetCloseableRegistry.PhantomDelegatingCloseableRef> createProducerThread(
 		AbstractCloseableRegistry<
@@ -81,7 +81,7 @@ public class SafetyNetCloseableRegistryTest
 		AtomicInteger unclosedCounter,
 		int maxStreams) {
 
-		return new AbstractCloseableRegistryTest.ProducerThread
+		return new ProducerThread
 			<WrappingProxyCloseable<? extends Closeable>,
 				SafetyNetCloseableRegistry.PhantomDelegatingCloseableRef>(registry, unclosedCounter, maxStreams) {
 
@@ -212,7 +212,7 @@ public class SafetyNetCloseableRegistryTest
 
 		try {
 			new SafetyNetCloseableRegistry(() -> new OutOfMemoryReaperThread());
-		} catch (java.lang.OutOfMemoryError error) {
+		} catch (OutOfMemoryError error) {
 		}
 		Assert.assertFalse(SafetyNetCloseableRegistry.isReaperThreadRunning());
 
@@ -239,7 +239,7 @@ public class SafetyNetCloseableRegistryTest
 
 		@Override
 		public synchronized void start() {
-			throw new java.lang.OutOfMemoryError();
+			throw new OutOfMemoryError();
 		}
 	}
 }

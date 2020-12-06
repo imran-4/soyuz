@@ -219,7 +219,7 @@ public interface FieldNamedPreparedStatement extends AutoCloseable {
 	 *
 	 * @see PreparedStatement#setDate(int, Date)
 	 */
-	void setDate(int fieldIndex, java.sql.Date x)
+	void setDate(int fieldIndex, Date x)
 		throws SQLException;
 
 	/**
@@ -229,7 +229,7 @@ public interface FieldNamedPreparedStatement extends AutoCloseable {
 	 *
 	 * @see PreparedStatement#setTime(int, Time)
 	 */
-	void setTime(int fieldIndex, java.sql.Time x)
+	void setTime(int fieldIndex, Time x)
 		throws SQLException;
 
 	/**
@@ -240,7 +240,7 @@ public interface FieldNamedPreparedStatement extends AutoCloseable {
 	 *
 	 * @see PreparedStatement#setTimestamp(int, Timestamp)
 	 * */
-	void setTimestamp(int fieldIndex, java.sql.Timestamp x)
+	void setTimestamp(int fieldIndex, Timestamp x)
 		throws SQLException;
 
 	/**

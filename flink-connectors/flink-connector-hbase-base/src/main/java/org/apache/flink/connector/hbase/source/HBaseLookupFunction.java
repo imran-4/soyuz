@@ -86,11 +86,11 @@ public class HBaseLookupFunction extends TableFunction<Row> {
 		return hbaseTableSchema.convertsToTableSchema().toRowType();
 	}
 
-	private org.apache.hadoop.conf.Configuration prepareRuntimeConfiguration() {
+	private Configuration prepareRuntimeConfiguration() {
 		// create default configuration from current runtime env (`hbase-site.xml` in classpath) first,
 		// and overwrite configuration using serialized configuration from client-side env (`hbase-site.xml` in classpath).
 		// user params from client-side have the highest priority
-		org.apache.hadoop.conf.Configuration runtimeConfig = HBaseConfigurationUtil.deserializeConfiguration(
+		Configuration runtimeConfig = HBaseConfigurationUtil.deserializeConfiguration(
 			serializedConfig,
 			HBaseConfigurationUtil.getHBaseConfiguration());
 
@@ -106,7 +106,7 @@ public class HBaseLookupFunction extends TableFunction<Row> {
 	@Override
 	public void open(FunctionContext context) {
 		LOG.info("start open ...");
-		org.apache.hadoop.conf.Configuration config = prepareRuntimeConfiguration();
+		Configuration config = prepareRuntimeConfiguration();
 		try {
 			hConnection = ConnectionFactory.createConnection(config);
 			table = (HTable) hConnection.getTable(TableName.valueOf(hTableName));

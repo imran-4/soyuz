@@ -69,7 +69,7 @@ public class MapSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Map<
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class MapSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Map<Integer, String>> {
+	public static final class MapSerializerSetup implements PreUpgradeSetup<Map<Integer, String>> {
 		@Override
 		public TypeSerializer<Map<Integer, String>> createPriorSerializer() {
 			return new MapSerializer<>(IntSerializer.INSTANCE, StringSerializer.INSTANCE);
@@ -88,7 +88,7 @@ public class MapSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Map<
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class MapSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Map<Integer, String>> {
+	public static final class MapSerializerVerifier implements UpgradeVerifier<Map<Integer, String>> {
 		@Override
 		public TypeSerializer<Map<Integer, String>> createUpgradedSerializer() {
 			return new MapSerializer<>(IntSerializer.INSTANCE, StringSerializer.INSTANCE);

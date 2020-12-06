@@ -178,7 +178,7 @@ public class PubSubSink<IN> extends RichSinkFunction<IN> implements Checkpointed
 	}
 
 	@Override
-	public void invoke(IN message, SinkFunction.Context context) {
+	public void invoke(IN message, Context context) {
 		PubsubMessage pubsubMessage = PubsubMessage
 			.newBuilder()
 			.setData(ByteString.copyFrom(serializationSchema.serialize(message)))

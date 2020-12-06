@@ -61,7 +61,7 @@ public interface RichFunction extends Function {
 	 *                   runtime catches an exception, it aborts the task and lets the fail-over logic
 	 *                   decide whether to retry the task execution.
 	 *
-	 * @see org.apache.flink.configuration.Configuration
+	 * @see Configuration
 	 */
 	void open(Configuration parameters) throws Exception;
 
@@ -101,7 +101,7 @@ public interface RichFunction extends Function {
 	 * available if the function is part of an iteration. Otherwise, this method throws an exception.
 	 *
 	 * @return The IterationRuntimeContext.
-	 * @throws java.lang.IllegalStateException Thrown, if the function is not executed as part of an iteration.
+	 * @throws IllegalStateException Thrown, if the function is not executed as part of an iteration.
 	 */
 	IterationRuntimeContext getIterationRuntimeContext();
 

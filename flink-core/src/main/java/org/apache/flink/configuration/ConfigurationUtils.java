@@ -63,7 +63,7 @@ public class ConfigurationUtils {
 
 	/**
 	 * Extracts the task manager directories for temporary files as defined by
-	 * {@link org.apache.flink.configuration.CoreOptions#TMP_DIRS}.
+	 * {@link CoreOptions#TMP_DIRS}.
 	 *
 	 * @param configuration configuration object
 	 * @return array of configured directories (in order)

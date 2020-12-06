@@ -353,7 +353,7 @@ public class FileWriterTest {
 		}
 
 		@Override
-		public String getBucketId(String element, BucketAssigner.Context context) {
+		public String getBucketId(String element, Context context) {
 			Long elementTimestamp = context.timestamp();
 			long watermark = context.currentWatermark();
 			long processingTime = context.currentProcessingTime();

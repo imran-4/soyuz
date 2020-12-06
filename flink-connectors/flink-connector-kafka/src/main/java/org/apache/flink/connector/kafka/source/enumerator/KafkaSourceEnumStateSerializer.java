@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The {@link org.apache.flink.core.io.SimpleVersionedSerializer Serializer} for the enumerator state of
+ * The {@link SimpleVersionedSerializer Serializer} for the enumerator state of
  * Kafka source.
  */
 public class KafkaSourceEnumStateSerializer implements SimpleVersionedSerializer<KafkaSourceEnumState> {

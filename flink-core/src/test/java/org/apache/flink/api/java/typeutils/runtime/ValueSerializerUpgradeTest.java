@@ -62,7 +62,7 @@ public class ValueSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Va
 		return testSpecifications;
 	}
 
-	public static final class ValueSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<NameValue> {
+	public static final class ValueSerializerSetup implements PreUpgradeSetup<NameValue> {
 		@Override
 		public TypeSerializer<NameValue> createPriorSerializer() {
 			return new ValueSerializer<>(NameValue.class);
@@ -76,7 +76,7 @@ public class ValueSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Va
 		}
 	}
 
-	public static final class ValueSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<NameValue> {
+	public static final class ValueSerializerVerifier implements UpgradeVerifier<NameValue> {
 		@Override
 		public TypeSerializer<NameValue> createUpgradedSerializer() {
 			return new ValueSerializer<>(NameValue.class);

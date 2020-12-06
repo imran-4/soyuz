@@ -69,7 +69,7 @@ public interface Accumulator<V, R extends Serializable> extends Serializable, Cl
 
 	/**
 	 * Duplicates the accumulator. All subclasses need to properly implement
-	 * cloning and cannot throw a {@link java.lang.CloneNotSupportedException}
+	 * cloning and cannot throw a {@link CloneNotSupportedException}
 	 *
 	 * @return The duplicated accumulator.
 	 */

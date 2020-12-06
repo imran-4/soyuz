@@ -169,7 +169,7 @@ public class FileWriterBucketStateSerializer
 			current = inProgressFileParser.apply(dataInputView);
 		}
 
-		HashMap<Long, List<InProgressFileWriter.PendingFileRecoverable>> pendingFileRecoverablesPerCheckpoint = new HashMap<>();
+		HashMap<Long, List<PendingFileRecoverable>> pendingFileRecoverablesPerCheckpoint = new HashMap<>();
 		if (pendingFileParser != null) {
 			final int pendingFileRecoverableSerializerVersion = dataInputView.readInt();
 			final int numCheckpoints = dataInputView.readInt();
@@ -178,7 +178,7 @@ public class FileWriterBucketStateSerializer
 				final long checkpointId = dataInputView.readLong();
 				final int numOfPendingFileRecoverables = dataInputView.readInt();
 
-				final List<InProgressFileWriter.PendingFileRecoverable> pendingFileRecoverables = new ArrayList<>(numOfPendingFileRecoverables);
+				final List<PendingFileRecoverable> pendingFileRecoverables = new ArrayList<>(numOfPendingFileRecoverables);
 				for (int j = 0; j < numOfPendingFileRecoverables; j++) {
 					final byte[] bytes = new byte[dataInputView.readInt()];
 					dataInputView.readFully(bytes);

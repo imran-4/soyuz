@@ -26,7 +26,7 @@ import java.io.Serializable;
  * This interface must be implemented by all kind of input splits that can be assigned to input formats.
  * 
  * <p>Input splits are transferred in serialized form via the messages, so they need to be serializable
- * as defined by {@link java.io.Serializable}.</p>
+ * as defined by {@link Serializable}.</p>
  */
 @Public
 public interface InputSplit extends Serializable {

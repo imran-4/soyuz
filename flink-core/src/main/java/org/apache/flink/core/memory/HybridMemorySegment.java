@@ -42,7 +42,7 @@ import static org.apache.flink.core.memory.MemoryUtils.getByteBufferAddress;
  * <p>This class specializes byte access and byte copy calls for heap memory, while reusing the
  * multi-byte type accesses and cross-segment operations from the MemorySegment.
  *
- * <p>This class subsumes the functionality of the {@link org.apache.flink.core.memory.HeapMemorySegment},
+ * <p>This class subsumes the functionality of the {@link HeapMemorySegment},
  * but is a bit less efficient for operations on individual bytes.
  *
  * <p>Note that memory segments should usually not be allocated manually, but rather through the
@@ -60,7 +60,7 @@ public final class HybridMemorySegment extends MemorySegment {
 
 	/**
 	  * Creates a new memory segment that represents the memory backing the given direct byte buffer.
-	  * Note that the given ByteBuffer must be direct {@link java.nio.ByteBuffer#allocateDirect(int)},
+	  * Note that the given ByteBuffer must be direct {@link ByteBuffer#allocateDirect(int)},
 	  * otherwise this method with throw an IllegalArgumentException.
 	  *
 	  * <p>The memory segment references the given owner.
@@ -110,10 +110,6 @@ public final class HybridMemorySegment extends MemorySegment {
 		} else {
 			throw new IllegalStateException("Memory segment does not represent off heap memory");
 		}
-	}
-
-	public boolean isOffHeap() {
-		return offHeapBuffer != null;
 	}
 
 	@Override

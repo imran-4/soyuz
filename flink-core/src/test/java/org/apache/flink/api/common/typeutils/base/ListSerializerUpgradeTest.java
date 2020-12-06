@@ -69,7 +69,7 @@ public class ListSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Lis
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class ListSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<List<String>> {
+	public static final class ListSerializerSetup implements PreUpgradeSetup<List<String>> {
 		@Override
 		public TypeSerializer<List<String>> createPriorSerializer() {
 			return new ListSerializer<>(StringSerializer.INSTANCE);
@@ -87,7 +87,7 @@ public class ListSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Lis
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class ListSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<List<String>> {
+	public static final class ListSerializerVerifier implements UpgradeVerifier<List<String>> {
 		@Override
 		public TypeSerializer<List<String>> createUpgradedSerializer() {
 			return new ListSerializer<>(StringSerializer.INSTANCE);

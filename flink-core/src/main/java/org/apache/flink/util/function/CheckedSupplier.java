@@ -23,7 +23,7 @@ import org.apache.flink.util.FlinkException;
 import java.util.function.Supplier;
 
 /**
- * Similar to {@link java.util.function.Supplier} but can throw {@link Exception}.
+ * Similar to {@link Supplier} but can throw {@link Exception}.
  */
 @FunctionalInterface
 public interface CheckedSupplier<R> extends SupplierWithException<R, Exception> {

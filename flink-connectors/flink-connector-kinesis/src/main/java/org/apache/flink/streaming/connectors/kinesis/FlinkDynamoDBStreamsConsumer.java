@@ -69,7 +69,7 @@ public class FlinkDynamoDBStreamsConsumer<T> extends FlinkKinesisConsumer<T> {
 	@Override
 	protected KinesisDataFetcher<T> createFetcher(
 			List<String> streams,
-			SourceFunction.SourceContext<T> sourceContext,
+			SourceContext<T> sourceContext,
 			RuntimeContext runtimeContext,
 			Properties configProps,
 			KinesisDeserializationSchema<T> deserializationSchema) {

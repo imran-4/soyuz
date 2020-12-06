@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @see org.apache.flink.api.common.functions.FlatMapFunction
+ * @see FlatMapFunction
  */
 @Internal
 public class FlatMapOperatorBase<IN, OUT, FT extends FlatMapFunction<IN, OUT>> extends SingleInputOperator<IN, OUT, FT> {

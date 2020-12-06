@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 /**
  * The SplitFetcherManager for Kafka source. This class is needed to help
  * commit the offsets to Kafka using the KafkaConsumer inside the
- * {@link org.apache.flink.connector.kafka.source.reader.KafkaPartitionSplitReader}.
+ * {@link KafkaPartitionSplitReader}.
  */
 public class KafkaSourceFetcherManager<T>
 		extends SingleThreadFetcherManager<Tuple3<T, Long, Long>, KafkaPartitionSplit> {

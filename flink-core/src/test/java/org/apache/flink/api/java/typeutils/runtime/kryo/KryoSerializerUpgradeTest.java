@@ -89,7 +89,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 	//  Specification for "kryo-type-serializer-empty-config"
 	// ----------------------------------------------------------------------------------------------
 
-	public static final class KryoTypeSerializerEmptyConfigSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Animal> {
+	public static final class KryoTypeSerializerEmptyConfigSetup implements PreUpgradeSetup<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createPriorSerializer() {
@@ -102,7 +102,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 		}
 	}
 
-	public static final class KryoTypeSerializerEmptyConfigVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Animal> {
+	public static final class KryoTypeSerializerEmptyConfigVerifier implements UpgradeVerifier<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createUpgradedSerializer() {
@@ -124,7 +124,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 	//  Specification for "kryo-type-serializer-empty-config-then-some-config"
 	// ----------------------------------------------------------------------------------------------
 
-	public static final class KryoTypeSerializerWithUnrelatedConfigVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Animal> {
+	public static final class KryoTypeSerializerWithUnrelatedConfigVerifier implements UpgradeVerifier<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createUpgradedSerializer() {
@@ -154,7 +154,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 	//  Specification for "kryo-type-serializer-changed-registration-order"
 	// ----------------------------------------------------------------------------------------------
 
-	public static final class KryoTypeSerializerChangedRegistrationOrderSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Animal> {
+	public static final class KryoTypeSerializerChangedRegistrationOrderSetup implements PreUpgradeSetup<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createPriorSerializer() {
@@ -172,7 +172,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 		}
 	}
 
-	public static final class KryoTypeSerializerChangedRegistrationOrderVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Animal> {
+	public static final class KryoTypeSerializerChangedRegistrationOrderVerifier implements UpgradeVerifier<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createUpgradedSerializer() {
@@ -203,7 +203,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 	//  Specification for "kryo-custom-type-serializer-changed-registration-order"
 	// ----------------------------------------------------------------------------------------------
 
-	public static final class KryoCustomTypeSerializerChangedRegistrationOrderSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Animal> {
+	public static final class KryoCustomTypeSerializerChangedRegistrationOrderSetup implements PreUpgradeSetup<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createPriorSerializer() {
@@ -225,7 +225,7 @@ public class KryoSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Obj
 		}
 	}
 
-	public static final class KryoCustomTypeSerializerChangedRegistrationOrderVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Animal> {
+	public static final class KryoCustomTypeSerializerChangedRegistrationOrderVerifier implements UpgradeVerifier<Animal> {
 
 		@Override
 		public TypeSerializer<Animal> createUpgradedSerializer() {

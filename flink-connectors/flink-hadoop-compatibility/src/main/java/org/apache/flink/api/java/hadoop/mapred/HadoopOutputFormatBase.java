@@ -106,7 +106,7 @@ public abstract class HadoopOutputFormatBase<K, V, T> extends HadoopOutputFormat
 	 * create the temporary output file for hadoop RecordWriter.
 	 * @param taskNumber The number of the parallel instance.
 	 * @param numTasks The number of parallel tasks.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	@Override
 	public void open(int taskNumber, int numTasks) throws IOException {
@@ -142,7 +142,7 @@ public abstract class HadoopOutputFormatBase<K, V, T> extends HadoopOutputFormat
 
 	/**
 	 * commit the task by moving the output file out from the temporary directory.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	@Override
 	public void close() throws IOException {

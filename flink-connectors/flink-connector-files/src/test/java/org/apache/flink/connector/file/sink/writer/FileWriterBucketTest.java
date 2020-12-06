@@ -389,17 +389,17 @@ public class FileWriterBucketTest {
 		}
 
 		@Override
-		public RecoverableFsDataOutputStream recover(RecoverableWriter.ResumeRecoverable resumable) throws IOException {
+		public RecoverableFsDataOutputStream recover(ResumeRecoverable resumable) throws IOException {
 			return new NoOpRecoverableFsDataOutputStream() {
 				@Override
-				public RecoverableFsDataOutputStream.Committer closeForCommit() throws IOException {
+				public Committer closeForCommit() throws IOException {
 					return new NoOpCommitter();
 				}
 			};
 		}
 
 		@Override
-		public RecoverableFsDataOutputStream.Committer recoverForCommit(RecoverableWriter.CommitRecoverable resumable) throws IOException {
+		public RecoverableFsDataOutputStream.Committer recoverForCommit(CommitRecoverable resumable) throws IOException {
 			checkArgument(resumable instanceof NoOpRecoverable);
 			return new NoOpCommitter();
 		}

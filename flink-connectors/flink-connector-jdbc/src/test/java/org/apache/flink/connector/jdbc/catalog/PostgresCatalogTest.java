@@ -115,7 +115,7 @@ public class PostgresCatalogTest extends PostgresCatalogTestBase {
 	}
 
 	@Test
-	public void testGetTable() throws org.apache.flink.table.catalog.exceptions.TableNotExistException {
+	public void testGetTable() throws TableNotExistException {
 		// test postgres.public.user1
 		TableSchema schema = getSimpleTable().schema;
 

@@ -28,7 +28,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * A legacy serializable representation of a AWS Kinesis Stream shard.
  * It is basically a wrapper class around the information provided along
- * with {@link com.amazonaws.services.kinesis.model.Shard}.
+ * with {@link Shard}.
  *
  * @deprecated Will be remove in a future version in favor of {@link StreamShardHandle}.
  */

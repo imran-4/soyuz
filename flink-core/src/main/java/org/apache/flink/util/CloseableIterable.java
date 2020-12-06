@@ -56,6 +56,6 @@ public interface CloseableIterable<T> extends Iterable<T>, Closeable {
 	 * Returns an empty iterator.
 	 */
 	static <T> CloseableIterable<T> empty() {
-		return new CloseableIterable.Empty<>();
+		return new Empty<>();
 	}
 }

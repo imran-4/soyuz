@@ -60,7 +60,7 @@ import java.util.Map;
  * A InputFormat to read from HCatalog tables.
  * The InputFormat supports projection (selection and order of fields) and partition filters.
  *
- * <p>Data can be returned as {@link org.apache.hive.hcatalog.data.HCatRecord} or Flink-native tuple.
+ * <p>Data can be returned as {@link HCatRecord} or Flink-native tuple.
  *
  * <p>Note: Flink tuples might only support a limited number of fields (depending on the API).
  *
@@ -86,13 +86,13 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 
 	/**
 	 * Creates a HCatInputFormat for the given database and table.
-	 * By default, the InputFormat returns {@link org.apache.hive.hcatalog.data.HCatRecord}.
+	 * By default, the InputFormat returns {@link HCatRecord}.
 	 * The return type of the InputFormat can be changed to Flink-native tuples by calling
 	 * {@link HCatInputFormatBase#asFlinkTuples()}.
 	 *
 	 * @param database The name of the database to read from.
 	 * @param table The name of the table to read.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	public HCatInputFormatBase(String database, String table) throws IOException {
 		this(database, table, new Configuration());
@@ -100,15 +100,15 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 
 	/**
 	 * Creates a HCatInputFormat for the given database, table, and
-	 * {@link org.apache.hadoop.conf.Configuration}.
-	 * By default, the InputFormat returns {@link org.apache.hive.hcatalog.data.HCatRecord}.
+	 * {@link Configuration}.
+	 * By default, the InputFormat returns {@link HCatRecord}.
 	 * The return type of the InputFormat can be changed to Flink-native tuples by calling
 	 * {@link HCatInputFormatBase#asFlinkTuples()}.
 	 *
 	 * @param database The name of the database to read from.
 	 * @param table The name of the table to read.
 	 * @param config The Configuration for the InputFormat.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	public HCatInputFormatBase(String database, String table, Configuration config) throws IOException {
 		super();
@@ -129,7 +129,7 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 	 *
 	 * @param fields The fields and their order which are returned by the InputFormat.
 	 * @return This InputFormat with specified return fields.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	public HCatInputFormatBase<T> getFields(String... fields) throws IOException {
 
@@ -153,7 +153,7 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 	 *
 	 * @param filter A SQL-like filter condition on the table's partition columns.
 	 * @return This InputFormat with specified partition filter.
-	 * @throws java.io.IOException
+	 * @throws IOException
 	 */
 	public HCatInputFormatBase<T> withFilter(String filter) throws IOException {
 
@@ -165,12 +165,12 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 
 	/**
 	 * Specifies that the InputFormat returns Flink tuples instead of
-	 * {@link org.apache.hive.hcatalog.data.HCatRecord}.
+	 * {@link HCatRecord}.
 	 *
 	 * <p>Note: Flink tuples might only support a limited number of fields (depending on the API).
 	 *
 	 * @return This InputFormat.
-	 * @throws org.apache.hive.hcatalog.common.HCatException
+	 * @throws HCatException
 	 */
 	public HCatInputFormatBase<T> asFlinkTuples() throws HCatException {
 
@@ -233,7 +233,7 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 	}
 
 	/**
-	 * Returns the {@link org.apache.hadoop.conf.Configuration} of the HCatInputFormat.
+	 * Returns the {@link Configuration} of the HCatInputFormat.
 	 *
 	 * @return The Configuration of the HCatInputFormat.
 	 */
@@ -242,7 +242,7 @@ public abstract class HCatInputFormatBase<T> extends RichInputFormat<T, HadoopIn
 	}
 
 	/**
-	 * Returns the {@link org.apache.hive.hcatalog.data.schema.HCatSchema} of the {@link org.apache.hive.hcatalog.data.HCatRecord}
+	 * Returns the {@link HCatSchema} of the {@link HCatRecord}
 	 * returned by this InputFormat.
 	 *
 	 * @return The HCatSchema of the HCatRecords returned by this InputFormat.

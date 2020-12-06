@@ -110,8 +110,8 @@ public final class DefaultRollingPolicy<IN, BucketID> implements RollingPolicy<I
 	 * Creates a new {@link PolicyBuilder} that is used to configure and build
 	 * an instance of {@code DefaultRollingPolicy}.
 	 */
-	public static DefaultRollingPolicy.PolicyBuilder builder() {
-		return new DefaultRollingPolicy.PolicyBuilder(
+	public static PolicyBuilder builder() {
+		return new PolicyBuilder(
 				DEFAULT_MAX_PART_SIZE,
 				DEFAULT_ROLLOVER_INTERVAL,
 				DEFAULT_INACTIVITY_INTERVAL);
@@ -121,7 +121,7 @@ public final class DefaultRollingPolicy<IN, BucketID> implements RollingPolicy<I
 	 * This method is {@link Deprecated}, use {@link DefaultRollingPolicy#builder()} instead.
 	 */
 	@Deprecated
-	public static DefaultRollingPolicy.PolicyBuilder create() {
+	public static PolicyBuilder create() {
 		return builder();
 	}
 
@@ -151,7 +151,7 @@ public final class DefaultRollingPolicy<IN, BucketID> implements RollingPolicy<I
 		 * Sets the part size above which a part file will have to roll.
 		 * @param size the allowed part size.
 		 */
-		public DefaultRollingPolicy.PolicyBuilder withMaxPartSize(final long size) {
+		public PolicyBuilder withMaxPartSize(final long size) {
 			Preconditions.checkState(size > 0L);
 			return new PolicyBuilder(size, rolloverInterval, inactivityInterval);
 		}
@@ -163,7 +163,7 @@ public final class DefaultRollingPolicy<IN, BucketID> implements RollingPolicy<I
 		 * setting.
 		 * @param interval the allowed inactivity interval.
 		 */
-		public DefaultRollingPolicy.PolicyBuilder withInactivityInterval(final long interval) {
+		public PolicyBuilder withInactivityInterval(final long interval) {
 			Preconditions.checkState(interval > 0L);
 			return new PolicyBuilder(partSize, rolloverInterval, interval);
 		}
@@ -175,7 +175,7 @@ public final class DefaultRollingPolicy<IN, BucketID> implements RollingPolicy<I
 		 * setting.
 		 * @param interval the desired rollover interval.
 		 */
-		public DefaultRollingPolicy.PolicyBuilder withRolloverInterval(final long interval) {
+		public PolicyBuilder withRolloverInterval(final long interval) {
 			Preconditions.checkState(interval > 0L);
 			return new PolicyBuilder(partSize, interval, inactivityInterval);
 		}

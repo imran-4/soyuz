@@ -85,7 +85,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>In order for the consumer to emit watermarks, a timestamp assigner needs to be set via {@link
  * #setPeriodicWatermarkAssigner(AssignerWithPeriodicWatermarks)} and the auto watermark emit
  * interval configured via {@link
- * org.apache.flink.api.common.ExecutionConfig#setAutoWatermarkInterval(long)}.
+ * ExecutionConfig#setAutoWatermarkInterval(long)}.
  *
  * <p>Watermarks can only advance when all shards of a subtask continuously deliver records. To
  * avoid an inactive or closed shard to block the watermark progress, the idle timeout should be
@@ -463,7 +463,7 @@ public class FlinkKinesisConsumer<T> extends RichParallelSourceFunction<T> imple
 	/** This method is exposed for tests that need to mock the KinesisDataFetcher in the consumer. */
 	protected KinesisDataFetcher<T> createFetcher(
 			List<String> streams,
-			SourceFunction.SourceContext<T> sourceContext,
+			SourceContext<T> sourceContext,
 			RuntimeContext runtimeContext,
 			Properties configProps,
 			KinesisDeserializationSchema<T> deserializationSchema) {

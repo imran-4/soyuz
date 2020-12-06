@@ -491,7 +491,7 @@ public class FileUtilsTest extends TestLogger {
 		}
 
 		byte[] b = messageDigest.digest();
-		return org.apache.flink.util.StringUtils.byteToHexString(b);
+		return StringUtils.byteToHexString(b);
 	}
 
 	private static String md5Hex(byte[] data) throws NoSuchAlgorithmException {
@@ -499,7 +499,7 @@ public class FileUtilsTest extends TestLogger {
 		messageDigest.update(data);
 
 		byte[] b = messageDigest.digest();
-		return org.apache.flink.util.StringUtils.byteToHexString(b);
+		return StringUtils.byteToHexString(b);
 	}
 
 	// ------------------------------------------------------------------------

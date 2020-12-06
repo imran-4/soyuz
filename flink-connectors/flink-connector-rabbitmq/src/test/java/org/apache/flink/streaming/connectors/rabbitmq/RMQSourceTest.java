@@ -663,7 +663,7 @@ public class RMQSourceTest {
 		}
 
 		@Override
-		public void collectWithTimestamp(java.lang.String element, long timestamp) {
+		public void collectWithTimestamp(String element, long timestamp) {
 		}
 
 		@Override

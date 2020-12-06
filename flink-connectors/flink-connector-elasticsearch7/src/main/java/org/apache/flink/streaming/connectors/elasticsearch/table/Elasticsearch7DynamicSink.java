@@ -55,7 +55,7 @@ import java.util.Objects;
 @Internal
 final class Elasticsearch7DynamicSink implements DynamicTableSink {
 	@VisibleForTesting
-	static final Elasticsearch7RequestFactory REQUEST_FACTORY = new Elasticsearch7DynamicSink.Elasticsearch7RequestFactory();
+	static final Elasticsearch7RequestFactory REQUEST_FACTORY = new Elasticsearch7RequestFactory();
 
 	private final EncodingFormat<SerializationSchema<RowData>> format;
 	private final TableSchema schema;

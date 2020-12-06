@@ -41,11 +41,11 @@ import java.util.stream.Collectors;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * A {@link org.apache.flink.runtime.dispatcher.runner.AbstractDispatcherLeaderProcess.DispatcherGatewayServiceFactory
+ * A {@link AbstractDispatcherLeaderProcess.DispatcherGatewayServiceFactory
  * DispatcherGatewayServiceFactory} used when executing a job in Application Mode, i.e. the user's main is executed on
  * the same machine as the {@link Dispatcher} and the lifecycle of the cluster is the same as the one of the application.
  *
- * <p>It instantiates a {@link org.apache.flink.runtime.dispatcher.runner.AbstractDispatcherLeaderProcess.DispatcherGatewayService
+ * <p>It instantiates a {@link AbstractDispatcherLeaderProcess.DispatcherGatewayService
  * DispatcherGatewayService} with an {@link ApplicationDispatcherBootstrap} containing the user's program.
  */
 @Internal

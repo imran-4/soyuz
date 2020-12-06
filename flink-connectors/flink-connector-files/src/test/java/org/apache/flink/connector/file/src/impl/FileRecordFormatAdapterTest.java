@@ -177,7 +177,7 @@ public class FileRecordFormatAdapterTest extends AdapterTestBase<FileRecordForma
 			return Types.INT;
 		}
 
-		private static final class FailingReader implements FileRecordFormat.Reader<Integer> {
+		private static final class FailingReader implements Reader<Integer> {
 
 			private final FSDataInputStream stream;
 

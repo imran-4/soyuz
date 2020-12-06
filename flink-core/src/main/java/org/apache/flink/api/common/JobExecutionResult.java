@@ -139,7 +139,7 @@ public class JobExecutionResult extends JobSubmissionResult {
 	 *
 	 * @param accumulatorName Name of the counter
 	 * @return Result of the counter, or null if the counter does not exist
-	 * @throws java.lang.ClassCastException Thrown, if the accumulator was not aggregating a {@link java.lang.Integer}
+	 * @throws ClassCastException Thrown, if the accumulator was not aggregating a {@link Integer}
 	 * @deprecated Will be removed in future versions. Use {@link #getAccumulatorResult} instead.
 	 */
 	@Deprecated

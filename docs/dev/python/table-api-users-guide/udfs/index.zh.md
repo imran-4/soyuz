@@ -1,8 +1,8 @@
 ---
-title: "Python API Tutorial"
-nav-title: Python API
-nav-parent_id: try-flink
-nav-pos: 4
+title: "自定义函数"
+nav-id: python_udf
+nav-parent_id: python_tableapi
+nav-pos: 35
 ---
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +22,3 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-
-* This will be replaced by the TOC
-{:toc}
-
-## Python Table API tutorial
-
-You can refer to the [Python Table API Tutorial]({% link dev/python/table_api_tutorial.md %}) Docs for more details.

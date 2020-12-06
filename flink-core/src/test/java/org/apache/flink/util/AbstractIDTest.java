@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * This class contains tests for the {@link org.apache.flink.util.AbstractID} class.
+ * This class contains tests for the {@link AbstractID} class.
  */
 public class AbstractIDTest extends TestLogger {
 

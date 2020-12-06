@@ -137,12 +137,12 @@ public class ObjectArrayTypeInfo<T, C> extends TypeInformation<T> {
 	}
 
 	/**
-	 * Creates a new {@link org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo} from a
+	 * Creates a new {@link ObjectArrayTypeInfo} from a
 	 * {@link TypeInformation} for the component type.
 	 *
 	 * <p>
 	 * This must be used in cases where the complete type of the array is not available as a
-	 * {@link java.lang.reflect.Type} or {@link java.lang.Class}.
+	 * {@link java.lang.reflect.Type} or {@link Class}.
 	 */
 	@SuppressWarnings("unchecked")
 	@PublicEvolving

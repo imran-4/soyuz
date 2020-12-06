@@ -38,7 +38,7 @@ import java.io.Serializable;
  * A reader format that reads individual records from a stream.
  *
  * <p>The outer class {@code StreamFormat} acts mainly as a configuration holder and factory for the reader.
- * The actual reading is done by the {@link StreamFormat.Reader}, which is created based on an
+ * The actual reading is done by the {@link Reader}, which is created based on an
  * input stream in the {@link #createReader(Configuration, FSDataInputStream, long, long)} method
  * and restored (from checkpointed positions) in the method
  * {@link #restoreReader(Configuration, FSDataInputStream, long, long, long)}.
@@ -63,7 +63,7 @@ import java.io.Serializable;
  * <h2>Checkpointing</h2>
  *
  * <p>Readers can optionally return the current position of the reader, via the
- * {@link StreamFormat.Reader#getCheckpointedPosition()}. This can improve recovery speed from
+ * {@link Reader#getCheckpointedPosition()}. This can improve recovery speed from
  * a checkpoint.
  *
  * <p>By default (if that method is not overridden or returns null), then recovery from a checkpoint

@@ -41,7 +41,7 @@ import java.io.Serializable;
  * is more robust.
  *
  * <p>The outer class {@code FileRecordFormat} acts mainly as a configuration holder and factory for the reader.
- * The actual reading is done by the {@link FileRecordFormat.Reader}, which is created based on an
+ * The actual reading is done by the {@link Reader}, which is created based on an
  * input stream in the {@link #createReader(Configuration, Path, long, long)} method
  * and restored (from checkpointed positions) in the method
  * {@link #restoreReader(Configuration, Path, long, long, long)}.
@@ -60,7 +60,7 @@ import java.io.Serializable;
  * <h2>Checkpointing</h2>
  *
  * <p>Readers can optionally return the current position of the reader, via the
- * {@link FileRecordFormat.Reader#getCheckpointedPosition()}. This can improve recovery speed from
+ * {@link Reader#getCheckpointedPosition()}. This can improve recovery speed from
  * a checkpoint.
  *
  * <p>By default (if that method is not overridden or returns null), then recovery from a checkpoint
@@ -101,7 +101,7 @@ public interface FileRecordFormat<T> extends Serializable, ResultTypeQueryable<T
 	 * recovery from a checkpoint, if the reader never stored an offset in the checkpoint
 	 * (see {@link #restoreReader(Configuration, Path, long, long, long)} for details.
 	 */
-	FileRecordFormat.Reader<T> createReader(
+	Reader<T> createReader(
 			Configuration config,
 			Path filePath,
 			long splitOffset,
@@ -110,7 +110,7 @@ public interface FileRecordFormat<T> extends Serializable, ResultTypeQueryable<T
 	/**
 	 * Restores a reader from a checkpointed position. This method is called when the reader is recovered
 	 * from a checkpoint and the reader has previously stored an offset into the checkpoint, by returning
-	 * from the {@link FileRecordFormat.Reader#getCheckpointedPosition()} a value with non-negative
+	 * from the {@link Reader#getCheckpointedPosition()} a value with non-negative
 	 * {@link CheckpointedPosition#getOffset() offset}. That value is supplied as the {@code restoredOffset}.
 	 *
 	 * <p>If the reader never produced a {@code CheckpointedPosition} with a non-negative offset before, then
@@ -118,7 +118,7 @@ public interface FileRecordFormat<T> extends Serializable, ResultTypeQueryable<T
 	 * {@link #createReader(Configuration, Path, long, long)} and the appropriate number of
 	 * records are read and discarded, to position to reader to the checkpointed position.
 	 */
-	FileRecordFormat.Reader<T> restoreReader(
+	Reader<T> restoreReader(
 			Configuration config,
 			Path filePath,
 			long restoredOffset,

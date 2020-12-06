@@ -43,7 +43,7 @@ public class FanOutShardSubscriberTest {
 
 		FanOutShardSubscriber subscriber = new FanOutShardSubscriber("consumerArn", "shardId", errorKinesisV2);
 
-		software.amazon.awssdk.services.kinesis.model.StartingPosition startingPosition = software.amazon.awssdk.services.kinesis.model.StartingPosition
+		StartingPosition startingPosition = StartingPosition
 			.builder().build();
 		subscriber.subscribeToShardAndConsumeRecords(startingPosition, event -> { });
 	}
@@ -58,7 +58,7 @@ public class FanOutShardSubscriberTest {
 
 		FanOutShardSubscriber subscriber = new FanOutShardSubscriber("consumerArn", "shardId", errorKinesisV2);
 
-		software.amazon.awssdk.services.kinesis.model.StartingPosition startingPosition = software.amazon.awssdk.services.kinesis.model.StartingPosition
+		StartingPosition startingPosition = StartingPosition
 			.builder().build();
 		subscriber.subscribeToShardAndConsumeRecords(startingPosition, event -> { });
 	}

@@ -35,9 +35,9 @@ import org.apache.flink.util.ReflectionUtil;
  * Generic list base type for PACT programs that implements the Value and List interfaces.
  * PactList encapsulates a Java ArrayList object.
  * 
- * @see org.apache.flink.types.Value
- * @see java.util.List
- * @see java.util.ArrayList
+ * @see Value
+ * @see List
+ * @see ArrayList
  * 
  * @param <V> Type of the list elements.
  * 
@@ -55,7 +55,7 @@ public abstract class ListValue<V extends Value> implements Value, List<V> {
 	/**
 	 * Initializes the encapsulated list with an empty ArrayList.
 	 * 
-	 * @see java.util.ArrayList
+	 * @see ArrayList
 	 */
 	public ListValue() {
 		this.valueClass = ReflectionUtil.<V> getTemplateType1(this.getClass());
@@ -66,8 +66,8 @@ public abstract class ListValue<V extends Value> implements Value, List<V> {
 	/**
 	 * Initializes the encapsulated list with an ArrayList filled with all object contained in the specified Collection object.
 	 * 
-	 * @see java.util.ArrayList
-	 * @see java.util.Collection
+	 * @see ArrayList
+	 * @see Collection
 	 * 
 	 * @param c Collection of initial element of the encapsulated list.
 	 */
