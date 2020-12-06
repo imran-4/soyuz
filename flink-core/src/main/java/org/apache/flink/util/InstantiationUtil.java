@@ -221,7 +221,7 @@ public final class InstantiationUtil {
 	 *
 	 * @see <a href="https://issues.apache.org/jira/browse/FLINK-6869">FLINK-6869</a>
 	 */
-	public static class FailureTolerantObjectInputStream extends ClassLoaderObjectInputStream {
+	public static class FailureTolerantObjectInputStream extends InstantiationUtil.ClassLoaderObjectInputStream {
 
 		public FailureTolerantObjectInputStream(InputStream in, ClassLoader cl) throws IOException {
 			super(in, cl);
@@ -570,8 +570,8 @@ public final class InstantiationUtil {
 		// not using resource try to avoid AutoClosable's close() on the given stream
 		try {
 			ObjectInputStream oois = isFailureTolerant
-				? new FailureTolerantObjectInputStream(in, cl)
-				: new ClassLoaderObjectInputStream(in, cl);
+				? new InstantiationUtil.FailureTolerantObjectInputStream(in, cl)
+				: new InstantiationUtil.ClassLoaderObjectInputStream(in, cl);
 			Thread.currentThread().setContextClassLoader(cl);
 			return (T) oois.readObject();
 		}

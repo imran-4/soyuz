@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 import org.apache.flink.annotation.PublicEvolving;
 
 /**
- * Parses a text field into a {@link BigDecimal}.
+ * Parses a text field into a {@link java.math.BigDecimal}.
  */
 @PublicEvolving
 public class BigDecParser extends FieldParser<BigDecimal> {

@@ -58,7 +58,7 @@ public class SourceSinkDataTestKit {
 		private volatile boolean running = true;
 
 		@Override
-		public void run(SourceContext<Tuple2<Integer, String>> ctx) throws Exception {
+		public void run(SourceFunction.SourceContext<Tuple2<Integer, String>> ctx) throws Exception {
 			for (int i = 0; i < NUM_ELEMENTS && running; i++) {
 				ctx.collect(Tuple2.of(i, DATA_PREFIX + i));
 			}

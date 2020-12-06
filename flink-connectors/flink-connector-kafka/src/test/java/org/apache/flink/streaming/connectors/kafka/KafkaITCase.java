@@ -241,7 +241,7 @@ public class KafkaITCase extends KafkaConsumerTestBase {
 		env.setParallelism(1);
 		env.getConfig().setRestartStrategy(RestartStrategies.noRestart());
 
-		FlinkKafkaConsumer<Long> kafkaSource = new FlinkKafkaConsumer<>(topic, new LimitedLongDeserializer(), standardProps);
+		FlinkKafkaConsumer<Long> kafkaSource = new FlinkKafkaConsumer<>(topic, new KafkaITCase.LimitedLongDeserializer(), standardProps);
 		kafkaSource.assignTimestampsAndWatermarks(new AssignerWithPunctuatedWatermarks<Long>() {
 			private static final long serialVersionUID = -4834111173247835189L;
 

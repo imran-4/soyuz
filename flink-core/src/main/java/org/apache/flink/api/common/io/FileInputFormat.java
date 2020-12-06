@@ -130,7 +130,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 	}
 
 	/**
-	 * Registers a decompression algorithm through a {@link InflaterInputStreamFactory}
+	 * Registers a decompression algorithm through a {@link org.apache.flink.api.common.io.compression.InflaterInputStreamFactory}
 	 * with a file extension for transparent decompression.
 	 * @param fileExtension of the compressed files
 	 * @param factory to create an {@link java.util.zip.InflaterInputStream} that handles the decompression format
@@ -445,7 +445,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 	/**
 	 * Configures the file input format by reading the file path from the configuration.
 	 * 
-	 * @see InputFormat#configure(Configuration)
+	 * @see org.apache.flink.api.common.io.InputFormat#configure(org.apache.flink.configuration.Configuration)
 	 */
 	@Override
 	public void configure(Configuration parameters) {
@@ -468,7 +468,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 	/**
 	 * Obtains basic file statistics containing only file size. If the input is a directory, then the size is the sum of all contained files.
 	 * 
-	 * @see InputFormat#getStatistics(BaseStatistics)
+	 * @see org.apache.flink.api.common.io.InputFormat#getStatistics(org.apache.flink.api.common.io.statistics.BaseStatistics)
 	 */
 	@Override
 	public FileBaseStatistics getStatistics(BaseStatistics cachedStats) throws IOException {
@@ -566,7 +566,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 	 * @param minNumSplits The minimum desired number of file splits.
 	 * @return The computed file splits.
 	 * 
-	 * @see InputFormat#createInputSplits(int)
+	 * @see org.apache.flink.api.common.io.InputFormat#createInputSplits(int)
 	 */
 	@Override
 	public FileInputSplit[] createInputSplits(int minNumSplits) throws IOException {
@@ -839,7 +839,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 	 * @param fileSplit   is the file split for which the input stream shall be decorated
 	 * @return the decorated input stream
 	 * @throws Throwable if the decoration fails
-	 * @see InputStreamFSInputWrapper
+	 * @see org.apache.flink.api.common.io.InputStreamFSInputWrapper
 	 */
 	protected FSDataInputStream decorateInputStream(FSDataInputStream inputStream, FileInputSplit fileSplit) throws Throwable {
 		// Wrap stream in a extracting (decompressing) stream if file ends with a known compression file extension.
@@ -926,7 +926,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 		 * Gets the file size.
 		 * 
 		 * @return The fileSize.
-		 * @see BaseStatistics#getTotalInputSize()
+		 * @see org.apache.flink.api.common.io.statistics.BaseStatistics#getTotalInputSize()
 		 */
 		@Override
 		public long getTotalInputSize() {
@@ -938,7 +938,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 		 * average record width, rounded up.
 		 * 
 		 * @return The estimated number of records in the file.
-		 * @see BaseStatistics#getNumberOfRecords()
+		 * @see org.apache.flink.api.common.io.statistics.BaseStatistics#getNumberOfRecords()
 		 */
 		@Override
 		public long getNumberOfRecords() {
@@ -950,7 +950,7 @@ public abstract class FileInputFormat<OT> extends RichInputFormat<OT, FileInputS
 		 * Gets the estimated average number of bytes per record.
 		 * 
 		 * @return The average number of bytes per record.
-		 * @see BaseStatistics#getAverageRecordWidth()
+		 * @see org.apache.flink.api.common.io.statistics.BaseStatistics#getAverageRecordWidth()
 		 */
 		@Override
 		public float getAverageRecordWidth() {

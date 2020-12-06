@@ -463,7 +463,7 @@ public class DelimitedInputFormatTest {
 		DelimitedInputFormat<String> format = new MyTextInputFormat();
 		format.setFilePaths(filePath.toUri().toString(), filePath2.toUri().toString());
 
-		FileBaseStatistics stats = format.getStatistics(null);
+		FileInputFormat.FileBaseStatistics stats = format.getStatistics(null);
 		assertNotNull(stats);
 		assertEquals("The file size from the statistics is wrong.", totalSize, stats.getTotalInputSize());
 	}

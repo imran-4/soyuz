@@ -25,7 +25,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * A wrapper class around the information provided along with streamName and
- * {@link Shard}, with some extra utility methods to determine whether
+ * {@link com.amazonaws.services.kinesis.model.Shard}, with some extra utility methods to determine whether
  * or not a shard is closed and whether or not the shard is a result of parent shard splits or merges.
  */
 @Internal

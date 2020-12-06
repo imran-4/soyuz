@@ -34,7 +34,7 @@ import java.io.Serializable;
  * The methods in this interface depend not only on the record, but also on what fields of a record are
  * used for the comparison or hashing. That set of fields is typically a subset of a record's fields.
  * In general, this class assumes a contract on hash codes and equality the same way as defined for
- * {@link Object#equals(Object)} {@link Object#equals(Object)}
+ * {@link java.lang.Object#equals(Object)} {@link java.lang.Object#equals(Object)}
  * <p>
  * Implementing classes are stateful, because several methods require to set one record as the reference for
  * comparisons and later comparing a candidate against it. Therefore, the classes implementing this interface are
@@ -42,8 +42,8 @@ import java.io.Serializable;
  * a copy for that purpose. It is hence imperative that the copies created by the {@link #duplicate()} method
  * share no state with the instance from which they were copied: they have to be deep copies.
  *
- * @see Object#hashCode()
- * @see Object#equals(Object)
+ * @see java.lang.Object#hashCode()
+ * @see java.lang.Object#equals(Object)
  * @see java.util.Comparator#compare(Object, Object)
  * 
  * @param <T> The data type that the comparator works on.
@@ -67,7 +67,7 @@ public abstract class TypeComparator<T> implements Serializable {
 	 * @param record The record to be hashed.
 	 * @return A hash value for the record.
 	 * 
-	 * @see Object#hashCode()
+	 * @see java.lang.Object#hashCode()
 	 */
 	public abstract int hash(T record);
 	
@@ -197,7 +197,7 @@ public abstract class TypeComparator<T> implements Serializable {
 
 	/**
 	 * Gets the number of bytes that the normalized key would maximally take. A value of
-	 * {@link Integer}.MAX_VALUE is interpreted as infinite.
+	 * {@link java.lang.Integer}.MAX_VALUE is interpreted as infinite.
 	 * 
 	 * @return The number of bytes that the normalized key would maximally take.
 	 */

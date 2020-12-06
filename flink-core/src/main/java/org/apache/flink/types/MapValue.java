@@ -34,9 +34,9 @@ import org.apache.flink.util.ReflectionUtil;
  * Generic map base type for PACT programs that implements the Value and Map interfaces.
  * The {@link MapValue} encapsulates a Java {@link HashMap} object.
  * 
- * @see Value
- * @see Map
- * @see HashMap
+ * @see org.apache.flink.types.Value
+ * @see java.util.Map
+ * @see java.util.HashMap
  * 
  * @param <K> Type of the map's key element.
  * @param <V> Type of the map's value element.

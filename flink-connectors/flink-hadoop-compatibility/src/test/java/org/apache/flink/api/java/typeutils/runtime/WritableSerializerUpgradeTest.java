@@ -113,7 +113,7 @@ public class WritableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class WritableSerializerSetup implements PreUpgradeSetup<WritableName> {
+	public static final class WritableSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<WritableName> {
 		@Override
 		public TypeSerializer<WritableName> createPriorSerializer() {
 			return new WritableSerializer<>(WritableName.class);
@@ -130,7 +130,7 @@ public class WritableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class WritableSerializerVerifier implements UpgradeVerifier<WritableName> {
+	public static final class WritableSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<WritableName> {
 		@Override
 		public TypeSerializer<WritableName> createUpgradedSerializer() {
 			return new WritableSerializer<>(WritableName.class);

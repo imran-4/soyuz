@@ -25,7 +25,7 @@ import org.apache.flink.connector.hbase1.source.HBaseInputFormat;
 /**
  * {@link InputFormat} subclass that wraps the access for HTables.
  *
- * @deprecated please use {@link HBaseInputFormat}.
+ * @deprecated please use {@link org.apache.flink.connector.hbase1.source.HBaseInputFormat}.
  */
 @Deprecated
 public abstract class TableInputFormat<T extends Tuple> extends HBaseInputFormat<T> {

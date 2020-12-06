@@ -147,7 +147,7 @@ public class FlinkKafkaProducerTest {
 		private boolean openCalled;
 
 		@Override
-		public void open(InitializationContext context) throws Exception {
+		public void open(SerializationSchema.InitializationContext context) throws Exception {
 			openCalled = true;
 		}
 

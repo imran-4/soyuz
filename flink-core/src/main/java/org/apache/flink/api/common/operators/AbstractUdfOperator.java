@@ -68,7 +68,7 @@ public abstract class AbstractUdfOperator<OUT, FT extends Function> extends Oper
 	 * 
 	 * @return The object with the user function for this operator.
 	 *
-	 * @see Operator#getUserCodeWrapper()
+	 * @see org.apache.flink.api.common.operators.Operator#getUserCodeWrapper()
 	 */
 	@Override
 	public UserCodeWrapper<FT> getUserCodeWrapper() {

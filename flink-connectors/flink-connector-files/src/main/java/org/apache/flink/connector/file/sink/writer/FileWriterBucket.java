@@ -130,7 +130,7 @@ class FileWriterBucket<IN> {
 		}
 
 		// we try to resume the previous in-progress file
-		InProgressFileRecoverable inProgressFileRecoverable =
+		InProgressFileWriter.InProgressFileRecoverable inProgressFileRecoverable =
 				state.getInProgressFileRecoverable();
 
 		if (bucketWriter.getProperties().supportsResume()) {
@@ -215,7 +215,7 @@ class FileWriterBucket<IN> {
 	}
 
 	FileWriterBucketState snapshotState() throws IOException {
-		InProgressFileRecoverable inProgressFileRecoverable = null;
+		InProgressFileWriter.InProgressFileRecoverable inProgressFileRecoverable = null;
 		long inProgressFileCreationTime = Long.MAX_VALUE;
 
 		if (inProgressPart != null) {

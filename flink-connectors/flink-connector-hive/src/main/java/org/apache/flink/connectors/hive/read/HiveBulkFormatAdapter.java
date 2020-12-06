@@ -259,7 +259,7 @@ public class HiveBulkFormatAdapter implements BulkFormat<RowData, HiveSourceSpli
 		}
 	}
 
-	private class HiveReader implements Reader<RowData> {
+	private class HiveReader implements BulkFormat.Reader<RowData> {
 
 		private final HiveMapredSplitReader hiveMapredSplitReader;
 		private final RowDataSerializer serializer;

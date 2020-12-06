@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * Utility class to create {@link ResultSetFuture}s.
+ * Utility class to create {@link com.datastax.driver.core.ResultSetFuture}s.
  */
 class ResultSetFutures {
 

@@ -104,7 +104,7 @@ public class DateTimeBucketAssigner<IN> implements BucketAssigner<IN, String> {
 	}
 
 	@Override
-	public String getBucketId(IN element, Context context) {
+	public String getBucketId(IN element, BucketAssigner.Context context) {
 		if (dateTimeFormatter == null) {
 			dateTimeFormatter = DateTimeFormatter.ofPattern(formatString).withZone(zoneId);
 		}

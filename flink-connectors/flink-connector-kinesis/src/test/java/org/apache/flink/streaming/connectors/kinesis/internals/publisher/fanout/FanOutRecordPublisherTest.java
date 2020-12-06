@@ -289,7 +289,7 @@ public class FanOutRecordPublisherTest {
 		FanOutRecordPublisherConfiguration configuration = new FanOutRecordPublisherConfiguration(efoProperties, emptyList());
 
 		ReadTimeoutException retryableError = ReadTimeoutException.INSTANCE;
-		SubscriptionErrorKinesisV2 kinesis = FakeKinesisFanOutBehavioursFactory.errorDuringSubscription(retryableError);
+		FakeKinesisFanOutBehavioursFactory.SubscriptionErrorKinesisV2 kinesis = FakeKinesisFanOutBehavioursFactory.errorDuringSubscription(retryableError);
 		FullJitterBackoff backoff = mock(FullJitterBackoff.class);
 
 		FanOutRecordPublisher recordPublisher = new FanOutRecordPublisher(latest(), "arn", createDummyStreamShardHandle(), kinesis, configuration, backoff);

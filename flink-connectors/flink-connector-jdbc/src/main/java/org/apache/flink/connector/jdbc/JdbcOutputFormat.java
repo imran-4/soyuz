@@ -49,7 +49,7 @@ public class JdbcOutputFormat extends JdbcBatchingOutputFormat<Row, Row, JdbcBat
 			connectionProvider,
 			new JdbcExecutionOptions.Builder().withBatchSize(batchSize).build(),
 			ctx -> createRowExecutor(sql, typesArray, ctx),
-			RecordExtractor.identity());
+			JdbcBatchingOutputFormat.RecordExtractor.identity());
 	}
 
 	private static JdbcBatchStatementExecutor<Row> createRowExecutor(String sql, int[] typesArray, RuntimeContext ctx) {

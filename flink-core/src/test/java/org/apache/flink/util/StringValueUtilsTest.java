@@ -49,7 +49,7 @@ public class StringValueUtilsTest extends TestLogger {
 	@Test
 	public void testTokenizerOnStringWithoutNexToken() {
 		StringValue testString = new StringValue("test");
-		WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+		StringValueUtils.WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
 		tokenizer.setStringToTokenize(testString);
 		//first token
 		tokenizer.next(testString);
@@ -60,7 +60,7 @@ public class StringValueUtilsTest extends TestLogger {
 	@Test
 	public void testTokenizerOnStringWithNexToken() {
 		StringValue testString = new StringValue("test test");
-		WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+		StringValueUtils.WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
 		tokenizer.setStringToTokenize(testString);
 		assertTrue(tokenizer.next(testString));
 	}
@@ -68,7 +68,7 @@ public class StringValueUtilsTest extends TestLogger {
 	@Test
 	public void testTokenizerOnStringOnlyWithDelimiter() {
 		StringValue testString = new StringValue("    ");
-		WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
+		StringValueUtils.WhitespaceTokenizer tokenizer = new WhitespaceTokenizer();
 		tokenizer.setStringToTokenize(testString);
 		assertFalse(tokenizer.next(testString));
 	}

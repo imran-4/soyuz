@@ -465,7 +465,7 @@ public abstract class DelimitedInputFormat<OT> extends FileInputFormat<OT> imple
 	 *
 	 * @param split The input split to open.
 	 *
-	 * @see FileInputFormat#open(FileInputSplit)
+	 * @see org.apache.flink.api.common.io.FileInputFormat#open(org.apache.flink.core.fs.FileInputSplit)
 	 */
 	@Override
 	public void open(FileInputSplit split) throws IOException {

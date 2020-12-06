@@ -76,7 +76,7 @@ public class KafkaSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Ob
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class TransactionStateSerializerSetup implements PreUpgradeSetup<FlinkKafkaProducer.KafkaTransactionState> {
+	public static final class TransactionStateSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<FlinkKafkaProducer.KafkaTransactionState> {
 		@Override
 		public TypeSerializer<FlinkKafkaProducer.KafkaTransactionState> createPriorSerializer() {
 			return new FlinkKafkaProducer.TransactionStateSerializer();
@@ -93,7 +93,7 @@ public class KafkaSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Ob
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class TransactionStateSerializerVerifier implements UpgradeVerifier<FlinkKafkaProducer.KafkaTransactionState> {
+	public static final class TransactionStateSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<FlinkKafkaProducer.KafkaTransactionState> {
 		@Override
 		public TypeSerializer<FlinkKafkaProducer.KafkaTransactionState> createUpgradedSerializer() {
 			return new FlinkKafkaProducer.TransactionStateSerializer();
@@ -119,7 +119,7 @@ public class KafkaSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Ob
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class ContextStateSerializerSetup implements PreUpgradeSetup<FlinkKafkaProducer.KafkaTransactionContext> {
+	public static final class ContextStateSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<FlinkKafkaProducer.KafkaTransactionContext> {
 		@Override
 		public TypeSerializer<FlinkKafkaProducer.KafkaTransactionContext> createPriorSerializer() {
 			return new FlinkKafkaProducer.ContextStateSerializer();
@@ -138,7 +138,7 @@ public class KafkaSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Ob
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class ContextStateSerializerVerifier implements UpgradeVerifier<FlinkKafkaProducer.KafkaTransactionContext> {
+	public static final class ContextStateSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<FlinkKafkaProducer.KafkaTransactionContext> {
 		@Override
 		public TypeSerializer<FlinkKafkaProducer.KafkaTransactionContext> createUpgradedSerializer() {
 			return new FlinkKafkaProducer.ContextStateSerializer();

@@ -200,7 +200,7 @@ public class EmulatedFullTopologyTest extends GCloudUnitTestBase {
 		receivedMessages.forEach(msg -> output.add(msg.getMessage().getData().toStringUtf8()));
 
 		for (String test : input) {
-			String reversedTest = StringUtils.reverse(test);
+			String reversedTest = org.apache.commons.lang3.StringUtils.reverse(test);
 			LOG.info("Checking if \"{}\" --> \"{}\" exists", test, reversedTest);
 			assertTrue("Missing " + test, output.contains(reversedTest));
 		}

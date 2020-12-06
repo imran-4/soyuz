@@ -21,7 +21,7 @@ package org.apache.flink.util;
 import org.apache.flink.annotation.Public;
 
 /**
- * An exception, indicating that an {@link Iterable} can only be traversed once, but has been attempted
+ * An exception, indicating that an {@link java.lang.Iterable} can only be traversed once, but has been attempted
  * to traverse an additional time.
  */
 @Public

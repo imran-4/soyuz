@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * This class wraps an {@link InputStream} and exposes it as {@link FSDataInputStream}.
+ * This class wraps an {@link java.io.InputStream} and exposes it as {@link org.apache.flink.core.fs.FSDataInputStream}.
  * <br>
  * <i>NB: {@link #seek(long)} and {@link #getPos()} are currently not supported.</i>
  */

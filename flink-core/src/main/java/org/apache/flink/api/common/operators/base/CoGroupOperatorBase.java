@@ -50,7 +50,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * @see CoGroupFunction
+ * @see org.apache.flink.api.common.functions.CoGroupFunction
  */
 @Internal
 public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {

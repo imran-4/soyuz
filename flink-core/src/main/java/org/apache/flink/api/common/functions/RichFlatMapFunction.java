@@ -23,7 +23,7 @@ import org.apache.flink.util.Collector;
 
 /**
  * Rich variant of the {@link FlatMapFunction}. As a {@link RichFunction}, it gives access to the
- * {@link RuntimeContext} and provides setup and teardown methods:
+ * {@link org.apache.flink.api.common.functions.RuntimeContext} and provides setup and teardown methods:
  * {@link RichFunction#open(org.apache.flink.configuration.Configuration)} and
  * {@link RichFunction#close()}.
  *

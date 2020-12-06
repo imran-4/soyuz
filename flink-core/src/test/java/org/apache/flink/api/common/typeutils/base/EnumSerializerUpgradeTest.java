@@ -92,9 +92,9 @@ public class EnumSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Tes
 	// ----------------------------------------------------------------------------------------------
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EnumSerializerSetup implements PreUpgradeSetup<TestEnum> {
+	public static final class EnumSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<TestEnum> {
 		@SuppressWarnings("unchecked")
 		@Override
 		public TypeSerializer<TestEnum> createPriorSerializer() {
@@ -108,9 +108,9 @@ public class EnumSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Tes
 	}
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EnumSerializerVerifier implements UpgradeVerifier<TestEnum> {
+	public static final class EnumSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<TestEnum> {
 		@SuppressWarnings("unchecked")
 		@Override
 		public TypeSerializer<TestEnum> createUpgradedSerializer() {
@@ -129,9 +129,9 @@ public class EnumSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Tes
 	}
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EnumSerializerReconfigSetup implements PreUpgradeSetup<EnumSerializerReconfigSetup.EnumBefore> {
+	public static final class EnumSerializerReconfigSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<EnumSerializerReconfigSetup.EnumBefore> {
 		@ClassRelocator.RelocateClass("TestEnumSerializerReconfig")
 		public enum EnumBefore {
 			FOO, BAR, PETER, NATHANIEL, EMMA, PAULA
@@ -150,9 +150,9 @@ public class EnumSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Tes
 	}
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EnumSerializerReconfigVerifier implements UpgradeVerifier<EnumSerializerReconfigVerifier.EnumAfter> {
+	public static final class EnumSerializerReconfigVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<EnumSerializerReconfigVerifier.EnumAfter> {
 		@ClassRelocator.RelocateClass("TestEnumSerializerReconfig")
 		public enum EnumAfter {
 			FOO, BAR, PETER, PAULA, NATHANIEL, EMMA

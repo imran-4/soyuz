@@ -45,7 +45,7 @@ import java.util.List;
 import org.apache.flink.api.common.ExecutionConfig;
 
 /**
- * @see CoGroupFunction
+ * @see org.apache.flink.api.common.functions.CoGroupFunction
  */
 @Internal
 public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, IN2, OUT>> extends DualInputOperator<IN1, IN2, OUT, FT> {

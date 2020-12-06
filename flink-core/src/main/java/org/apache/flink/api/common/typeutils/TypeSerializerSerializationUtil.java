@@ -66,7 +66,7 @@ public class TypeSerializerSerializationUtil {
 	 * @throws IOException
 	 */
 	public static <T> void writeSerializer(DataOutputView out, TypeSerializer<T> serializer) throws IOException {
-		new TypeSerializerSerializationProxy<>(serializer).write(out);
+		new TypeSerializerSerializationUtil.TypeSerializerSerializationProxy<>(serializer).write(out);
 	}
 
 	/**
@@ -109,8 +109,8 @@ public class TypeSerializerSerializationUtil {
 			ClassLoader userCodeClassLoader,
 			boolean useDummyPlaceholder) throws IOException {
 
-		final TypeSerializerSerializationProxy<T> proxy =
-			new TypeSerializerSerializationProxy<>(userCodeClassLoader);
+		final TypeSerializerSerializationUtil.TypeSerializerSerializationProxy<T> proxy =
+			new TypeSerializerSerializationUtil.TypeSerializerSerializationProxy<>(userCodeClassLoader);
 
 		try {
 			proxy.read(in);

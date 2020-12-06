@@ -110,7 +110,7 @@ public interface RuntimeContext {
 	String getTaskNameWithSubtasks();
 
 	/**
-	 * Returns the {@link ExecutionConfig} for the currently executing
+	 * Returns the {@link org.apache.flink.api.common.ExecutionConfig} for the currently executing
 	 * job.
 	 */
 	ExecutionConfig getExecutionConfig();

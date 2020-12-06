@@ -29,8 +29,8 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import javax.annotation.Nullable;
 
 /**
- * An adapter from old style interfaces such as {@link SerializationSchema},
- * {@link FlinkKafkaPartitioner} to the
+ * An adapter from old style interfaces such as {@link org.apache.flink.api.common.serialization.SerializationSchema},
+ * {@link org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner} to the
  * {@link KafkaSerializationSchema}.
  */
 @Internal

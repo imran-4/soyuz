@@ -64,12 +64,12 @@ public class IndexGeneratorTest {
 			DataTypes.INT(),
 			DataTypes.STRING(),
 			DataTypes.BIGINT(),
-			DataTypes.DATE().bridgedTo(Date.class),
-			DataTypes.TIMESTAMP().bridgedTo(Timestamp.class),
-			DataTypes.TIME().bridgedTo(Time.class),
-			DataTypes.TIMESTAMP().bridgedTo(LocalDateTime.class),
-			DataTypes.DATE().bridgedTo(LocalDate.class),
-			DataTypes.TIME().bridgedTo(LocalTime.class),
+			DataTypes.DATE().bridgedTo(java.sql.Date.class),
+			DataTypes.TIMESTAMP().bridgedTo(java.sql.Timestamp.class),
+			DataTypes.TIME().bridgedTo(java.sql.Time.class),
+			DataTypes.TIMESTAMP().bridgedTo(java.time.LocalDateTime.class),
+			DataTypes.DATE().bridgedTo(java.time.LocalDate.class),
+			DataTypes.TIME().bridgedTo(java.time.LocalTime.class),
 			DataTypes.STRING(),
 			DataTypes.BOOLEAN()
 		};

@@ -70,9 +70,9 @@ public class CompositeTypeSerializerUpgradeTest extends TypeSerializerUpgradeTes
 	// ----------------------------------------------------------------------------------------------
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EitherSerializerSetup implements PreUpgradeSetup<Either<String, Integer>> {
+	public static final class EitherSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Either<String, Integer>> {
 		@Override
 		public TypeSerializer<Either<String, Integer>> createPriorSerializer() {
 			return new EitherSerializer<>(StringSerializer.INSTANCE, IntSerializer.INSTANCE);
@@ -85,9 +85,9 @@ public class CompositeTypeSerializerUpgradeTest extends TypeSerializerUpgradeTes
 	}
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class EitherSerializerVerifier implements UpgradeVerifier<Either<String, Integer>> {
+	public static final class EitherSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Either<String, Integer>> {
 		@Override
 		public TypeSerializer<Either<String, Integer>> createUpgradedSerializer() {
 			return new EitherSerializer<>(StringSerializer.INSTANCE, IntSerializer.INSTANCE);
@@ -109,9 +109,9 @@ public class CompositeTypeSerializerUpgradeTest extends TypeSerializerUpgradeTes
 	// ----------------------------------------------------------------------------------------------
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class GenericArraySerializerSetup implements PreUpgradeSetup<String[]> {
+	public static final class GenericArraySerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<String[]> {
 		@Override
 		public TypeSerializer<String[]> createPriorSerializer() {
 			return new GenericArraySerializer<>(String.class, StringSerializer.INSTANCE);
@@ -125,9 +125,9 @@ public class CompositeTypeSerializerUpgradeTest extends TypeSerializerUpgradeTes
 	}
 
 	/**
-	 * This class is only public to work with {@link ClassRelocator}.
+	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class GenericArraySerializerVerifier implements UpgradeVerifier<String[]> {
+	public static final class GenericArraySerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<String[]> {
 		@Override
 		public TypeSerializer<String[]> createUpgradedSerializer() {
 			return new GenericArraySerializer<>(String.class, StringSerializer.INSTANCE);

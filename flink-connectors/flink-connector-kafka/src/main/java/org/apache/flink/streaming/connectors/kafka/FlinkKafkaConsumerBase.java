@@ -282,7 +282,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 	 * Flink DataStream, if the parallel source subtask reads more than one partition.
 	 *
 	 * <p>Common watermark generation patterns can be found as static methods in the
-	 * {@link WatermarkStrategy} class.
+	 * {@link org.apache.flink.api.common.eventtime.WatermarkStrategy} class.
 	 *
 	 * @return The consumer object, to allow function chaining.
 	 */

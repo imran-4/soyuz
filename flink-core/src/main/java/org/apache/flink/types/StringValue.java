@@ -38,9 +38,9 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * helps to increase the performance, as string objects are rather heavy-weight objects and incur a lot of garbage
  * collection overhead, if created and destroyed en masse.
  *
- * @see NormalizableKey
- * @see String
- * @see CharSequence
+ * @see org.apache.flink.types.NormalizableKey
+ * @see java.lang.String
+ * @see java.lang.CharSequence
  */
 @Public
 public class StringValue implements NormalizableKey<StringValue>, CharSequence, ResettableValue<StringValue>, 

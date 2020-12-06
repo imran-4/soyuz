@@ -191,7 +191,7 @@ public abstract class SingleInputOperator<IN, OUT, FT extends Function> extends 
 	 * 
 	 * @param visitor The visitor.
 	 *  
-	 * @see org.apache.flink.util.Visitable#accept(Visitor)
+	 * @see org.apache.flink.util.Visitable#accept(org.apache.flink.util.Visitor)
 	 */
 	@Override
 	public void accept(Visitor<Operator<?>> visitor) {

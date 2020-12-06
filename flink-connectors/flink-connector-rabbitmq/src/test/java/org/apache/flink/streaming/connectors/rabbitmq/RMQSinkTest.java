@@ -59,7 +59,7 @@ public class RMQSinkTest {
 	private static final String EXPIRATION = "10000";
 	private static final String MESSAGE_STR = "msg";
 	private static final byte[] MESSAGE = new byte[1];
-	private static BasicProperties props = new BasicProperties.Builder()
+	private static AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
 			.headers(Collections.singletonMap("Test", "My Value"))
 			.expiration(EXPIRATION)
 			.build();

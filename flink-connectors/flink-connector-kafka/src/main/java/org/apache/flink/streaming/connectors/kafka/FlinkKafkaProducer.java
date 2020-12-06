@@ -93,8 +93,8 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * Flink Sink to produce data into a Kafka topic. By default producer
- * will use {@link Semantic#AT_LEAST_ONCE} semantic.
- * Before using {@link Semantic#EXACTLY_ONCE} please refer to Flink's
+ * will use {@link FlinkKafkaProducer.Semantic#AT_LEAST_ONCE} semantic.
+ * Before using {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE} please refer to Flink's
  * Kafka connector documentation.
  */
 @PublicEvolving
@@ -169,7 +169,7 @@ public class FlinkKafkaProducer<IN>
 	public static final int SAFE_SCALE_DOWN_FACTOR = 5;
 
 	/**
-	 * Default number of KafkaProducers in the pool. See {@link Semantic#EXACTLY_ONCE}.
+	 * Default number of KafkaProducers in the pool. See {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE}.
 	 */
 	public static final int DEFAULT_KAFKA_PRODUCERS_POOL_SIZE = 5;
 
@@ -189,16 +189,16 @@ public class FlinkKafkaProducer<IN>
 	 * Please use NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2.
 	 */
 	@Deprecated
-	private static final ListStateDescriptor<NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR =
+	private static final ListStateDescriptor<FlinkKafkaProducer.NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR =
 		new ListStateDescriptor<>("next-transactional-id-hint", TypeInformation.of(NextTransactionalIdHint.class));
 
-	private static final ListStateDescriptor<NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2 =
+	private static final ListStateDescriptor<FlinkKafkaProducer.NextTransactionalIdHint> NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2 =
 		new ListStateDescriptor<>("next-transactional-id-hint-v2", new NextTransactionalIdHintSerializer());
 
 	/**
 	 * State for nextTransactionalIdHint.
 	 */
-	private transient ListState<NextTransactionalIdHint> nextTransactionalIdHintState;
+	private transient ListState<FlinkKafkaProducer.NextTransactionalIdHint> nextTransactionalIdHintState;
 
 	/**
 	 * Generator for Transactional IDs.
@@ -208,7 +208,7 @@ public class FlinkKafkaProducer<IN>
 	/**
 	 * Hint for picking next transactional id.
 	 */
-	private transient NextTransactionalIdHint nextTransactionalIdHint;
+	private transient FlinkKafkaProducer.NextTransactionalIdHint nextTransactionalIdHint;
 
 	/**
 	 * User defined properties for the Producer.
@@ -268,7 +268,7 @@ public class FlinkKafkaProducer<IN>
 	/**
 	 * Semantic chosen for this instance.
 	 */
-	protected Semantic semantic;
+	protected FlinkKafkaProducer.Semantic semantic;
 
 	// -------------------------------- Runtime fields ------------------------------------------
 
@@ -373,16 +373,16 @@ public class FlinkKafkaProducer<IN>
 	 *          A serializable partitioner for assigning messages to Kafka partitions. If a partitioner is not
 	 *          provided, records will be distributed to Kafka partitions in a round-robin fashion.
 	 * @param semantic
-	 *          Defines semantic that will be used by this producer (see {@link Semantic}).
+	 *          Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
 	 * @param kafkaProducersPoolSize
-	 *          Overwrite default KafkaProducers pool size (see {@link Semantic#EXACTLY_ONCE}).
+	 *          Overwrite default KafkaProducers pool size (see {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE}).
 	 */
 	public FlinkKafkaProducer(
 			String topicId,
 			SerializationSchema<IN> serializationSchema,
 			Properties producerConfig,
 			@Nullable FlinkKafkaPartitioner<IN> customPartitioner,
-			Semantic semantic,
+			FlinkKafkaProducer.Semantic semantic,
 			int kafkaProducersPoolSize) {
 		this(
 			topicId,
@@ -416,7 +416,7 @@ public class FlinkKafkaProducer<IN>
 	 * @param serializationSchema
 	 * 			User defined serialization schema supporting key/value messages
 	 *
-	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, Semantic)}
+	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, FlinkKafkaProducer.Semantic)}
 	 */
 	@Deprecated
 	public FlinkKafkaProducer(String brokerList, String topicId, KeyedSerializationSchema<IN> serializationSchema) {
@@ -446,7 +446,7 @@ public class FlinkKafkaProducer<IN>
 	 * @param producerConfig
 	 * 			Properties with the producer configuration.
 	 *
-	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, Semantic)}
+	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, FlinkKafkaProducer.Semantic)}
 	 */
 	@Deprecated
 	public FlinkKafkaProducer(String topicId, KeyedSerializationSchema<IN> serializationSchema, Properties producerConfig) {
@@ -473,16 +473,16 @@ public class FlinkKafkaProducer<IN>
 	 * @param producerConfig
 	 * 			Properties with the producer configuration.
 	 * @param semantic
-	 * 			Defines semantic that will be used by this producer (see {@link Semantic}).
+	 * 			Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
 	 *
-	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, Semantic)}
+	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, FlinkKafkaProducer.Semantic)}
 	 */
 	@Deprecated
 	public FlinkKafkaProducer(
 			String topicId,
 			KeyedSerializationSchema<IN> serializationSchema,
 			Properties producerConfig,
-			Semantic semantic) {
+			FlinkKafkaProducer.Semantic semantic) {
 		this(topicId,
 			serializationSchema,
 			producerConfig,
@@ -510,7 +510,7 @@ public class FlinkKafkaProducer<IN>
 	 *                          are {@code null}, then records will be distributed to Kafka partitions in a
 	 *                          round-robin fashion.
 	 *
-	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, Semantic)}
+	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, FlinkKafkaProducer.Semantic)}
 	 */
 	@Deprecated
 	public FlinkKafkaProducer(
@@ -523,7 +523,7 @@ public class FlinkKafkaProducer<IN>
 			serializationSchema,
 			producerConfig,
 			customPartitioner,
-			Semantic.AT_LEAST_ONCE,
+			FlinkKafkaProducer.Semantic.AT_LEAST_ONCE,
 			DEFAULT_KAFKA_PRODUCERS_POOL_SIZE);
 	}
 
@@ -544,10 +544,10 @@ public class FlinkKafkaProducer<IN>
 	 *                          (determined by {@link KeyedSerializationSchema#serializeKey(Object)}). If the keys
 	 *                          are {@code null}, then records will be distributed to Kafka partitions in a
 	 *                          round-robin fashion.
-	 * @param semantic Defines semantic that will be used by this producer (see {@link Semantic}).
-	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link Semantic#EXACTLY_ONCE}).
+	 * @param semantic Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
+	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE}).
 	 *
-	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, Semantic)}
+	 * @deprecated use {@link #FlinkKafkaProducer(String, KafkaSerializationSchema, Properties, FlinkKafkaProducer.Semantic)}
 	 */
 	@Deprecated
 	public FlinkKafkaProducer(
@@ -555,7 +555,7 @@ public class FlinkKafkaProducer<IN>
 			KeyedSerializationSchema<IN> serializationSchema,
 			Properties producerConfig,
 			Optional<FlinkKafkaPartitioner<IN>> customPartitioner,
-			Semantic semantic,
+			FlinkKafkaProducer.Semantic semantic,
 			int kafkaProducersPoolSize) {
 		this(
 				defaultTopicId,
@@ -575,13 +575,13 @@ public class FlinkKafkaProducer<IN>
 	 * @param defaultTopic The default topic to write data to
 	 * @param serializationSchema A serializable serialization schema for turning user objects into a kafka-consumable byte[] supporting key/value messages
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param semantic Defines semantic that will be used by this producer (see {@link Semantic}).
+	 * @param semantic Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
 	 */
 	public FlinkKafkaProducer(
 			String defaultTopic,
 			KafkaSerializationSchema<IN> serializationSchema,
 			Properties producerConfig,
-			Semantic semantic) {
+			FlinkKafkaProducer.Semantic semantic) {
 		this(
 				defaultTopic,
 				serializationSchema,
@@ -597,14 +597,14 @@ public class FlinkKafkaProducer<IN>
 	 * @param defaultTopic The default topic to write data to
 	 * @param serializationSchema A serializable serialization schema for turning user objects into a kafka-consumable byte[] supporting key/value messages
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param semantic Defines semantic that will be used by this producer (see {@link Semantic}).
-	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link Semantic#EXACTLY_ONCE}).
+	 * @param semantic Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
+	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE}).
 	 */
 	public FlinkKafkaProducer(
 		String defaultTopic,
 		KafkaSerializationSchema<IN> serializationSchema,
 		Properties producerConfig,
-		Semantic semantic,
+		FlinkKafkaProducer.Semantic semantic,
 		int kafkaProducersPoolSize) {
 		this(
 				defaultTopic,
@@ -633,8 +633,8 @@ public class FlinkKafkaProducer<IN>
 	 *                          round-robin fashion.
 	 * @param kafkaSchema A serializable serialization schema for turning user objects into a kafka-consumable byte[] supporting key/value messages
 	 * @param producerConfig Configuration properties for the KafkaProducer. 'bootstrap.servers.' is the only required argument.
-	 * @param semantic Defines semantic that will be used by this producer (see {@link Semantic}).
-	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link Semantic#EXACTLY_ONCE}).
+	 * @param semantic Defines semantic that will be used by this producer (see {@link FlinkKafkaProducer.Semantic}).
+	 * @param kafkaProducersPoolSize Overwrite default KafkaProducers pool size (see {@link FlinkKafkaProducer.Semantic#EXACTLY_ONCE}).
 	 */
 	private FlinkKafkaProducer(
 			String defaultTopic,
@@ -642,9 +642,9 @@ public class FlinkKafkaProducer<IN>
 			FlinkKafkaPartitioner<IN> customPartitioner,
 			KafkaSerializationSchema<IN> kafkaSchema,
 			Properties producerConfig,
-			Semantic semantic,
+			FlinkKafkaProducer.Semantic semantic,
 			int kafkaProducersPoolSize) {
-		super(new TransactionStateSerializer(), new ContextStateSerializer());
+		super(new FlinkKafkaProducer.TransactionStateSerializer(), new FlinkKafkaProducer.ContextStateSerializer());
 
 		this.defaultTopicId = checkNotNull(defaultTopic, "defaultTopic is null");
 
@@ -708,7 +708,7 @@ public class FlinkKafkaProducer<IN>
 		// Enable transactionTimeoutWarnings to avoid silent data loss
 		// See KAFKA-6119 (affects versions 0.11.0.0 and 0.11.0.1):
 		// The KafkaProducer may not throw an exception if the transaction failed to commit
-		if (semantic == Semantic.EXACTLY_ONCE) {
+		if (semantic == FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			final Object object = this.producerConfig.get(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG);
 			final long transactionTimeout;
 			if (object instanceof String && StringUtils.isNumeric((String) object)) {
@@ -822,7 +822,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	public void invoke(KafkaTransactionState transaction, IN next, Context context) throws FlinkKafkaException {
+	public void invoke(FlinkKafkaProducer.KafkaTransactionState transaction, IN next, Context context) throws FlinkKafkaException {
 		checkErroneous();
 
 		ProducerRecord<byte[], byte[]> record;
@@ -934,27 +934,27 @@ public class FlinkKafkaProducer<IN>
 	// ------------------- Logic for handling checkpoint flushing -------------------------- //
 
 	@Override
-	protected KafkaTransactionState beginTransaction() throws FlinkKafkaException {
+	protected FlinkKafkaProducer.KafkaTransactionState beginTransaction() throws FlinkKafkaException {
 		switch (semantic) {
 			case EXACTLY_ONCE:
 				FlinkKafkaInternalProducer<byte[], byte[]> producer = createTransactionalProducer();
 				producer.beginTransaction();
-				return new KafkaTransactionState(producer.getTransactionalId(), producer);
+				return new FlinkKafkaProducer.KafkaTransactionState(producer.getTransactionalId(), producer);
 			case AT_LEAST_ONCE:
 			case NONE:
 				// Do not create new producer on each beginTransaction() if it is not necessary
-				final KafkaTransactionState currentTransaction = currentTransaction();
+				final FlinkKafkaProducer.KafkaTransactionState currentTransaction = currentTransaction();
 				if (currentTransaction != null && currentTransaction.producer != null) {
-					return new KafkaTransactionState(currentTransaction.producer);
+					return new FlinkKafkaProducer.KafkaTransactionState(currentTransaction.producer);
 				}
-				return new KafkaTransactionState(initNonTransactionalProducer(true));
+				return new FlinkKafkaProducer.KafkaTransactionState(initNonTransactionalProducer(true));
 			default:
 				throw new UnsupportedOperationException("Not implemented semantic");
 		}
 	}
 
 	@Override
-	protected void preCommit(KafkaTransactionState transaction) throws FlinkKafkaException {
+	protected void preCommit(FlinkKafkaProducer.KafkaTransactionState transaction) throws FlinkKafkaException {
 		switch (semantic) {
 			case EXACTLY_ONCE:
 			case AT_LEAST_ONCE:
@@ -969,7 +969,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected void commit(KafkaTransactionState transaction) {
+	protected void commit(FlinkKafkaProducer.KafkaTransactionState transaction) {
 		if (transaction.isTransactional()) {
 			try {
 				transaction.producer.commitTransaction();
@@ -980,7 +980,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected void recoverAndCommit(KafkaTransactionState transaction) {
+	protected void recoverAndCommit(FlinkKafkaProducer.KafkaTransactionState transaction) {
 		if (transaction.isTransactional()) {
 			FlinkKafkaInternalProducer<byte[], byte[]> producer = null;
 			try {
@@ -1003,7 +1003,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected void abort(KafkaTransactionState transaction) {
+	protected void abort(FlinkKafkaProducer.KafkaTransactionState transaction) {
 		if (transaction.isTransactional()) {
 			transaction.producer.abortTransaction();
 			recycleTransactionalProducer(transaction.producer);
@@ -1011,7 +1011,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected void recoverAndAbort(KafkaTransactionState transaction) {
+	protected void recoverAndAbort(FlinkKafkaProducer.KafkaTransactionState transaction) {
 		if (transaction.isTransactional()) {
 			FlinkKafkaInternalProducer<byte[], byte[]> producer = null;
 			try {
@@ -1039,7 +1039,7 @@ public class FlinkKafkaProducer<IN>
 	 * Flush pending records.
 	 * @param transaction
 	 */
-	private void flush(KafkaTransactionState transaction) throws FlinkKafkaException {
+	private void flush(FlinkKafkaProducer.KafkaTransactionState transaction) throws FlinkKafkaException {
 		if (transaction.producer != null) {
 			transaction.producer.flush();
 		}
@@ -1059,7 +1059,7 @@ public class FlinkKafkaProducer<IN>
 		nextTransactionalIdHintState.clear();
 		// To avoid duplication only first subtask keeps track of next transactional id hint. Otherwise all of the
 		// subtasks would write exactly same information.
-		if (getRuntimeContext().getIndexOfThisSubtask() == 0 && semantic == Semantic.EXACTLY_ONCE) {
+		if (getRuntimeContext().getIndexOfThisSubtask() == 0 && semantic == FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			checkState(nextTransactionalIdHint != null, "nextTransactionalIdHint must be set for EXACTLY_ONCE");
 			long nextFreeTransactionalId = nextTransactionalIdHint.nextFreeTransactionalId;
 
@@ -1070,7 +1070,7 @@ public class FlinkKafkaProducer<IN>
 				nextFreeTransactionalId += getRuntimeContext().getNumberOfParallelSubtasks() * kafkaProducersPoolSize;
 			}
 
-			nextTransactionalIdHintState.add(new NextTransactionalIdHint(
+			nextTransactionalIdHintState.add(new FlinkKafkaProducer.NextTransactionalIdHint(
 				getRuntimeContext().getNumberOfParallelSubtasks(),
 				nextFreeTransactionalId));
 		}
@@ -1078,9 +1078,9 @@ public class FlinkKafkaProducer<IN>
 
 	@Override
 	public void initializeState(FunctionInitializationContext context) throws Exception {
-		if (semantic != Semantic.NONE && !((StreamingRuntimeContext) this.getRuntimeContext()).isCheckpointingEnabled()) {
-			LOG.warn("Using {} semantic, but checkpointing is not enabled. Switching to {} semantic.", semantic, Semantic.NONE);
-			semantic = Semantic.NONE;
+		if (semantic != FlinkKafkaProducer.Semantic.NONE && !((StreamingRuntimeContext) this.getRuntimeContext()).isCheckpointingEnabled()) {
+			LOG.warn("Using {} semantic, but checkpointing is not enabled. Switching to {} semantic.", semantic, FlinkKafkaProducer.Semantic.NONE);
+			semantic = FlinkKafkaProducer.Semantic.NONE;
 		}
 
 		nextTransactionalIdHintState = context.getOperatorStateStore().getUnionListState(
@@ -1104,15 +1104,15 @@ public class FlinkKafkaProducer<IN>
 			kafkaProducersPoolSize,
 			SAFE_SCALE_DOWN_FACTOR);
 
-		if (semantic != Semantic.EXACTLY_ONCE) {
+		if (semantic != FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			nextTransactionalIdHint = null;
 		} else {
-			ArrayList<NextTransactionalIdHint> transactionalIdHints = Lists.newArrayList(nextTransactionalIdHintState.get());
+			ArrayList<FlinkKafkaProducer.NextTransactionalIdHint> transactionalIdHints = Lists.newArrayList(nextTransactionalIdHintState.get());
 			if (transactionalIdHints.size() > 1) {
 				throw new IllegalStateException(
 					"There should be at most one next transactional id hint written by the first subtask");
 			} else if (transactionalIdHints.size() == 0) {
-				nextTransactionalIdHint = new NextTransactionalIdHint(0, 0);
+				nextTransactionalIdHint = new FlinkKafkaProducer.NextTransactionalIdHint(0, 0);
 
 				// this means that this is either:
 				// (1) the first execution of this application
@@ -1129,14 +1129,14 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected Optional<KafkaTransactionContext> initializeUserContext() {
-		if (semantic != Semantic.EXACTLY_ONCE) {
+	protected Optional<FlinkKafkaProducer.KafkaTransactionContext> initializeUserContext() {
+		if (semantic != FlinkKafkaProducer.Semantic.EXACTLY_ONCE) {
 			return Optional.empty();
 		}
 
 		Set<String> transactionalIds = generateNewTransactionalIds();
 		resetAvailableTransactionalIdsPool(transactionalIds);
-		return Optional.of(new KafkaTransactionContext(transactionalIds));
+		return Optional.of(new FlinkKafkaProducer.KafkaTransactionContext(transactionalIds));
 	}
 
 	private Set<String> generateNewTransactionalIds() {
@@ -1148,7 +1148,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	@Override
-	protected void finishRecoveringContext(Collection<KafkaTransactionState> handledTransactions) {
+	protected void finishRecoveringContext(Collection<FlinkKafkaProducer.KafkaTransactionState> handledTransactions) {
 		cleanUpUserContext(handledTransactions);
 		resetAvailableTransactionalIdsPool(getUserContext().get().transactionalIds);
 		LOG.info("Recovered transactionalIds {}", getUserContext().get().transactionalIds);
@@ -1164,7 +1164,7 @@ public class FlinkKafkaProducer<IN>
 	 * @param handledTransactions
 	 * 		transactions which were already committed or aborted and do not need further handling
 	 */
-	private void cleanUpUserContext(Collection<KafkaTransactionState> handledTransactions) {
+	private void cleanUpUserContext(Collection<FlinkKafkaProducer.KafkaTransactionState> handledTransactions) {
 		if (!getUserContext().isPresent()) {
 			return;
 		}
@@ -1211,7 +1211,7 @@ public class FlinkKafkaProducer<IN>
 	}
 
 	int getTransactionCoordinatorId() {
-		final KafkaTransactionState currentTransaction = currentTransaction();
+		final FlinkKafkaProducer.KafkaTransactionState currentTransaction = currentTransaction();
 		if (currentTransaction == null || currentTransaction.producer == null) {
 			throw new IllegalArgumentException();
 		}
@@ -1416,7 +1416,7 @@ public class FlinkKafkaProducer<IN>
 				return false;
 			}
 
-			KafkaTransactionState that = (KafkaTransactionState) o;
+			FlinkKafkaProducer.KafkaTransactionState that = (FlinkKafkaProducer.KafkaTransactionState) o;
 
 			if (producerId != that.producerId) {
 				return false;
@@ -1460,7 +1460,7 @@ public class FlinkKafkaProducer<IN>
 				return false;
 			}
 
-			KafkaTransactionContext that = (KafkaTransactionContext) o;
+			FlinkKafkaProducer.KafkaTransactionContext that = (FlinkKafkaProducer.KafkaTransactionContext) o;
 
 			return transactionalIds.equals(that.transactionalIds);
 		}
@@ -1473,11 +1473,11 @@ public class FlinkKafkaProducer<IN>
 
 	/**
 	 * {@link org.apache.flink.api.common.typeutils.TypeSerializer} for
-	 * {@link KafkaTransactionState}.
+	 * {@link FlinkKafkaProducer.KafkaTransactionState}.
 	 */
 	@VisibleForTesting
 	@Internal
-	public static class TransactionStateSerializer extends TypeSerializerSingleton<KafkaTransactionState> {
+	public static class TransactionStateSerializer extends TypeSerializerSingleton<FlinkKafkaProducer.KafkaTransactionState> {
 
 		private static final long serialVersionUID = 1L;
 
@@ -1487,19 +1487,19 @@ public class FlinkKafkaProducer<IN>
 		}
 
 		@Override
-		public KafkaTransactionState createInstance() {
+		public FlinkKafkaProducer.KafkaTransactionState createInstance() {
 			return null;
 		}
 
 		@Override
-		public KafkaTransactionState copy(KafkaTransactionState from) {
+		public FlinkKafkaProducer.KafkaTransactionState copy(FlinkKafkaProducer.KafkaTransactionState from) {
 			return from;
 		}
 
 		@Override
-		public KafkaTransactionState copy(
-			KafkaTransactionState from,
-			KafkaTransactionState reuse) {
+		public FlinkKafkaProducer.KafkaTransactionState copy(
+			FlinkKafkaProducer.KafkaTransactionState from,
+			FlinkKafkaProducer.KafkaTransactionState reuse) {
 			return from;
 		}
 
@@ -1510,7 +1510,7 @@ public class FlinkKafkaProducer<IN>
 
 		@Override
 		public void serialize(
-			KafkaTransactionState record,
+			FlinkKafkaProducer.KafkaTransactionState record,
 			DataOutputView target) throws IOException {
 			if (record.transactionalId == null) {
 				target.writeBoolean(false);
@@ -1523,19 +1523,19 @@ public class FlinkKafkaProducer<IN>
 		}
 
 		@Override
-		public KafkaTransactionState deserialize(DataInputView source) throws IOException {
+		public FlinkKafkaProducer.KafkaTransactionState deserialize(DataInputView source) throws IOException {
 			String transactionalId = null;
 			if (source.readBoolean()) {
 				transactionalId = source.readUTF();
 			}
 			long producerId = source.readLong();
 			short epoch = source.readShort();
-			return new KafkaTransactionState(transactionalId, producerId, epoch, null);
+			return new FlinkKafkaProducer.KafkaTransactionState(transactionalId, producerId, epoch, null);
 		}
 
 		@Override
-		public KafkaTransactionState deserialize(
-			KafkaTransactionState reuse,
+		public FlinkKafkaProducer.KafkaTransactionState deserialize(
+			FlinkKafkaProducer.KafkaTransactionState reuse,
 			DataInputView source) throws IOException {
 			return deserialize(source);
 		}
@@ -1555,7 +1555,7 @@ public class FlinkKafkaProducer<IN>
 		// -----------------------------------------------------------------------------------
 
 		@Override
-		public TypeSerializerSnapshot<KafkaTransactionState> snapshotConfiguration() {
+		public TypeSerializerSnapshot<FlinkKafkaProducer.KafkaTransactionState> snapshotConfiguration() {
 			return new TransactionStateSerializerSnapshot();
 		}
 
@@ -1563,7 +1563,7 @@ public class FlinkKafkaProducer<IN>
 		 * Serializer configuration snapshot for compatibility and format evolution.
 		 */
 		@SuppressWarnings("WeakerAccess")
-		public static final class TransactionStateSerializerSnapshot extends SimpleTypeSerializerSnapshot<KafkaTransactionState> {
+		public static final class TransactionStateSerializerSnapshot extends SimpleTypeSerializerSnapshot<FlinkKafkaProducer.KafkaTransactionState> {
 
 			public TransactionStateSerializerSnapshot() {
 				super(TransactionStateSerializer::new);
@@ -1573,11 +1573,11 @@ public class FlinkKafkaProducer<IN>
 
 	/**
 	 * {@link org.apache.flink.api.common.typeutils.TypeSerializer} for
-	 * {@link KafkaTransactionContext}.
+	 * {@link FlinkKafkaProducer.KafkaTransactionContext}.
 	 */
 	@VisibleForTesting
 	@Internal
-	public static class ContextStateSerializer extends TypeSerializerSingleton<KafkaTransactionContext> {
+	public static class ContextStateSerializer extends TypeSerializerSingleton<FlinkKafkaProducer.KafkaTransactionContext> {
 
 		private static final long serialVersionUID = 1L;
 
@@ -1587,19 +1587,19 @@ public class FlinkKafkaProducer<IN>
 		}
 
 		@Override
-		public KafkaTransactionContext createInstance() {
+		public FlinkKafkaProducer.KafkaTransactionContext createInstance() {
 			return null;
 		}
 
 		@Override
-		public KafkaTransactionContext copy(KafkaTransactionContext from) {
+		public FlinkKafkaProducer.KafkaTransactionContext copy(FlinkKafkaProducer.KafkaTransactionContext from) {
 			return from;
 		}
 
 		@Override
-		public KafkaTransactionContext copy(
-			KafkaTransactionContext from,
-			KafkaTransactionContext reuse) {
+		public FlinkKafkaProducer.KafkaTransactionContext copy(
+			FlinkKafkaProducer.KafkaTransactionContext from,
+			FlinkKafkaProducer.KafkaTransactionContext reuse) {
 			return from;
 		}
 
@@ -1610,7 +1610,7 @@ public class FlinkKafkaProducer<IN>
 
 		@Override
 		public void serialize(
-			KafkaTransactionContext record,
+			FlinkKafkaProducer.KafkaTransactionContext record,
 			DataOutputView target) throws IOException {
 			int numIds = record.transactionalIds.size();
 			target.writeInt(numIds);
@@ -1620,18 +1620,18 @@ public class FlinkKafkaProducer<IN>
 		}
 
 		@Override
-		public KafkaTransactionContext deserialize(DataInputView source) throws IOException {
+		public FlinkKafkaProducer.KafkaTransactionContext deserialize(DataInputView source) throws IOException {
 			int numIds = source.readInt();
 			Set<String> ids = new HashSet<>(numIds);
 			for (int i = 0; i < numIds; i++) {
 				ids.add(source.readUTF());
 			}
-			return new KafkaTransactionContext(ids);
+			return new FlinkKafkaProducer.KafkaTransactionContext(ids);
 		}
 
 		@Override
-		public KafkaTransactionContext deserialize(
-			KafkaTransactionContext reuse,
+		public FlinkKafkaProducer.KafkaTransactionContext deserialize(
+			FlinkKafkaProducer.KafkaTransactionContext reuse,
 			DataInputView source) throws IOException {
 			return deserialize(source);
 		}
@@ -1717,7 +1717,7 @@ public class FlinkKafkaProducer<IN>
 
 	/**
 	 * {@link org.apache.flink.api.common.typeutils.TypeSerializer} for
-	 * {@link NextTransactionalIdHint}.
+	 * {@link FlinkKafkaProducer.NextTransactionalIdHint}.
 	 */
 	@VisibleForTesting
 	@Internal

@@ -23,7 +23,7 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 /**
- * Test {@link SourceFunction.SourceContext}.
+ * Test {@link org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext}.
  */
 public class TestSourceContext<T> implements SourceFunction.SourceContext<T> {
 

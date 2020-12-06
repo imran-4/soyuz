@@ -23,7 +23,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import java.io.Serializable;
 
 /**
- * A {@link TimestampAssigner} that is also {@link Serializable}.
+ * A {@link TimestampAssigner} that is also {@link java.io.Serializable}.
  */
 @PublicEvolving
 @FunctionalInterface

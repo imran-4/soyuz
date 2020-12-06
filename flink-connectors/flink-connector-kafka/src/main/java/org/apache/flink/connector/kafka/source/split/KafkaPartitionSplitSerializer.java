@@ -29,7 +29,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * The {@link SimpleVersionedSerializer serializer} for {@link KafkaPartitionSplit}.
+ * The {@link org.apache.flink.core.io.SimpleVersionedSerializer serializer} for {@link KafkaPartitionSplit}.
  */
 public class KafkaPartitionSplitSerializer implements SimpleVersionedSerializer<KafkaPartitionSplit> {
 

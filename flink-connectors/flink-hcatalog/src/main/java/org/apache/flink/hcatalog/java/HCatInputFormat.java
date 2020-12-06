@@ -29,7 +29,7 @@ import org.apache.hive.hcatalog.data.HCatRecord;
  * A InputFormat to read from HCatalog tables.
  * The InputFormat supports projection (selection and order of fields) and partition filters.
  *
- * <p>Data can be returned as {@link HCatRecord} or Flink {@link Tuple}.
+ * <p>Data can be returned as {@link HCatRecord} or Flink {@link org.apache.flink.api.java.tuple.Tuple}.
  * Flink tuples support only up to 25 fields.
  *
  * @param <T>

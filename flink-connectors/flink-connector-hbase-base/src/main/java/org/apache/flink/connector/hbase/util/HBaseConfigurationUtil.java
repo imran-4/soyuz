@@ -164,8 +164,8 @@ public class HBaseConfigurationUtil {
 		writable.readFields(dataInputStream);
 	}
 
-	public static Configuration createHBaseConf() {
-		Configuration hbaseClientConf = HBaseConfiguration.create();
+	public static org.apache.hadoop.conf.Configuration createHBaseConf() {
+		org.apache.hadoop.conf.Configuration hbaseClientConf = HBaseConfiguration.create();
 
 		String hbaseConfDir = System.getenv(ENV_HBASE_CONF_DIR);
 

@@ -40,7 +40,7 @@ import java.io.Serializable;
  * DataSet<X> result = input.groupBy(<key-definition>).reduce(new MyReduceFunction());
  * }</pre>
  *
- * <p>Like all functions, the ReduceFunction needs to be serializable, as defined in {@link Serializable}.
+ * <p>Like all functions, the ReduceFunction needs to be serializable, as defined in {@link java.io.Serializable}.
  *
  * @param <T> Type of the elements that this function processes.
  */

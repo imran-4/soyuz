@@ -88,7 +88,7 @@ public class RowSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Row,
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class RowSerializerSetup implements PreUpgradeSetup<Row> {
+	public static final class RowSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Row> {
 		@Override
 		public TypeSerializer<Row> createPriorSerializer() {
 			return createRowSerializer();
@@ -108,7 +108,7 @@ public class RowSerializerUpgradeTest extends TypeSerializerUpgradeTestBase<Row,
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class RowSerializerVerifier implements UpgradeVerifier<Row> {
+	public static final class RowSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Row> {
 		@Override
 		public TypeSerializer<Row> createUpgradedSerializer() {
 			return createRowSerializer();

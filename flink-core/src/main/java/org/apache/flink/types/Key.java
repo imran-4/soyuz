@@ -22,16 +22,16 @@ import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * This interface has to be implemented by all data types that act as key. Keys are used to establish
- * relationships between values. A key must always be {@link Comparable} to other keys of
- * the same type. In addition, keys must implement a correct {@link Object#hashCode()} method
- * and {@link Object#equals(Object)} method to ensure that grouping on keys works properly.
+ * relationships between values. A key must always be {@link java.lang.Comparable} to other keys of
+ * the same type. In addition, keys must implement a correct {@link java.lang.Object#hashCode()} method
+ * and {@link java.lang.Object#equals(Object)} method to ensure that grouping on keys works properly.
  * <p>
- * This interface extends {@link Value} and requires to implement
+ * This interface extends {@link org.apache.flink.types.Value} and requires to implement
  * the serialization of its value.
  *
- * @see Value
+ * @see org.apache.flink.types.Value
  * @see org.apache.flink.core.io.IOReadableWritable
- * @see Comparable
+ * @see java.lang.Comparable
  *
  * @deprecated The Key type is a relict of a deprecated and removed API and will be removed
  *             in future (2.0) versions as well.

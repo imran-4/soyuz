@@ -862,7 +862,7 @@ public class FlinkKinesisConsumerTest extends TestLogger {
 				@Override
 				protected KinesisDataFetcher<String> createFetcher(
 					List<String> streams,
-					SourceContext<String> sourceContext,
+					SourceFunction.SourceContext<String> sourceContext,
 					RuntimeContext runtimeContext,
 					Properties configProps,
 					KinesisDeserializationSchema<String> deserializationSchema) {

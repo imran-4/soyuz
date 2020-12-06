@@ -55,7 +55,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	/**
 	 * Creates a new instance for the given file using the given input format.
 	 *
-	 * @param format The {@link InputFormat} implementation used to read the data.
+	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
 	 * @param operatorInfo The type information for the operator.
 	 * @param name The given name for the Pact, used in plans, logs and progress messages.
 	 */
@@ -72,7 +72,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	/**
 	 * Creates a new instance for the given file using the given input format, using the default name.
 	 *
-	 * @param format The {@link InputFormat} implementation used to read the data.
+	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
 	 * @param operatorInfo The type information for the operator.
 	 */
 	public GenericDataSourceBase(T format, OperatorInformation<OUT> operatorInfo) {
@@ -88,7 +88,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	/**
 	 * Creates a new instance for the given file using the given input format.
 	 *
-	 * @param format The {@link InputFormat} implementation used to read the data.
+	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
 	 * @param operatorInfo The type information for the operator.
 	 * @param name The given name for the Pact, used in plans, logs and progress messages.
 	 */
@@ -105,7 +105,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	/**
 	 * Creates a new instance for the given file using the given input format, using the default name.
 	 *
-	 * @param format The {@link InputFormat} implementation used to read the data.
+	 * @param format The {@link org.apache.flink.api.common.io.InputFormat} implementation used to read the data.
 	 * @param operatorInfo The type information for the operator.
 	 */
 	public GenericDataSourceBase(Class<? extends T> format, OperatorInformation<OUT> operatorInfo) {
@@ -136,7 +136,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	 * 
 	 * @return The class describing the input format.
 	 * 
-	 * @see Operator#getUserCodeWrapper()
+	 * @see org.apache.flink.api.common.operators.Operator#getUserCodeWrapper()
 	 */
 	@Override
 	public UserCodeWrapper<? extends T> getUserCodeWrapper() {
@@ -196,7 +196,7 @@ public class GenericDataSourceBase<OUT, T extends InputFormat<OUT, ?>> extends O
 	 * 
 	 * @param visitor The visitor.
 	 *  
-	 * @see org.apache.flink.util.Visitable#accept(Visitor)
+	 * @see org.apache.flink.util.Visitable#accept(org.apache.flink.util.Visitor)
 	 */
 	@Override
 	public void accept(Visitor<Operator<?>> visitor) {

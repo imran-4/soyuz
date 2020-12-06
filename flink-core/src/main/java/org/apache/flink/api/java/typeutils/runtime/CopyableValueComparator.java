@@ -159,7 +159,7 @@ public class CopyableValueComparator<T extends CopyableValue<T> & Comparable<T>>
 	// serialization
 	// --------------------------------------------------------------------------------------------
 	
-	private void readObject(java.io.ObjectInputStream s) throws IOException, ClassNotFoundException {
+	private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
 		// read basic object and the type
 		s.defaultReadObject();
 		

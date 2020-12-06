@@ -42,8 +42,8 @@ import org.apache.flink.util.Visitor;
  * via {@link #getSolutionSet()}, and be accessed by joining (or CoGrouping) with it. The solution
  * set is updated by producing a delta for it, which is merged into the solution set at the end of each iteration step.
  * <p>
- * The delta iteration must be closed by setting a delta for the solution set ({@link #setSolutionSetDelta(Operator)})
- * and the new workset (the data set that will be fed back, {@link #setNextWorkset(Operator)}).
+ * The delta iteration must be closed by setting a delta for the solution set ({@link #setSolutionSetDelta(org.apache.flink.api.common.operators.Operator)})
+ * and the new workset (the data set that will be fed back, {@link #setNextWorkset(org.apache.flink.api.common.operators.Operator)}).
  * The DeltaIteration itself represents the result after the iteration has terminated.
  * Delta iterations terminate when the feed back data set (the workset) is empty.
  * In addition, a maximum number of steps is given as a fall back termination guard.

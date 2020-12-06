@@ -73,7 +73,7 @@ public class NullableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class NullablePaddedSerializerSetup implements PreUpgradeSetup<Long> {
+	public static final class NullablePaddedSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Long> {
 		@Override
 		public TypeSerializer<Long> createPriorSerializer() {
 			return NullableSerializer.wrap(LongSerializer.INSTANCE, true);
@@ -88,7 +88,7 @@ public class NullableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class NullablePaddedSerializerVerifier implements UpgradeVerifier<Long> {
+	public static final class NullablePaddedSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Long> {
 		@Override
 		public TypeSerializer<Long> createUpgradedSerializer() {
 			return NullableSerializer.wrap(LongSerializer.INSTANCE, true);
@@ -112,7 +112,7 @@ public class NullableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class NullableNotPaddedSerializerSetup implements PreUpgradeSetup<Long> {
+	public static final class NullableNotPaddedSerializerSetup implements TypeSerializerUpgradeTestBase.PreUpgradeSetup<Long> {
 		@Override
 		public TypeSerializer<Long> createPriorSerializer() {
 			return NullableSerializer.wrap(LongSerializer.INSTANCE, false);
@@ -127,7 +127,7 @@ public class NullableSerializerUpgradeTest extends TypeSerializerUpgradeTestBase
 	/**
 	 * This class is only public to work with {@link org.apache.flink.api.common.typeutils.ClassRelocator}.
 	 */
-	public static final class NullableNotPaddedSerializerVerifier implements UpgradeVerifier<Long> {
+	public static final class NullableNotPaddedSerializerVerifier implements TypeSerializerUpgradeTestBase.UpgradeVerifier<Long> {
 		@Override
 		public TypeSerializer<Long> createUpgradedSerializer() {
 			return NullableSerializer.wrap(LongSerializer.INSTANCE, false);

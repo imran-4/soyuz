@@ -168,12 +168,12 @@ public class HiveShimV100 implements HiveShim {
 
 	@Override
 	public Class<?> getDateDataTypeClass() {
-		return Date.class;
+		return java.sql.Date.class;
 	}
 
 	@Override
 	public Class<?> getTimestampDataTypeClass() {
-		return Timestamp.class;
+		return java.sql.Timestamp.class;
 	}
 
 	@Override

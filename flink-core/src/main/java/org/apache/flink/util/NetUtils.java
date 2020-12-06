@@ -251,7 +251,7 @@ public class NetUtils {
 	 * @param host The address to be included in the URL.
 	 * @param port The port for the URL address.
 	 * @return The proper URL string encoded IP address and port.
-	 * @throws UnknownHostException Thrown, if the hostname cannot be translated into a URL.
+	 * @throws java.net.UnknownHostException Thrown, if the hostname cannot be translated into a URL.
 	 */
 	public static String hostAndPortToUrlString(String host, int port) throws UnknownHostException {
 		return ipAddressAndPortToUrlString(InetAddress.getByName(host), port);

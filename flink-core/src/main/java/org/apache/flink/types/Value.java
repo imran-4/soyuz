@@ -30,7 +30,7 @@ import org.apache.flink.core.io.IOReadableWritable;
  * This interface extends {@link IOReadableWritable} and requires to implement
  * the serialization of its value.
  * 
- * @see IOReadableWritable
+ * @see org.apache.flink.core.io.IOReadableWritable
  */
 @Public
 public interface Value extends IOReadableWritable, Serializable {

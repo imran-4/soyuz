@@ -41,8 +41,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for extracting {@link TypeInformation} from types
- * using a {@link TypeInfoFactory}
+ * Tests for extracting {@link org.apache.flink.api.common.typeinfo.TypeInformation} from types
+ * using a {@link org.apache.flink.api.common.typeinfo.TypeInfoFactory}
  */
 public class TypeInfoFactoryTest {
 

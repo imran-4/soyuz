@@ -32,12 +32,12 @@ import java.nio.ReadOnlyBufferException;
  * The segment may be backed by heap memory (byte array) or by off-heap memory.
  *
  * <p>The methods for individual memory access are specialized in the classes
- * {@link HeapMemorySegment} and
- * {@link HybridMemorySegment}.
+ * {@link org.apache.flink.core.memory.HeapMemorySegment} and
+ * {@link org.apache.flink.core.memory.HybridMemorySegment}.
  * All methods that operate across two memory segments are implemented in this class,
  * to transparently handle the mixing of memory segment types.
  *
- * <p>This class fulfills conceptually a similar purpose as Java's {@link ByteBuffer}.
+ * <p>This class fulfills conceptually a similar purpose as Java's {@link java.nio.ByteBuffer}.
  * We add this specialized class for various reasons:
  * <ul>
  *     <li>It offers additional binary compare, swap, and copy methods.</li>
@@ -85,8 +85,8 @@ import java.nio.ReadOnlyBufferException;
  * <p><i>Note on efficiency</i>:
  * For best efficiency, the code that uses this class should make sure that only one
  * subclass is loaded, or that the methods that are abstract in this class are used only from one of the
- * subclasses (either the {@link HeapMemorySegment}, or the
- * {@link HybridMemorySegment}).
+ * subclasses (either the {@link org.apache.flink.core.memory.HeapMemorySegment}, or the
+ * {@link org.apache.flink.core.memory.HybridMemorySegment}).
  *
  * <p>That way, all the abstract methods in the MemorySegment base class have only one loaded
  * actual implementation. This is easy for the JIT to recognize through class hierarchy analysis,

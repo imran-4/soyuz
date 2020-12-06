@@ -654,7 +654,7 @@ public class KinesisDataFetcherTest extends TestLogger {
 		@Override
 		protected KinesisDataFetcher<T> createFetcher(
 				List<String> streams,
-				SourceContext<T> sourceContext,
+				SourceFunction.SourceContext<T> sourceContext,
 				RuntimeContext runtimeContext,
 				Properties configProps,
 				KinesisDeserializationSchema<T> deserializationSchema) {
@@ -771,7 +771,7 @@ public class KinesisDataFetcherTest extends TestLogger {
 			new TestableKinesisDataFetcher<String>(
 				singletonList(fakeStream1),
 				sourceContext,
-				new Properties(),
+				new java.util.Properties(),
 				new KinesisDeserializationSchemaWrapper<>(new org.apache.flink.streaming.util.serialization.SimpleStringSchema()),
 				1,
 				1,

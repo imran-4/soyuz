@@ -42,7 +42,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * Operator for nodes that act as data sinks, storing the data they receive.
- * The way the data is stored is handled by the {@link OutputFormat}.
+ * The way the data is stored is handled by the {@link org.apache.flink.api.common.io.OutputFormat}.
  */
 @Internal
 public class GenericDataSinkBase<IN> extends Operator<Nothing> {
@@ -56,10 +56,10 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	// --------------------------------------------------------------------------------------------
 
 	/**
-	 * Creates a GenericDataSink with the provided {@link OutputFormat} implementation
+	 * Creates a GenericDataSink with the provided {@link org.apache.flink.api.common.io.OutputFormat} implementation
 	 * and the given name.
 	 *
-	 * @param f The {@link OutputFormat} implementation used to sink the data.
+	 * @param f The {@link org.apache.flink.api.common.io.OutputFormat} implementation used to sink the data.
 	 * @param name The given name for the sink, used in plans, logs and progress messages.
 	 */
 	public GenericDataSinkBase(OutputFormat<IN> f, UnaryOperatorInformation<IN, Nothing> operatorInfo, String name) {
@@ -70,10 +70,10 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	}
 
 	/**
-	 * Creates a GenericDataSink with the provided {@link OutputFormat} implementation
+	 * Creates a GenericDataSink with the provided {@link org.apache.flink.api.common.io.OutputFormat} implementation
 	 * and the given name.
 	 *
-	 * @param f The {@link OutputFormat} implementation used to sink the data.
+	 * @param f The {@link org.apache.flink.api.common.io.OutputFormat} implementation used to sink the data.
 	 * @param name The given name for the sink, used in plans, logs and progress messages.
 	 */
 	public GenericDataSinkBase(UserCodeWrapper<? extends OutputFormat<IN>> f, UnaryOperatorInformation<IN, Nothing> operatorInfo, String name) {
@@ -105,7 +105,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * Sets the input to the union of the given operators.
 	 *
 	 * @param inputs The operator(s) that form the input.
-	 * @deprecated This method will be removed in future versions. Use the {@link Union} operator instead.
+	 * @deprecated This method will be removed in future versions. Use the {@link org.apache.flink.api.common.operators.Union} operator instead.
 	 */
 	@Deprecated
 	public void setInputs(Operator<IN>... inputs) {
@@ -117,7 +117,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * Sets the input to the union of the given operators.
 	 *
 	 * @param inputs The operator(s) that form the input.
-	 * @deprecated This method will be removed in future versions. Use the {@link Union} operator instead.
+	 * @deprecated This method will be removed in future versions. Use the {@link org.apache.flink.api.common.operators.Union} operator instead.
 	 */
 	@Deprecated
 	public void setInputs(List<Operator<IN>> inputs) {
@@ -129,7 +129,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * Adds to the input the union of the given operators.
 	 *
 	 * @param inputs The operator(s) to be unioned with the input.
-	 * @deprecated This method will be removed in future versions. Use the {@link Union} operator instead.
+	 * @deprecated This method will be removed in future versions. Use the {@link org.apache.flink.api.common.operators.Union} operator instead.
 	 */
 	@Deprecated
 	public void addInput(Operator<IN>... inputs) {
@@ -141,7 +141,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * Adds to the input the union of the given operators.
 	 *
 	 * @param inputs The operator(s) to be unioned with the input.
-	 * @deprecated This method will be removed in future versions. Use the {@link Union} operator instead.
+	 * @deprecated This method will be removed in future versions. Use the {@link org.apache.flink.api.common.operators.Union} operator instead.
 	 */
 	@SuppressWarnings("unchecked")
 	@Deprecated
@@ -194,7 +194,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * 
 	 * @return The class describing the output format.
 	 * 
-	 * @see Operator#getUserCodeWrapper()
+	 * @see org.apache.flink.api.common.operators.Operator#getUserCodeWrapper()
 	 */
 	@Override
 	public UserCodeWrapper<? extends OutputFormat<IN>> getUserCodeWrapper() {
@@ -211,7 +211,7 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
 	 * 
 	 * @param visitor The visitor.
 	 *  
-	 * @see org.apache.flink.util.Visitable#accept(Visitor)
+	 * @see org.apache.flink.util.Visitable#accept(org.apache.flink.util.Visitor)
 	 */
 	@Override
 	public void accept(Visitor<Operator<?>> visitor) {

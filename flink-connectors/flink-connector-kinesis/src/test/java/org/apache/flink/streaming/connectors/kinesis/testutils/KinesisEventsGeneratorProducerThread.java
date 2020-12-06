@@ -56,7 +56,7 @@ public class KinesisEventsGeneratorProducerThread {
 					see.setParallelism(parallelism);
 
 					// start data generator
-					DataStream<String> simpleStringStream = see.addSource(new EventsGenerator(totalEventCount)).setParallelism(1);
+					DataStream<String> simpleStringStream = see.addSource(new KinesisEventsGeneratorProducerThread.EventsGenerator(totalEventCount)).setParallelism(1);
 
 					Properties producerProps = new Properties();
 					producerProps.setProperty(AWSConfigConstants.AWS_ACCESS_KEY_ID, awsAccessKey);
