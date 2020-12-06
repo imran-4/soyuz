@@ -201,14 +201,14 @@ public class PackagedProgram {
 	/**
 	 * Returns the classpaths that are required by the program.
 	 *
-	 * @return List of {@link URL}s.
+	 * @return List of {@link java.net.URL}s.
 	 */
 	public List<URL> getClasspaths() {
 		return this.classpaths;
 	}
 
 	/**
-	 * Gets the {@link ClassLoader} that must be used to load user code classes.
+	 * Gets the {@link java.lang.ClassLoader} that must be used to load user code classes.
 	 *
 	 * @return The user code ClassLoader.
 	 */

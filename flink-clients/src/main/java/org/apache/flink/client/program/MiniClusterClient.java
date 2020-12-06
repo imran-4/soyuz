@@ -134,7 +134,7 @@ public class MiniClusterClient implements ClusterClient<MiniClusterClient.MiniCl
 	}
 
 	@Override
-	public MiniClusterId getClusterId() {
+	public MiniClusterClient.MiniClusterId getClusterId() {
 		return MiniClusterId.INSTANCE;
 	}
 
