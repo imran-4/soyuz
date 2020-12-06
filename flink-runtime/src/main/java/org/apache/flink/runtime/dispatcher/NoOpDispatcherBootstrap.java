@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.flink.table.codegen
+package org.apache.flink.runtime.dispatcher;
 
-import org.apache.flink.api.common.InvalidProgramException
-import org.codehaus.commons.compiler.CompileException
-import org.codehaus.janino.SimpleCompiler
+import org.apache.flink.annotation.Internal;
+import org.apache.flink.runtime.jobgraph.JobGraph;
 
-trait Compiler[T] {
+/**
+ * A {@link DispatcherBootstrap} which submits the provided {@link JobGraph job graphs}
+ * for execution upon dispatcher initialization.
+ */
+@Internal
+public class NoOpDispatcherBootstrap implements DispatcherBootstrap {
 
-  @throws(classOf[CompileException])
-  def compile(cl: ClassLoader, name: String, code: String): Class[T] = {
-    require(cl != null, "Classloader must not be null.")
-    val compiler = new SimpleCompiler()
-    compiler.setParentClassLoader(cl)
-    try {
-      compiler.cook(code)
-    } catch {
-      case t: Throwable =>
-        throw new InvalidProgramException("Table program cannot be compiled. " +
-          "This is a bug. Please file an issue.", t)
-    }
-    compiler.getClassLoader.loadClass(name).asInstanceOf[Class[T]]
-  }
+	public NoOpDispatcherBootstrap() {
+	}
+
+	@Override
+	public void stop() throws Exception {
+		// do nothing
+	}
 }

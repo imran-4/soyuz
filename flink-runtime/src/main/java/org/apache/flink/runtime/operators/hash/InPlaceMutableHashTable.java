@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.operators.hash;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeutils.SameTypePairComparator;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -27,10 +26,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.io.disk.RandomAccessInputView;
-import org.apache.flink.runtime.io.disk.iomanager.IOManager;
 import org.apache.flink.runtime.memory.AbstractPagedOutputView;
-import org.apache.flink.runtime.memory.MemoryAllocationException;
-import org.apache.flink.runtime.memory.MemoryManager;
 import org.apache.flink.util.MathUtils;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
@@ -116,9 +112,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 */
 	private final ArrayList<MemorySegment> freeMemorySegments;
 
-	private MemoryManager memoryManager;
-	private Object memoryOwner;
-
 	private final int numAllMemorySegments;
 
 	private final int segmentSize;
@@ -166,12 +159,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	private boolean enableResize;
 
 
-	public InPlaceMutableHashTable(TypeSerializer<T> serializer, TypeComparator<T> comparator, List<MemorySegment> memory, MemoryManager memoryManager, Object memoryOwner) {
-		this(serializer, comparator, memory);
-		this.memoryManager = memoryManager;
-		this.memoryOwner = memoryOwner;
-	}
-
 	public InPlaceMutableHashTable(TypeSerializer<T> serializer, TypeComparator<T> comparator, List<MemorySegment> memory) {
 		super(serializer, comparator);
 		this.numAllMemorySegments = memory.size();
@@ -180,11 +167,8 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		// some sanity checks first
 		if (freeMemorySegments.size() < MIN_NUM_MEMORY_SEGMENTS) {
 			throw new IllegalArgumentException("Too few memory segments provided. InPlaceMutableHashTable needs at least " +
-					MIN_NUM_MEMORY_SEGMENTS + " memory segments.");
+				MIN_NUM_MEMORY_SEGMENTS + " memory segments.");
 		}
-
-		this.memoryManager = null;
-		this.memoryOwner = null;
 
 		// Get the size of the first memory segment and record it. All further buffers must have the same size.
 		// the size must also be a power of 2
@@ -351,13 +335,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		if (s > 0) {
 			return freeMemorySegments.remove(s - 1);
 		} else {
-			//return null;
-			try {
-				return memoryManager.allocatePages(memoryOwner, 1).get(0);
-				// TODO: Check that it is not slow because of allocating one at a time
-			} catch (MemoryAllocationException e) {
-				return null;
-			}
+			return null;
 		}
 	}
 
@@ -375,7 +353,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 * Otherwise, the specified record is inserted.
 	 * @param record The record to insert or to replace with.
 	 * @throws IOException (EOFException specifically, if memory ran out)
-	 */
+     */
 	@Override
 	public void insertOrReplaceRecord(T record) throws IOException {
 		if (closed) {
@@ -395,7 +373,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 * Note: this method doesn't care about whether a record with the same key is already present.
 	 * @param record The record to insert.
 	 * @throws IOException (EOFException specifically, if memory ran out)
-	 */
+     */
 	@Override
 	public void insert(T record) throws IOException {
 		if (closed) {
@@ -422,16 +400,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		resizeTableIfNecessary();
 	}
 
-	// Copied from CompactingHashTable
-	public void buildTableWithUniqueKey(final MutableObjectIterator<T> input) throws IOException {
-		// go over the complete input and insert every element into the hash table
-
-		T value;
-		while (!this.closed && (value = input.next()) != null) {
-			insertOrReplaceRecord(value);
-		}
-	}
-
 	private void resizeTableIfNecessary() throws IOException {
 		if (enableResize && numElements > numBuckets) {
 			final long newNumBucketSegments = 2L * bucketSegments.length;
@@ -440,8 +408,8 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 			// - don't take more memory than the free memory we have left
 			// - the buckets shouldn't occupy more than half of all our memory
 			if (newNumBucketSegments * numBucketsPerSegment < Integer.MAX_VALUE &&
-					newNumBucketSegments - bucketSegments.length < freeMemorySegments.size() &&
-					newNumBucketSegments < numAllMemorySegments / 2) {
+				newNumBucketSegments - bucketSegments.length < freeMemorySegments.size() &&
+				newNumBucketSegments < numAllMemorySegments / 2) {
 				// do the resize
 				rebuild(newNumBucketSegments);
 			}
@@ -453,7 +421,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 * WARNING: Doing any other operation on the table invalidates the iterator! (Even
 	 * using getMatchFor of a prober!)
 	 * @return the iterator
-	 */
+     */
 	@Override
 	public EntryIterator getEntryIterator() {
 		return new EntryIterator();
@@ -499,7 +467,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 
 		} catch (EOFException ex) {
 			throw new RuntimeException("Bug in InPlaceMutableHashTable: we shouldn't get out of memory during a rebuild, " +
-					"because we aren't allocating any new memory.");
+				"because we aren't allocating any new memory.");
 		}
 	}
 
@@ -521,13 +489,13 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 */
 	private String getMemoryConsumptionString() {
 		return "InPlaceMutableHashTable memory stats:\n" +
-				"Total memory:     " + numAllMemorySegments * segmentSize + "\n" +
-				"Free memory:      " + freeMemorySegments.size() * segmentSize + "\n" +
-				"Bucket area:      " + numBuckets * 8  + "\n" +
-				"Record area:      " + recordArea.getTotalSize() + "\n" +
-				"Staging area:     " + stagingSegments.size() * segmentSize + "\n" +
-				"Num of elements:  " + numElements + "\n" +
-				"Holes total size: " + holes;
+			"Total memory:     " + numAllMemorySegments * segmentSize + "\n" +
+			"Free memory:      " + freeMemorySegments.size() * segmentSize + "\n" +
+			"Bucket area:      " + numBuckets * 8  + "\n" +
+			"Record area:      " + recordArea.getTotalSize() + "\n" +
+			"Staging area:     " + stagingSegments.size() * segmentSize + "\n" +
+			"Num of elements:  " + numElements + "\n" +
+			"Holes total size: " + holes;
 	}
 
 
@@ -567,7 +535,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 				addSegment();
 			} catch (EOFException ex) {
 				throw new RuntimeException("Bug in InPlaceMutableHashTable: we should have caught it earlier " +
-						"that we don't have enough segments.");
+					"that we don't have enough segments.");
 			}
 			inView = new RandomAccessInputView(segments, segmentSize);
 		}
@@ -715,7 +683,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 			outView.writeLong(pointer);
 			buildSideSerializer.serialize(record, outView);
 			appendPosition += outView.getCurrentPositionInSegment() - oldPositionInSegment +
-					outView.getSegmentSize() * (outView.currentSegmentIndex - oldSegmentIndex);
+				outView.getSegmentSize() * (outView.currentSegmentIndex - oldSegmentIndex);
 			return oldLastPosition;
 		}
 
@@ -823,7 +791,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 	 * In addition to getMatchFor and updateMatch, it also has insertAfterNoMatch.
 	 * Warning: Don't modify the table between calling getMatchFor and the other methods!
 	 * @param <PT> The type of the records that we are probing with
-	 */
+     */
 	public final class HashTableProber<PT> extends AbstractHashTableProber<PT, T>{
 
 		public HashTableProber(TypeComparator<PT> probeTypeComparator, TypePairComparator<PT, T> pairComparator) {
@@ -842,8 +810,8 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		 * (If there would be multiple matches, only one is returned.)
 		 * @param record The record whose key we are searching for
 		 * @param targetForMatch If a match is found, it will be written here
-		 * @return targetForMatch if a match is found, otherwise null.
-		 */
+         * @return targetForMatch if a match is found, otherwise null.
+         */
 		@Override
 		public T getMatchFor(PT record, T targetForMatch) {
 			if (closed) {
@@ -889,29 +857,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 			return getMatchFor(probeSideRecord, buildSideSerializer.createInstance());
 		}
 
-		public T getNextMatch(T targetForMatch) {
-			T currentRecordInList = targetForMatch;
-			try {
-				while (nextPtr != END_OF_LIST && !closed) {
-					prevElemPtr = curElemPtr;
-					curElemPtr = nextPtr;
-
-					recordArea.setReadPosition(curElemPtr);
-					nextPtr = recordArea.readPointer();
-
-					currentRecordInList = recordArea.readRecord(currentRecordInList);
-					recordEnd = recordArea.getReadPosition();
-					if (pairComparator.equalToReference(currentRecordInList)) {
-						// we found an element with a matching key, and not just a hash collision
-						return currentRecordInList;
-					}
-				}
-			} catch (IOException ex) {
-				throw new RuntimeException("Error deserializing record from the hashtable: " + ex.getMessage(), ex);
-			}
-			return null;
-		}
-
 		/**
 		 * This method can be called after getMatchFor returned a match.
 		 * It will overwrite the record that was found by getMatchFor.
@@ -920,7 +865,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		 * getMatchFor and updateMatch!
 		 * @param newRecord The record to override the old record with.
 		 * @throws IOException (EOFException specifically, if memory ran out)
-		 */
+         */
 		@Override
 		public void updateMatch(T newRecord) throws IOException {
 			if (closed) {
@@ -949,7 +894,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 					// wouldn't know the size of this place, and wouldn't know where does the next record start.
 
 					final long pointerToAppended =
-							recordArea.appendPointerAndCopyRecord(nextPtr, stagingSegmentsInView, newRecordSize);
+						recordArea.appendPointerAndCopyRecord(nextPtr, stagingSegmentsInView, newRecordSize);
 
 					// modify the pointer in the previous link
 					if (prevElemPtr == INVALID_PREV_POINTER) {
@@ -1087,7 +1032,7 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 		 * a reduce step.
 		 * @param record The record to update.
 		 * @throws Exception
-		 */
+         */
 		public void updateTableEntryWithReduce(T record) throws Exception {
 			T match = prober.getMatchFor(record, reuse);
 			if (match == null) {
@@ -1129,128 +1074,6 @@ public class InPlaceMutableHashTable<T> extends AbstractMutableHashTable<T> {
 			emit();
 			close();
 			open(oldNumBucketSegments);
-		}
-	}
-
-	public final static class JoinFacade<BT, PT> {
-
-		final InPlaceMutableHashTable<BT> ht;
-		final InPlaceMutableHashTable<BT>.HashTableProber<PT> prober;
-		final TypeSerializer<PT> probeSideSerializer;
-		final TypeComparator<PT> probeSideComparator;
-		final TypePairComparator<PT, BT> comparator;
-
-		MutableHashTable.ProbeIterator<PT> probeSideInput;
-
-		BuildSideIterator buildSideIterator;
-
-		BT buildSideMatchReuse;
-
-		boolean probeMatched = false;
-
-		JoinFacade(TypeSerializer<BT> buildSideSerializer,
-				   TypeSerializer<PT> probeSideSerializer,
-				   TypeComparator<BT> buildSideComparator,
-				   TypeComparator<PT> probeSideComparator,
-				   TypePairComparator<PT, BT> comparator,
-				   List<MemorySegment> memorySegments, IOManager ioManager,
-				   boolean useBitmapFilters,
-				   MemoryManager memoryManager, Object memoryOwner) {
-
-			ht = new InPlaceMutableHashTable<>(buildSideSerializer, buildSideComparator, memorySegments, memoryManager, memoryOwner);
-			prober = ht.getProber(probeSideComparator, comparator);
-
-			this.probeSideSerializer = probeSideSerializer;
-			this.probeSideComparator = probeSideComparator;
-			this.comparator = comparator;
-
-			this.buildSideMatchReuse = buildSideSerializer.createInstance();
-		}
-
-		public void open(final MutableObjectIterator<BT> buildSide, final MutableObjectIterator<PT> probeSide)
-				throws IOException {
-
-			open(buildSide, probeSide, false);
-		}
-
-		public void open(final MutableObjectIterator<BT> buildSide,	final MutableObjectIterator<PT> probeSide,
-						 boolean buildOuterJoin) throws IOException {
-			if (buildOuterJoin)
-				throw new NotImplementedException("paper writing mode...");
-
-			ht.open();
-
-			// Insert all from the build side input to the hash table
-			BT cur = ht.buildSideSerializer.createInstance();
-			while (buildSide.next(cur) != null) {
-				ht.insert(cur); // serializes it, so it's ok to overwrite later
-			}
-
-			probeSideInput = new MutableHashTable.ProbeIterator<>(probeSide, probeSideSerializer.createInstance());
-			probeMatched = false;
-		}
-
-		public boolean nextRecord() throws IOException {
-			while (probeSideInput.next() != null) {
-				BT match = prober.getMatchFor(probeSideInput.getCurrent(), buildSideMatchReuse);
-				if (match != null) {
-					buildSideIterator = new BuildSideIterator(match);
-					probeMatched = true;
-					return true;
-				}
-			}
-
-			probeMatched = false;
-			return false;
-		}
-
-		public final class BuildSideIterator implements MutableObjectIterator<BT> {
-
-			BT current;
-
-			public BuildSideIterator(BT first) {
-				current = first;
-			}
-
-			@Override
-			public BT next(BT reuse) {
-				BT old = current;
-				current = prober.getNextMatch(reuse);
-				return old;
-			}
-
-			@Override
-			public BT next() {
-				return next(ht.buildSideSerializer.createInstance());
-			}
-		}
-
-		public MutableObjectIterator<BT> getBuildSideIterator() {
-			return buildSideIterator;
-		}
-
-		public PT getCurrentProbeRecord() {
-			if (probeMatched)
-				return probeSideInput.getCurrent();
-			else
-				return null;
-		}
-
-		public void close() {
-			ht.close();
-		}
-
-		public void reopenProbe(MutableObjectIterator<PT> probeInput) throws IOException {
-			probeSideInput.set(probeInput);
-			probeMatched = false;
-		}
-
-		public List<MemorySegment> getFreedMemory() {
-			return ht.getFreeMemory();
-		}
-
-		public void abort() {
-			ht.abort();
 		}
 	}
 }

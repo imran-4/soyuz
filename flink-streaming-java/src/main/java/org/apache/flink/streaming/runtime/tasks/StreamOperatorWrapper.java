@@ -82,15 +82,6 @@ public class StreamOperatorWrapper<OUT, OP extends StreamOperator<OUT>> {
 	}
 
 	/**
-	 * Checks if the wrapped operator has been closed.
-	 *
-	 * <p>Note that this method must be called in the task thread.
-	 */
-	public boolean isClosed() {
-		return closed;
-	}
-
-	/**
 	 * Ends an input of the operator contained by this wrapper.
 	 *
 	 * @param inputId the input ID starts from 1 which indicates the first input.
