@@ -29,9 +29,6 @@ import org.junit.Test
 import java.time.{Instant, ZoneId}
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import java.time.{Instant, ZoneId}
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import scala.collection.mutable
 
 class MatchHarnessTest extends HarnessTestBase {
