@@ -41,7 +41,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rowtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "rowTimeT",
       new TestTableSourceWithTime[Row](
         false, tableSchema, returnType, Seq(), rowtime = "rowtime"))
@@ -62,7 +62,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rowtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "rowTimeT",
       new TestTableSourceWithTime[Row](
         false, tableSchema, returnType, Seq(), rowtime = "rowtime"))
@@ -83,7 +83,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rowtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "rowTimeT",
       new TestTableSourceWithTime[Row](
         false, tableSchema, returnType, Seq(), rowtime = "rowtime"))
@@ -107,7 +107,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "procTimeT",
       new TestTableSourceWithTime[Row](
         false, tableSchema, returnType, Seq(), proctime = "proctime"))
@@ -127,7 +127,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "procTimeT",
       new TestTableSourceWithTime[Row](
         false, tableSchema, returnType, Seq(), proctime = "proctime"))
@@ -150,7 +150,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "name", "val", "rtime"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime"))
@@ -170,7 +170,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "name", "val", "rtime"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime"))
@@ -190,7 +190,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime"))
@@ -210,7 +210,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime"))
@@ -230,7 +230,7 @@ class LegacyTableSourceTest extends TableTestBase {
       Array("id", "rtime", "val", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime"))
@@ -251,7 +251,7 @@ class LegacyTableSourceTest extends TableTestBase {
     val mapping = Map("rtime" -> "p-rtime", "id" -> "p-id", "val" -> "p-val", "name" -> "p-name")
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestLegacyProjectableTableSource(
         false, tableSchema, returnType, Seq(), "rtime", "ptime", mapping))
@@ -287,7 +287,7 @@ class LegacyTableSourceTest extends TableTestBase {
         Array("id", "deepNested", "nested", "name"))
 
     val util = streamTestUtil()
-    util.tableEnv.registerTableSource(
+    util.tableEnv.asInstanceOf[TableEnvironmentInternal].registerTableSourceInternal(
       "T",
       new TestNestedProjectableTableSource(
         false, tableSchema, returnType, Seq()))

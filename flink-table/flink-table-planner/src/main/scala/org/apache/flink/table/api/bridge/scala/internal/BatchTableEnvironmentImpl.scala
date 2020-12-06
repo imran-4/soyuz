@@ -21,6 +21,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.scala._
 import org.apache.flink.table.api._
 import org.apache.flink.table.api.internal.BatchTableEnvImpl
+import org.apache.flink.table.api.bridge.scala.BatchTableEnvironment
 import org.apache.flink.table.catalog.CatalogManager
 import org.apache.flink.table.expressions.Expression
 import org.apache.flink.table.functions.{AggregateFunction, TableFunction}

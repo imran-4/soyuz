@@ -593,7 +593,6 @@ class AggsHandlerCodeGenerator(
         public final class $functionName
           implements $NAMESPACE_AGGS_HANDLER_FUNCTION<$namespaceClassName> {
 
-          private $namespaceClassName $NAMESPACE_TERM;
           ${ctx.reuseMemberCode()}
 
           private $STATE_DATA_VIEW_STORE store;
@@ -702,7 +701,6 @@ class AggsHandlerCodeGenerator(
         public final class $functionName
           implements ${className[NamespaceTableAggsHandleFunction[_]]}<$namespaceClassName> {
 
-          private $namespaceClassName $NAMESPACE_TERM;
           ${ctx.reuseMemberCode()}
 
           private $STATE_DATA_VIEW_STORE store;
