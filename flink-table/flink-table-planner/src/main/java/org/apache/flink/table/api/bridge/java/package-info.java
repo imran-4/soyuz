@@ -57,9 +57,9 @@
  * <p>
  * As seen above, a {@link org.apache.flink.table.api.Table} can be converted back to the
  * underlying API representation using
- * {@link org.apache.flink.table.api.bridge.java.BatchTableEnvironment#toDataSet(Table, Class)},
- * {@link org.apache.flink.table.api.bridge.java.StreamTableEnvironment#toAppendStream(Table, Class)}}, or
- * {@link org.apache.flink.table.api.bridge.java.StreamTableEnvironment#toRetractStream(Table, Class)}}.
+ * {@link org.apache.flink.table.api.bridge.java.BatchTableEnvironment#toDataSet(Table, java.lang.Class)},
+ * {@link org.apache.flink.table.api.bridge.java.StreamTableEnvironment#toAppendStream(Table, java.lang.Class)}}, or
+ * {@link org.apache.flink.table.api.bridge.java.StreamTableEnvironment#toRetractStream(Table, java.lang.Class)}}.
  */
 
 package org.apache.flink.table.api.bridge.java;
