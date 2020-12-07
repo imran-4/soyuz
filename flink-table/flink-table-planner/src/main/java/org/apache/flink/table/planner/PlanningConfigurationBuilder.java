@@ -191,7 +191,7 @@ public class PlanningConfigurationBuilder {
 		}
 	}
 
-	private CatalogReader createCatalogReader(
+	protected CatalogReader createCatalogReader(
 			boolean lenientCaseSensitivity,
 			String currentCatalog,
 			String currentDatabase) {
@@ -217,7 +217,7 @@ public class PlanningConfigurationBuilder {
 			CalciteConfig.connectionConfig(parserConfig));
 	}
 
-	private FrameworkConfig createFrameworkConfig() {
+	protected FrameworkConfig createFrameworkConfig() {
 		return Frameworks
 			.newConfigBuilder()
 			.parserConfig(getSqlParserConfig())

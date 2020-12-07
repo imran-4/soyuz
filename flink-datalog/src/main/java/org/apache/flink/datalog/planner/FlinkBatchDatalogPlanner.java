@@ -17,14 +17,19 @@
 
 package org.apache.flink.datalog.planner;
 
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlKind;
+
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.ExplainDetail;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.TableSchema;
-import org.apache.flink.table.api.internal.SelectTableSink;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
@@ -42,13 +47,6 @@ import org.apache.flink.table.operations.Operation;
 import org.apache.flink.table.planner.operations.PlannerQueryOperation;
 import org.apache.flink.table.planner.plan.trait.FlinkRelDistributionTraitDef;
 
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.sql.SqlKind;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,27 +58,36 @@ import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 /**
  * This class is used to return Datalog parser via {@link #getParser()} and transform a Datalog query
  * into a Table API specific objects
- * e.g. tree of {@link Operation}s</li>.
+ * e.g. tree of {@link Operation}.
  */
 public class FlinkBatchDatalogPlanner implements Planner {
-	private Executor executor;
-	private TableConfig tableConfig;
-	private FunctionCatalog functionCatalog;
-	private CatalogManager catalogManager;
-	private ExpressionBridge<PlannerExpression> expressionBridge;
+	private final Executor executor;
+	private final TableConfig tableConfig;
+	private final FunctionCatalog functionCatalog;
+	private final CatalogManager catalogManager;
 	//	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
-	private CalciteSchema internalSchema;
+	private final CalciteSchema internalSchema;
+	private ExpressionBridge<PlannerExpression> expressionBridge;
 	//	private DatalogPlannerContext plannerContext;
 	private ObjectIdentifier objectIdentifier;
 
-	public FlinkBatchDatalogPlanner(Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager, boolean isStreamingMode) {
+	public FlinkBatchDatalogPlanner(
+		Executor executor,
+		TableConfig tableConfig,
+		FunctionCatalog functionCatalog,
+		CatalogManager catalogManager,
+		boolean isStreamingMode) {
 		this.executor = executor;
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
 		functionCatalog.setPlannerTypeInferenceUtil(PlannerTypeInferenceUtilImpl.INSTANCE);
-		internalSchema = asRootSchema(new CatalogManagerCalciteSchema(catalogManager, tableConfig, false));
-		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(PlannerExpressionConverter.INSTANCE());
+		internalSchema = asRootSchema(new CatalogManagerCalciteSchema(
+			catalogManager,
+			tableConfig,
+			false));
+		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(
+			PlannerExpressionConverter.INSTANCE());
 //		planningConfigurationBuilder =
 //			new DatalogPlanningConfigurationBuilder(
 //				tableConfig,
@@ -131,25 +138,6 @@ public class FlinkBatchDatalogPlanner implements Planner {
 			.filter(Objects::nonNull).collect(Collectors.toList());
 	}
 
-	/**
-	 * Creates a {@link SelectTableSink} for a select query.
-	 *
-	 * @param tableSchema the table schema of select result.
-	 * @return The {@link SelectTableSink} for the select query.
-	 */
-	@Override
-	public SelectTableSink createSelectTableSink(TableSchema tableSchema) {
-		return null;
-	}
-
-	/**
-	 * Returns the AST of the specified Table API and SQL queries and the execution plan
-	 * to compute the result of the given collection of {@link QueryOperation}s.
-	 *
-	 * @param operations   The collection of relational queries for which the AST
-	 *                     and execution plan will be returned.
-	 * @param extraDetails The extra explain details which the explain result should include,
-	 */
 	@Override
 	public String explain(List<Operation> operations, ExplainDetail... extraDetails) {
 		return null;

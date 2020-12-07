@@ -55,9 +55,13 @@ import java.util.Map;
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
 /**
+ * The implementation for the Java [[BatchTableEnvironment]] that works with [[DataSet]].
  *
+ * @deprecated This constructor will be removed. Use [[BatchTableEnvironment#create()]] instead.
  */
-public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl implements BatchDatalogEnvironment {
+public class BatchDatalogEnvironmentImpl
+	extends BatchTableEnvironmentImpl
+	implements BatchDatalogEnvironment {
 	//    private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
 	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();

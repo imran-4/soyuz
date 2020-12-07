@@ -30,8 +30,7 @@ under the License.
     </parent>
 
     <artifactId>flink-datalog</artifactId>
-    <name>flink-datalog</name>
-
+	<name>Flink : Datalog</name>
     <packaging>jar</packaging>
 
     <properties>

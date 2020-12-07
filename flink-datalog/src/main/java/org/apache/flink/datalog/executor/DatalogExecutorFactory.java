@@ -34,8 +34,12 @@ import java.util.Map;
  */
 public class DatalogExecutorFactory implements ExecutorFactory {
 
-	public Executor create(Map<String, String> properties, StreamExecutionEnvironment executionEnvironment) {
-		if (Boolean.parseBoolean(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
+	public Executor create(
+		Map<String, String> properties,
+		StreamExecutionEnvironment executionEnvironment) {
+		if (Boolean.parseBoolean(properties.getOrDefault(
+			EnvironmentSettings.STREAMING_MODE,
+			"true"))) {
 			return null;
 		} else {
 			return new BatchExecutor(executionEnvironment);

@@ -34,34 +34,33 @@ import java.util.function.Function;
 public class FlinkDatalogPlannerImpl extends FlinkPlannerImpl {
 
 	/**
-	 *
 	 * @param frameworkConfig
 	 * @param catalogReaderSupplier
 	 * @param planner
 	 * @param typeFactory
 	 */
-    public FlinkDatalogPlannerImpl(
-            FrameworkConfig frameworkConfig,
-            Function<Boolean, CatalogReader> catalogReaderSupplier,
-            RelOptPlanner planner,
-            FlinkTypeFactory typeFactory) {
-        super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
+	public FlinkDatalogPlannerImpl(
+		FrameworkConfig frameworkConfig,
+		Function<Boolean, CatalogReader> catalogReaderSupplier,
+		RelOptPlanner planner,
+		FlinkTypeFactory typeFactory) {
+		super(frameworkConfig, catalogReaderSupplier, planner, typeFactory);
 
-    }
+	}
 
 	/**
-	 *
 	 * @param inputProgram
 	 * @param query
+	 *
 	 * @return
 	 */
-    public Node parse(String inputProgram, String query) {
-        try {
-            ParserManager parserManager = new ParserManager();
-            return parserManager.parse(inputProgram, query);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	public Node parse(String inputProgram, String query) {
+		try {
+			ParserManager parserManager = new ParserManager();
+			return parserManager.parse(inputProgram, query);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

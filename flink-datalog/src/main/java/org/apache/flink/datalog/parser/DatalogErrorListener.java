@@ -32,28 +32,54 @@ import java.util.List;
  *
  */
 class DatalogErrorListener implements ANTLRErrorListener {
-	private List<String> syntaxErrors = new ArrayList<>();
+	private final List<String> syntaxErrors = new ArrayList<>();
 
 
 	@Override
-	public void syntaxError(Recognizer<?, ?> recognizer, Object o, int line, int position, String message, RecognitionException recognitionException) {
+	public void syntaxError(
+		Recognizer<?, ?> recognizer,
+		Object o,
+		int line,
+		int position,
+		String message,
+		RecognitionException recognitionException) {
 		List<String> stack = ((Parser) recognizer).getRuleInvocationStack();
-		String errorMessage = "Error occured on line number " + line + " at position " + position + ". The message is: " + message + ".";
+		String errorMessage = "Error occured on line number " + line + " at position " + position
+			+ ". The message is: " + message + ".";
 		syntaxErrors.add(errorMessage);
 	}
 
 	@Override
-	public void reportAmbiguity(Parser parser, DFA dfa, int i, int i1, boolean b, BitSet bitSet, ATNConfigSet atnConfigSet) {
+	public void reportAmbiguity(
+		Parser parser,
+		DFA dfa,
+		int i,
+		int i1,
+		boolean b,
+		BitSet bitSet,
+		ATNConfigSet atnConfigSet) {
 
 	}
 
 	@Override
-	public void reportAttemptingFullContext(Parser parser, DFA dfa, int i, int i1, BitSet bitSet, ATNConfigSet atnConfigSet) {
+	public void reportAttemptingFullContext(
+		Parser parser,
+		DFA dfa,
+		int i,
+		int i1,
+		BitSet bitSet,
+		ATNConfigSet atnConfigSet) {
 
 	}
 
 	@Override
-	public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, int i2, ATNConfigSet atnConfigSet) {
+	public void reportContextSensitivity(
+		Parser parser,
+		DFA dfa,
+		int i,
+		int i1,
+		int i2,
+		ATNConfigSet atnConfigSet) {
 
 	}
 

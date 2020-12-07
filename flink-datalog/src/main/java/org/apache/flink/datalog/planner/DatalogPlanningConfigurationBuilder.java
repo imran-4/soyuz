@@ -17,6 +17,13 @@
 
 package org.apache.flink.datalog.planner;
 
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.tools.FrameworkConfig;
+
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.datalog.DatalogEnvironment;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
@@ -28,13 +35,6 @@ import org.apache.flink.table.expressions.ExpressionBridge;
 import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.plan.cost.DataSetCostFactory;
 import org.apache.flink.table.planner.PlanningConfigurationBuilder;
-
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.RelOptCostFactory;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.tools.FrameworkConfig;
 
 /**
  * Utility class to create {@link org.apache.calcite.tools.RelBuilder} or {@link FrameworkConfig} used to create
@@ -50,8 +50,8 @@ public class DatalogPlanningConfigurationBuilder extends PlanningConfigurationBu
 	private final Context context;
 	private final TableConfig tableConfig;
 	private final FunctionCatalog functionCatalog;
-	private CalciteSchema rootSchema;
-	private DatalogEnvironment datalogEnvironment;
+	private final CalciteSchema rootSchema;
+	private final DatalogEnvironment datalogEnvironment;
 
 	public DatalogPlanningConfigurationBuilder(
 		TableConfig tableConfig,

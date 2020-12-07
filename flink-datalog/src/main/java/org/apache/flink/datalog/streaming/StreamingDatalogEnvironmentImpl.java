@@ -17,6 +17,8 @@
 
 package org.apache.flink.datalog.streaming;
 
+import org.apache.calcite.rel.RelNode;
+
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
@@ -41,8 +43,6 @@ import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.module.ModuleManager;
 import org.apache.flink.table.planner.operations.PlannerQueryOperation;
-
-import org.apache.calcite.rel.RelNode;
 
 import java.util.Map;
 
@@ -108,7 +108,10 @@ public class StreamingDatalogEnvironmentImpl extends StreamTableEnvironmentImpl 
 			.executionConfig(executionEnvironment.getConfig())
 			.build();
 
-		FunctionCatalog functionCatalog = new FunctionCatalog(tableConfig, catalogManager, moduleManager);
+		FunctionCatalog functionCatalog = new FunctionCatalog(
+			tableConfig,
+			catalogManager,
+			moduleManager);
 
 		Map<String, String> executorProperties = settings.toExecutorProperties();
 		Executor executor = lookupExecutor(executorProperties, executionEnvironment);

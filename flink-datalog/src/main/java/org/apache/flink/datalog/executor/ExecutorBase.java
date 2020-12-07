@@ -58,7 +58,9 @@ public abstract class ExecutorBase implements Executor {
 		return generateStreamGraph(transformations, jobName);
 	}
 
-	public abstract StreamGraph generateStreamGraph(List<Transformation<?>> transformations, String jobName);
+	public abstract StreamGraph generateStreamGraph(
+		List<Transformation<?>> transformations,
+		String jobName);
 
 	protected String getNonEmptyJobName(String jobName) {
 		if (StringUtils.isNullOrWhitespaceOnly(jobName)) {

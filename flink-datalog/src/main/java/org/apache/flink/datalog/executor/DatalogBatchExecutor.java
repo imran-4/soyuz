@@ -17,18 +17,11 @@
 
 package org.apache.flink.datalog.executor;
 
-import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.InputDependencyConstraint;
-import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.dag.Pipeline;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.core.execution.JobClient;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.graph.StreamGraph;
-import org.apache.flink.streaming.api.transformations.ShuffleMode;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.config.ExecutionConfigOptions;
 import org.apache.flink.table.planner.delegation.BatchExecutor;
 
 import java.util.List;
@@ -37,11 +30,11 @@ import java.util.List;
  *
  */
 public class DatalogBatchExecutor extends BatchExecutor {
-    public DatalogBatchExecutor(StreamExecutionEnvironment executionEnvironment) {
-        super(executionEnvironment);
-    }
+	public DatalogBatchExecutor(StreamExecutionEnvironment executionEnvironment) {
+		super(executionEnvironment);
+	}
 
-    //    @Override
+	//    @Override
 //    public void apply(List<Transformation<?>> transformations) {
 //        this.transformations.addAll(transformations);
 //
@@ -53,7 +46,8 @@ public class DatalogBatchExecutor extends BatchExecutor {
 	 *
 	 * @param transformations list of transformations
 	 * @param tableConfig
-	 * @param jobName         what should be the name of the job
+	 * @param jobName what should be the name of the job
+	 *
 	 * @return The pipeline representing the transformations.
 	 */
 	@Override
@@ -80,8 +74,10 @@ public class DatalogBatchExecutor extends BatchExecutor {
 	 * Executes the given pipeline asynchronously.
 	 *
 	 * @param pipeline the pipeline to execute
+	 *
 	 * @return A {@link JobClient} that can be used to communicate with the submitted job,
-	 * completed on submission succeeded.
+	 * 	completed on submission succeeded.
+	 *
 	 * @throws Exception which occurs during job execution.
 	 */
 	@Override

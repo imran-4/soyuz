@@ -38,12 +38,29 @@ public class DatalogPlannerFactory implements PlannerFactory {
 
 
 	@Override
-	public Planner create(Map<String, String> properties, Executor executor, TableConfig tableConfig, FunctionCatalog functionCatalog, CatalogManager catalogManager) {
+	public Planner create(
+		Map<String, String> properties,
+		Executor executor,
+		TableConfig tableConfig,
+		FunctionCatalog functionCatalog,
+		CatalogManager catalogManager) {
 
-		if (Boolean.parseBoolean(properties.getOrDefault(EnvironmentSettings.STREAMING_MODE, "true"))) {
-			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, true); //later may be we can separate the planner for stream and batch.
+		if (Boolean.parseBoolean(properties.getOrDefault(
+			EnvironmentSettings.STREAMING_MODE,
+			"true"))) {
+			return new FlinkBatchDatalogPlanner(
+				executor,
+				tableConfig,
+				functionCatalog,
+				catalogManager,
+				true); //later may be we can separate the planner for stream and batch.
 		} else {
-			return new FlinkBatchDatalogPlanner(executor, tableConfig, functionCatalog, catalogManager, false);
+			return new FlinkBatchDatalogPlanner(
+				executor,
+				tableConfig,
+				functionCatalog,
+				catalogManager,
+				false);
 		}
 	}
 

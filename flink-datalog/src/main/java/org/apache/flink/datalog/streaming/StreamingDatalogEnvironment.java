@@ -23,7 +23,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.bridge.java.BatchTableEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 //import org.apache.flink.table.api.scala.BatchTableEnvironment;
 
@@ -47,7 +46,10 @@ public interface StreamingDatalogEnvironment extends DatalogEnvironment, StreamT
 		StreamExecutionEnvironment executionEnvironment,
 		EnvironmentSettings environmentSettings,
 		TableConfig tableConfig) {
-		return StreamingDatalogEnvironmentImpl.create(executionEnvironment, environmentSettings, tableConfig);
+		return StreamingDatalogEnvironmentImpl.create(
+			executionEnvironment,
+			environmentSettings,
+			tableConfig);
 	}
 
 	Table datalogQuery(String inputProgram, String query);

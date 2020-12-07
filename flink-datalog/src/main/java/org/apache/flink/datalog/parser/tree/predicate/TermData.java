@@ -21,7 +21,7 @@ package org.apache.flink.datalog.parser.tree.predicate;
  *
  */
 public class TermData<T> { //todo: add type information if needed...
-	private T term;
+	private final T term;
 	private Adornment adornment;
 
 	public TermData(T term, Adornment adornment) {

@@ -36,13 +36,13 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
 		OrNode rootNode = new QueryBuilder().visitQuery(ctx.query());
-		rootNode.setChildren(new RulesBuilder(rootNode, null).visitRules(ctx.rules()));
+		rootNode.setChildren(new RulesBuilder(rootNode, null).visitRules(ctx.rules(0)));
 		return rootNode;
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
-		private OrNode currentNode;
-		private AndNode parentNode; //in case of root node, this is null
+		private final OrNode currentNode;
+		private final AndNode parentNode; //in case of root node, this is null
 
 		RulesBuilder(OrNode currentNode, AndNode parentNode) {
 			this.currentNode = currentNode;
@@ -54,18 +54,24 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			String queryPredicateName = currentNode.getPredicateData().getPredicateName();
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
-				String headPredicateName = ruleClauseContext.headPredicate().predicate().predicateName().getText();
+				String headPredicateName = ruleClauseContext
+					.headPredicate()
+					.predicateName().getText();
 
 				if (headPredicateName.equals(queryPredicateName)) {
 					if (currentNode.getPredicateData() instanceof SimplePredicateData) {
 						((SimplePredicateData) currentNode.getPredicateData()).setIdb(true);
 					}
 					if (parentNode != null) {
-						if (parentNode.getPredicateData().getPredicateName().equals(queryPredicateName)) {
+						if (parentNode
+							.getPredicateData()
+							.getPredicateName()
+							.equals(queryPredicateName)) {
 							continue;
 						}
 					}
-					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(ruleClauseContext));
+					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(
+						ruleClauseContext));
 				}
 			}
 			return ruleHeadsMatchingQuery;
@@ -83,21 +89,23 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		public AndNode visitRuleClause(DatalogParser.RuleClauseContext ctx) {
 			DatalogParser.HeadPredicateContext headPredicateContext = ctx.headPredicate();
 			AndNode headPredicateNode = new HeadPredicateBuilder().visit(headPredicateContext);
-			headPredicateNode.setChildren(new PredicateListBuilder(headPredicateNode, rulesContext).visitPredicateList(ctx.predicateList()));
+			headPredicateNode.setChildren(new PredicateListBuilder(
+				headPredicateNode,
+				rulesContext).visitPredicateList(ctx.predicateList()));
 			return headPredicateNode;
 		}
 	}
 
-	private static class  MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+	private static class MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
 		@Override
-		public AndNode  visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
+		public AndNode visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
 			return null;
 		}
 	}
 
-	private static class  NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+	private static class NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
 		@Override
-		public AndNode  visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
+		public AndNode visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
 			return null;
 		}
 	}
@@ -106,7 +114,9 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		DatalogParser.RulesContext rulesContext;
 		AndNode headPredicateNode;
 
-		PredicateListBuilder(AndNode headPredicateContext, DatalogParser.RulesContext rulesContext) {
+		PredicateListBuilder(
+			AndNode headPredicateContext,
+			DatalogParser.RulesContext rulesContext) {
 			this.headPredicateNode = headPredicateContext;
 			this.rulesContext = rulesContext;
 		}
@@ -119,25 +129,33 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 				OrNode bodyNode = null;
 
 				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
-				if (bodyNode.getPredicateData().getPredicateName().equals(headPredicateNode.getPredicateData().getPredicateName())) {
+				if (bodyNode
+					.getPredicateData()
+					.getPredicateName()
+					.equals(headPredicateNode.getPredicateData().getPredicateName())) {
 					headPredicateNode.setRecursive(true);
 				}
-				List<AndNode> subNodes = new RulesBuilder(bodyNode, this.headPredicateNode).visitRules((DatalogParser.RulesContext) ctx.getParent().getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
+				List<AndNode> subNodes = new RulesBuilder(
+					bodyNode,
+					this.headPredicateNode).visitRules((DatalogParser.RulesContext) ctx
+					.getParent()
+					.getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
 				if (subNodes.size() > 0) {
 					bodyNode.setChildren(subNodes);
 				}
 				ruleBodyNodes.add(bodyNode);
 			}
 
-			for (int i = 0; i < ctx.primitivePredicate().size(); i++) {
-				OrNode bodyNode = null;
-
-				bodyNode = new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate(i));
-				ruleBodyNodes.add(bodyNode);
-			}
-			for (int i = 0; i < ctx.notPredicate().size(); i++) {
-				throw new UnsupportedOperationException("Not operator is not supported yet.");
-			}
+//			for (int i = 0; i < ctx.primitivePredicate().size(); i++) {
+//				OrNode bodyNode = null;
+//
+//				bodyNode = new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate(
+//					i));
+//				ruleBodyNodes.add(bodyNode);
+//			}
+//			for (int i = 0; i < ctx.notPredicate().size(); i++) {
+//				throw new UnsupportedOperationException("Not operator is not supported yet.");
+//			}
 			return ruleBodyNodes;
 		}
 	}
@@ -145,14 +163,20 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class HeadPredicateBuilder extends DatalogBaseVisitor<AndNode> {
 		@Override
 		public AndNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
-			return new AndNode(new SimplePredicateData(ctx.predicate().predicateName().getText(), new TermListBuilder().visitTermList(ctx.predicate().termList()), true));
+			return new AndNode(new SimplePredicateData(
+				ctx.predicateName().getText(),
+				new TermListBuilder().visitTermList(ctx.termList(0)),
+				true));
 		}
 	}
 
 	private static class QueryBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitQuery(DatalogParser.QueryContext ctx) {
-			return new OrNode(new QueryPredicateData(ctx.predicate().predicateName().getText(), new TermListBuilder().visitTermList(ctx.predicate().termList()))); //implemented separately, because we may need to set other parameters as well, otherwise visit predicate and return.
+			return new OrNode(new QueryPredicateData(
+				ctx.headPredicate().predicateName().getText(),
+				new TermListBuilder().visitTermList(ctx.headPredicate()
+					.termList(0)))); //implemented separately, because we may need to set other parameters as well, otherwise visit predicate and return.
 		}
 	}
 
@@ -163,59 +187,94 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			if (ctx.VARIABLE(0) != null) {
 				leftTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
 				if (ctx.VARIABLE(1) != null) {
-					rightTerm = new TermData<String>(ctx.VARIABLE(1).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(
+						ctx.VARIABLE(1).getText(),
+						TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(0) != null) {
-					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(0).getText()), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(
+						Integer.parseInt(ctx.DECIMAL(0).getText()),
+						TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(0) != null) {
-					rightTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(
+						ctx.CONSTANT(0).getText(),
+						TermData.Adornment.BOUND);
 				}
 			} else if (ctx.DECIMAL(0) != null) {
-				leftTerm = new TermData<Integer>(Integer.parseInt(ctx.CONSTANT(0).getText()), TermData.Adornment.BOUND);
+				leftTerm = new TermData<Integer>(
+					Integer.parseInt(ctx.CONSTANT(0).getText()),
+					TermData.Adornment.BOUND);
 				if (ctx.VARIABLE(0) != null) {
-					rightTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(
+						ctx.VARIABLE(0).getText(),
+						TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(1) != null) {
-					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(1).getText()), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(
+						Integer.parseInt(ctx.DECIMAL(1).getText()),
+						TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(0) != null) {
-					rightTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(
+						ctx.CONSTANT(0).getText(),
+						TermData.Adornment.BOUND);
 				}
 			} else if (ctx.CONSTANT(0) != null) {
-				leftTerm = new TermData<String>(ctx.CONSTANT(0).getText(), TermData.Adornment.BOUND);
+				leftTerm = new TermData<String>(
+					ctx.CONSTANT(0).getText(),
+					TermData.Adornment.BOUND);
 				if (ctx.VARIABLE(0) != null) {
-					rightTerm = new TermData<String>(ctx.VARIABLE(0).getText(), TermData.Adornment.FREE);
+					rightTerm = new TermData<String>(
+						ctx.VARIABLE(0).getText(),
+						TermData.Adornment.FREE);
 				} else if (ctx.DECIMAL(0) != null) {
-					rightTerm = new TermData<Integer>(Integer.parseInt(ctx.DECIMAL(0).getText()), TermData.Adornment.BOUND);
+					rightTerm = new TermData<Integer>(
+						Integer.parseInt(ctx.DECIMAL(0).getText()),
+						TermData.Adornment.BOUND);
 				} else if (ctx.CONSTANT(1) != null) {
-					rightTerm = new TermData<String>(ctx.CONSTANT(1).getText(), TermData.Adornment.BOUND);
+					rightTerm = new TermData<String>(
+						ctx.CONSTANT(1).getText(),
+						TermData.Adornment.BOUND);
 				}
 			}
 
-			return new OrNode(new PrimitivePredicateData(leftTerm, ctx.COMPARISON_OPERATOR().getText(), rightTerm));
+			return new OrNode(new PrimitivePredicateData(
+				leftTerm,
+				ctx.COMPARISON_OPERATOR().getText(),
+				rightTerm));
 		}
 	}
 
 	private static class PredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPredicate(DatalogParser.PredicateContext ctx) {
-			return new OrNode(new SimplePredicateData(ctx.predicateName().getText(), new TermListBuilder().visitTermList(ctx.termList())));
+			return new OrNode(new SimplePredicateData(
+				ctx.predicateName().getText(),
+				new TermListBuilder().visitTermList(ctx.termList())));
 		}
 	}
 
 	private static class TermListBuilder extends DatalogBaseVisitor<List<TermData<?>>> {
 		@Override
 		public List<TermData<?>> visitTermList(DatalogParser.TermListContext ctx) {
-			return ctx.term().stream().map(termContext -> new TermBuilder().visitTerm(termContext)).collect(Collectors.toList());
+			return ctx
+				.term()
+				.stream()
+				.map(termContext -> new TermBuilder().visitTerm(termContext))
+				.collect(Collectors.toList());
 		}
 	}
 
 	private static class TermBuilder extends DatalogBaseVisitor<TermData> {
 		@Override
 		public TermData<?> visitTerm(DatalogParser.TermContext ctx) {
-			if (ctx.VARIABLE() != null){
+			if (ctx.VARIABLE() != null) {
 				return new TermData<String>(ctx.getText(), TermData.Adornment.FREE);
-			} else  if (ctx.CONSTANT() != null){ //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+			} else if (ctx.CONSTANT()
+				!= null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
-			} else  if (ctx.integer() != null){ //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
-				return new TermData<Integer>(Integer.parseInt(ctx.getText()), TermData.Adornment.BOUND);
+			} else if (ctx.integer()
+				!= null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+				return new TermData<Integer>(
+					Integer.parseInt(ctx.getText()),
+					TermData.Adornment.BOUND);
 			} else {
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
 			}

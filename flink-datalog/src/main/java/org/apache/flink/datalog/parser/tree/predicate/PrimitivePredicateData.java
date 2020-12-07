@@ -17,16 +17,15 @@
 
 package org.apache.flink.datalog.parser.tree.predicate;
 
-
 import java.util.List;
 
 /**
  *
  */
 public class PrimitivePredicateData extends PredicateData {
-	private TermData<?> leftTerm;
-	private String operator;
-	private TermData<?> rightTerm;
+	private final TermData<?> leftTerm;
+	private final String operator;
+	private final TermData<?> rightTerm;
 
 	public PrimitivePredicateData(TermData<?> leftTerm, String operator, TermData<?> rightTerm) {
 		this.leftTerm = leftTerm;

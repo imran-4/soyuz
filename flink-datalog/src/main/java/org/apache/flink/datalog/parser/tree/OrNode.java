@@ -26,7 +26,7 @@ import java.util.List;
  *
  */
 public class OrNode extends Node {
-	private PredicateData predicateData;
+	private final PredicateData predicateData;
 	private List<AndNode> children = new ArrayList<>();
 
 	public OrNode(PredicateData predicateData) {

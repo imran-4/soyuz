@@ -17,19 +17,14 @@
 
 package org.apache.flink.datalog.parser;
 
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.tree.ParseTree;
+
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.AndOrTree;
 import org.apache.flink.datalog.parser.tree.Node;
-
-import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DefaultErrorStrategy;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.atn.PredictionMode;
-import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.List;
 
@@ -47,7 +42,9 @@ public class ParserManager {//todo: extend flink Parser interface
 		TokenStream tokens = new CommonTokenStream(lexer);
 		DatalogParser parser = new DatalogParser(tokens);
 
-		parser.getInterpreter().setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION); //make the parser report all ambiguities
+		parser
+			.getInterpreter()
+			.setPredictionMode(PredictionMode.LL_EXACT_AMBIG_DETECTION); //make the parser report all ambiguities
 
 		parser.removeErrorListeners(); //remove ConsoleErrorListener
 		parser.addErrorListener(new DatalogErrorListener());
