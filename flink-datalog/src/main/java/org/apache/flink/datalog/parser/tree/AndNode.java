@@ -26,7 +26,7 @@ import java.util.List;
  *
  */
 public class AndNode extends Node {
-	private final PredicateData predicateData;
+	private PredicateData predicateData;
 	private List<OrNode> children = new ArrayList<>();
 	private boolean isRecursive = false;
 
@@ -38,6 +38,8 @@ public class AndNode extends Node {
 		this.predicateData = predicateData;
 		this.isRecursive = isRecursive;
 	}
+
+
 
 	public boolean isRecursive() {
 		return this.isRecursive;

@@ -17,6 +17,8 @@
 
 package org.apache.flink.datalog.parser.tree;
 
+import org.antlr.v4.runtime.tree.ParseTree;
+
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
@@ -35,9 +37,31 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 
 	@Override
 	public OrNode visitCompileUnit(DatalogParser.CompileUnitContext ctx) {
-		OrNode rootNode = new QueryBuilder().visitQuery(ctx.query());
-		rootNode.setChildren(new RulesBuilder(rootNode, null).visitRules(ctx.rules(0)));
+		OrNode rootNode = null;
+		List<AndNode> headPredicatesOrFacts = new ArrayList<>();
+		for (ParseTree t : ctx.children) {
+			if (t instanceof DatalogParser.RulesContext) {
+				headPredicatesOrFacts.addAll(new RulesBuilder(
+					rootNode,
+					null).visitRules((DatalogParser.RulesContext) t));
+			} else if (t instanceof DatalogParser.FactContext) {
+				// todo:..
+			} else if (t instanceof DatalogParser.QueryContext) {
+				rootNode = new QueryBuilder().visitQuery(ctx.query());
+			} else {
+				continue;
+			}
+
+		}
+		ctx.children.size();
+
+
+		rootNode.setChildren(headPredicatesOrFacts);
 		return rootNode;
+	}
+
+	//todo:
+	private static class FactsBuilder extends DatalogBaseVisitor<List<OrNode>> {
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
@@ -96,19 +120,19 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		}
 	}
 
-	private static class MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
-		@Override
-		public AndNode visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
-			return null;
-		}
-	}
-
-	private static class NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
-		@Override
-		public AndNode visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
-			return null;
-		}
-	}
+//	private static class MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+//		@Override
+//		public AndNode visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
+//			return null;
+//		}
+//	}
+//
+//	private static class NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+//		@Override
+//		public AndNode visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
+//			return null;
+//		}
+//	}
 
 	private static class PredicateListBuilder extends DatalogBaseVisitor<List<OrNode>> {
 		DatalogParser.RulesContext rulesContext;
@@ -163,6 +187,18 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class HeadPredicateBuilder extends DatalogBaseVisitor<AndNode> {
 		@Override
 		public AndNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
+			String headPredicateName = ctx.predicateName().getText();
+			List<AndNode> ruleBodyElements = new ArrayList<>();
+			for (ParseTree t : ctx.children) {
+				if (t instanceof DatalogParser.MonotonicAggregatesContext) {
+					ruleBodyElements.add(null);
+				} else if (t instanceof DatalogParser.NonMonotonicAggregatesContext) {
+					ruleBodyElements.add(null);
+				} else if (t instanceof DatalogParser.TermListContext) {
+					ruleBodyElements.add(null);
+				} else { //todo: check if CONSTANT and VARIABLE
+				}
+			}
 			return new AndNode(new SimplePredicateData(
 				ctx.predicateName().getText(),
 				new TermListBuilder().visitTermList(ctx.termList(0)),
