@@ -74,7 +74,6 @@ under the License.
 		<module>flink-state-backends</module>
 		<module>flink-libraries</module>
 		<module>flink-table</module>
-		<module>flink-datalog</module>
 		<module>flink-quickstart</module>
 		<module>flink-contrib</module>
 		<module>flink-dist</module>
@@ -90,6 +89,8 @@ under the License.
 		<module>flink-kubernetes</module>
 		<module>flink-external-resources</module>
 		<module>tools/ci/java-ci-tools</module>
+		<module>flink-datalog</module>
+
 	</modules>
 
 	<properties>

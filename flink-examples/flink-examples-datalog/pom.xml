@@ -29,7 +29,7 @@
     </parent>
 
     <artifactId>flink-examples-datalog</artifactId>
-    <version>1.11-SNAPSHOT</version>
+    <version>1.12-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-hadoop-fs</artifactId>
-            <version>1.11-SNAPSHOT</version>
+            <version>1.12-SNAPSHOT</version>
         </dependency>
 
 

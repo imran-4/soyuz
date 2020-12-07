@@ -17,8 +17,6 @@
 
 package org.apache.flink.datalog.streaming;
 
-import org.apache.calcite.rel.RelNode;
-
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
@@ -28,7 +26,6 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.api.bridge.java.internal.StreamTableEnvironmentImpl;
 import org.apache.flink.table.calcite.FlinkRelBuilder;
 import org.apache.flink.table.catalog.CatalogManager;
@@ -43,7 +40,9 @@ import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.module.ModuleManager;
-import org.apache.flink.table.operations.PlannerQueryOperation;
+import org.apache.flink.table.planner.operations.PlannerQueryOperation;
+
+import org.apache.calcite.rel.RelNode;
 
 import java.util.Map;
 
@@ -161,11 +160,6 @@ public class StreamingDatalogEnvironmentImpl extends StreamTableEnvironmentImpl 
 
 		return planningConfigurationBuilder.createRelBuilder(currentCatalogName, currentDatabase);
 	}
-
-
-
-
-
 }
 
 

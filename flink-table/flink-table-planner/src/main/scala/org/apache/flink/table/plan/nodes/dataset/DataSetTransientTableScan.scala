@@ -45,13 +45,19 @@ class DataSetTransientTableScan(cluster: RelOptCluster,
   override def estimateRowCount(mq: RelMetadataQuery): Double = 1000L
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-    new DataSetTransientTableScan(cluster, traitSet, inputs.get(0).getTable, tableSource, selectedFields)
+    new DataSetTransientTableScan(cluster,
+      traitSet,
+      inputs.get(0).getTable,
+      tableSource,
+      selectedFields)
   }
 
   override def translateToPlan(tableEnv: BatchTableEnvImpl): DataSet[Row] = {
     val schema = new RowSchema(deriveRowType)
     val config = tableEnv.getConfig
-    val ds = tableEnv.asInstanceOf[BatchTableEnvironmentImpl].toDataSet(tableEnv.from("__TEMP"), classOf[Row])
+    val ds = tableEnv
+        .asInstanceOf[BatchTableEnvironmentImpl]
+        .toDataSet(tableEnv.from("__TEMP"), classOf[Row])
     ds
   }
 }

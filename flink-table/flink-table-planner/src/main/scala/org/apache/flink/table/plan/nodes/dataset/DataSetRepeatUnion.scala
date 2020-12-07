@@ -56,7 +56,13 @@ class DataSetRepeatUnion(
   }
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-    new DataSetRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1, rowRelDataType)
+    new DataSetRepeatUnion(cluster,
+      traitSet,
+      inputs.get(0),
+      inputs.get(1),
+      true,
+      -1,
+      rowRelDataType)
   }
 
   override def translateToPlan(
@@ -68,7 +74,10 @@ class DataSetRepeatUnion(
     val solutionSet: DataSet[Row] = seedDs
 
     val maxIterations: Int = Int.MaxValue
-    val iteration = solutionSet.iterateDelta(workingSet, maxIterations, (0 until seedDs.getType.getTotalFields): _*) //used maxIteration = Int.MaxValue to check if the iteration stops upon workingset getting emptied.
+    val iteration = solutionSet
+        .iterateDelta(workingSet,
+          maxIterations,
+          (0 until seedDs.getType.getTotalFields): _*)
     updateCatalog(tableEnv, iteration.getWorkset, "__TEMP")
     val iterativeDs = iterative.asInstanceOf[DataSetRel].translateToPlan(tableEnv)
     val delta = iterativeDs
@@ -77,11 +86,13 @@ class DataSetRepeatUnion(
       .equalTo("*")
       .`with`(new MinusCoGroupFunction[Row](false))
       .withForwardedFieldsFirst("*")
-    val result = iteration.closeWith(delta, delta) //sending first parameter(solutionSet) delta means it will union it with solution set.
+    val result = iteration.closeWith(delta, delta)
     result
   }
 
-  private def updateCatalog(tableEnv: BatchTableEnvImpl, ds: DataSet[Row], tableName: String): Unit = {
+  private def updateCatalog(tableEnv: BatchTableEnvImpl,
+                            ds: DataSet[Row],
+                            tableName: String): Unit = {
     tableEnv match {
       case btei: BatchTableEnvironmentImpl =>
         btei.registerTable(tableName, btei.fromDataSet(ds))

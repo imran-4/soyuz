@@ -59,12 +59,16 @@ class DataStreamTransientTableScan(cluster: RelOptCluster,
   override def estimateRowCount(mq: RelMetadataQuery): Double = 1000L
 
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-    new DataStreamTransientTableScan(cluster, traitSet, inputs.get(0).getTable, tableSource, selectedFields)
+    new DataStreamTransientTableScan(cluster,
+      traitSet,
+      inputs.get(0).getTable,
+      tableSource,
+      selectedFields)
   }
 
   override def translateToPlan(planner: StreamPlanner): DataStream[CRow] = {
 
-
+null
 
   }
 }

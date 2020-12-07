@@ -51,7 +51,10 @@ class DataSetTableSpool(cluster: RelOptCluster,
     ds
   }
 
-  override def copy(relTraitSet: RelTraitSet, relNode: RelNode, readType: Spool.Type, writeType: Spool.Type): Spool = {
+  override def copy(relTraitSet: RelTraitSet,
+                    relNode: RelNode,
+                    readType: Spool.Type,
+                    writeType: Spool.Type): Spool = {
     new DataSetTableSpool(cluster,
       traitSet,
       relNode,

@@ -77,7 +77,7 @@ import java.util.Optional;
  * <p>It binds to a given {@link StreamExecutionEnvironment}.
  */
 @Internal
-public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl implements StreamTableEnvironment {
+public class StreamTableEnvironmentImpl extends TableEnvironmentImpl implements StreamTableEnvironment {
 
 	private final StreamExecutionEnvironment executionEnvironment;
 
@@ -151,7 +151,7 @@ public final class StreamTableEnvironmentImpl extends TableEnvironmentImpl imple
 		);
 	}
 
-	private static Executor lookupExecutor(
+	protected static Executor lookupExecutor(
 			Map<String, String> executorProperties,
 			StreamExecutionEnvironment executionEnvironment) {
 		try {

@@ -17,8 +17,6 @@
 
 package org.apache.flink.table.plan.nodes.datastream
 
-import java.util
-
 import org.apache.calcite.plan.{RelOptCluster, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.RepeatUnion
@@ -26,10 +24,9 @@ import org.apache.calcite.rel.{RelNode, RelWriter}
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.table.codegen.InputFormatCodeGenerator
 import org.apache.flink.table.planner.StreamPlanner
-import org.apache.flink.table.runtime.MinusCoGroupFunction
 import org.apache.flink.table.runtime.types.CRow
-import org.apache.flink.types.Row
 
+import java.util
 import scala.collection.JavaConverters._
 
 class DataStreamRepeatUnion(
@@ -49,16 +46,22 @@ class DataStreamRepeatUnion(
     s"RepeatUnion(union: ($repeatUnionSelectionToString))"
   }
 
-  private def repeatUnionSelectionToString: String = {
-    rowRelDataType.getFieldNames.asScala.toList.mkString(", ")
-  }
-
   override def explainTerms(pw: RelWriter): RelWriter = {
     super.explainTerms(pw).item("repeatunion", repeatUnionSelectionToString)
   }
 
+  private def repeatUnionSelectionToString: String = {
+    rowRelDataType.getFieldNames.asScala.toList.mkString(", ")
+  }
+
   override def copy(traitSet: RelTraitSet, inputs: util.List[RelNode]): RelNode = {
-    new DataStreamRepeatUnion(cluster, traitSet, inputs.get(0), inputs.get(1), true, -1, rowRelDataType)
+    new DataStreamRepeatUnion(cluster,
+      traitSet,
+      inputs.get(0),
+      inputs.get(1),
+      true,
+      -1,
+      rowRelDataType)
   }
 
   override def translateToPlan(planner: StreamPlanner): DataStream[CRow] = {
@@ -73,19 +76,19 @@ class DataStreamRepeatUnion(
     val solutionSet = seedDs
 
     val iteration = solutionSet.iterate()
-//    updateCatalog(tableEnv, iteration, "__TEMP")
+    //    updateCatalog(tableEnv, iteration, "__TEMP")
 
 
     val iterativeDs = iterative.asInstanceOf[DataStreamRel].translateToPlan(planner)
     val delta = iterativeDs
         .coGroup(workingSet)
-        .where("*")
-        .equalTo("*")
-        .`with`(new MinusCoGroupFunction[Row](false))
-        .withForwardedFieldsFirst("*")
+    //        .where("*")
+    //        .equalTo("*")
+    //        .`with`(new MinusCoGroupFunction[Row](false))
+    //        .withForwardedFieldsFirst("*")
     //    workingSet = delta
 
-    iteration.closeWith(delta)
+    //iteration.closeWith(delta, delta)
 
     iterativeDs
 

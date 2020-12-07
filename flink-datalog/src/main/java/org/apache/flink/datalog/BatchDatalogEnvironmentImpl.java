@@ -17,14 +17,13 @@
 
 package org.apache.flink.datalog;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.ExplainDetail;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
@@ -33,8 +32,6 @@ import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
 import org.apache.flink.table.catalog.FunctionCatalog;
 import org.apache.flink.table.catalog.GenericInMemoryCatalog;
-import org.apache.flink.table.catalog.ObjectIdentifier;
-import org.apache.flink.table.catalog.UnresolvedIdentifier;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.ExecutorFactory;
 import org.apache.flink.table.expressions.Expression;
@@ -43,20 +40,17 @@ import org.apache.flink.table.expressions.PlannerExpression;
 import org.apache.flink.table.expressions.PlannerExpressionConverter;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.module.ModuleManager;
-import org.apache.flink.table.operations.CatalogQueryOperation;
-import org.apache.flink.table.operations.DataSetQueryOperation;
 import org.apache.flink.table.operations.ModifyOperation;
-import org.apache.flink.table.operations.PlannerQueryOperation;
-import org.apache.flink.table.typeutils.FieldInfoUtils;
 
 import org.apache.calcite.rel.RelNode;
+
+import org.apache.flink.table.operations.Operation;
+import org.apache.flink.table.planner.operations.PlannerQueryOperation;
+import org.apache.flink.table.types.AbstractDataType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
-import scala.Option;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
@@ -176,6 +170,36 @@ public class BatchDatalogEnvironmentImpl extends BatchTableEnvironmentImpl imple
 		String currentCatalogName = catalogManager.getCurrentCatalog();
 		String currentDatabase = catalogManager.getCurrentDatabase();
 		return planningConfigurationBuilder.createFlinkPlanner(currentCatalogName, currentDatabase);
+	}
+
+	@Override
+	public Table fromValues(Expression... values) {
+		return null;
+	}
+
+	@Override
+	public Table fromValues(AbstractDataType<?> rowType, Expression... values) {
+		return null;
+	}
+
+	@Override
+	public Table scan(String... tablePath) {
+		return null;
+	}
+
+	@Override
+	public void insertInto(Table table, String sinkPath, String... sinkPathContinued) {
+
+	}
+
+	@Override
+	public String explainSql(String statement, ExplainDetail... extraDetails) {
+		return null;
+	}
+
+	@Override
+	public String explainInternal(List<Operation> operations, ExplainDetail... extraDetails) {
+		return null;
 	}
 }
 
