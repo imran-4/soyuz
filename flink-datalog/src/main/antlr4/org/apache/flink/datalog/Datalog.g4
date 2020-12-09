@@ -35,7 +35,7 @@ headPredicate
     : predicateName  LEFT_PARANTHESES (( termList | VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates) (COMMA ( termList |  VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates))*) RIGH_PARANTHESES
     ;
 query
-	: headPredicate QUESTION_MARK
+    : predicateName  LEFT_PARANTHESES ((  VARIABLE | CONSTANT ) (COMMA ( VARIABLE | CONSTANT ))*) RIGH_PARANTHESES QUESTION_MARK
 	;
 facts
 	: fact+

@@ -17,6 +17,8 @@
 
 package org.apache.flink.datalog.parser.tree;
 
+import org.antlr.v4.runtime.RuleContext;
+
 import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
 
 import java.util.ArrayList;
@@ -26,13 +28,19 @@ import java.util.List;
  *
  */
 public class OrNode extends Node {
-	private final PredicateData predicateData;
+	private PredicateData predicateData;
 	private List<AndNode> children = new ArrayList<>();
+
+	private RuleContext ctx;
 
 	public OrNode(PredicateData predicateData) {
 		this.predicateData = predicateData;
 	}
 
+	public OrNode(RuleContext ctx) {
+		this.ctx = ctx;
+
+	}
 	@Override
 	public List<AndNode> getChildren() {
 		return children;
@@ -57,6 +65,9 @@ public class OrNode extends Node {
 		return predicateData;
 	}
 
+	public RuleContext getCtx() {
+		return this.ctx;
+	}
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
