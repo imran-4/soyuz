@@ -32,7 +32,7 @@ ruleClause
     : headPredicate COLON_HYPGHEN predicateList DOT
     ;
 headPredicate
-    : predicateName  LEFT_PARANTHESES (( termList | VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates) (COMMA ( termList |  VARIABLE | CONSTANT | nonMonotonicAggregates | monotonicAggregates))*) RIGH_PARANTHESES
+    : predicateName  LEFT_PARANTHESES ((  term) (COMMA (term))*) RIGH_PARANTHESES
     ;
 query
     : predicateName  LEFT_PARANTHESES ((  VARIABLE | CONSTANT ) (COMMA ( VARIABLE | CONSTANT ))*) RIGH_PARANTHESES QUESTION_MARK
