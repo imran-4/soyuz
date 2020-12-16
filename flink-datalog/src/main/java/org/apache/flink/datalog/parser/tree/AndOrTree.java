@@ -17,10 +17,6 @@
 
 package org.apache.flink.datalog.parser.tree;
 
-import org.antlr.v4.runtime.tree.ParseTree;
-
-import org.antlr.v4.runtime.tree.TerminalNodeImpl;
-
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
@@ -29,11 +25,12 @@ import org.apache.flink.datalog.parser.tree.predicate.QueryPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.TermData;
 
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.apache.flink.datalog.DatalogParser.VARIABLE;
 
 /**
  *
@@ -51,14 +48,8 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 					null).visitRules((DatalogParser.RulesContext) t));
 			} else if (t instanceof DatalogParser.FactContext) {
 				// todo:..
-			} else if (t instanceof DatalogParser.QueryContext) {
-				rootNode = new QueryBuilder().visitQuery(ctx.query());
-			} else {
-				continue;
 			}
 		}
-		ctx.children.size();
-
 		rootNode.setChildren(headPredicatesOrFacts);
 		return rootNode;
 	}
@@ -212,19 +203,23 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class QueryBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitQuery(DatalogParser.QueryContext ctx) {
-			List<TermData> parameters = new ArrayList<>();
+			List<TermData<? extends Object>> parameters = new ArrayList<>();
 
-			for (ParseTree t: ctx.children) {
-				if (((TerminalNodeImpl) ctx.children.get(2)).getSymbol().getType() == DatalogLexer.VARIABLE) {
-					parameters.add(null); //todo
-				} else if (((TerminalNodeImpl) ctx.children.get(2)).getSymbol().getType() == DatalogLexer.CONSTANT) {
-					parameters.add(null);//todo
+			for (ParseTree t : ctx.children) {
+				if (t instanceof TerminalNodeImpl) {
+					if (((TerminalNodeImpl) t).getSymbol().getType()
+						== DatalogLexer.VARIABLE) {
+						parameters.add(new TermData<>(t.getText(), TermData.Adornment.FREE));
+					} else if (((TerminalNodeImpl) t).getSymbol().getType()
+						== DatalogLexer.CONSTANT) {
+						parameters.add(new TermData<>(t.getText(), TermData.Adornment.BOUND));
+					}
 				}
 			}
 			return new OrNode(new QueryPredicateData(
 				ctx.predicateName().getText(),
-null
-				)); //implemented separately, because we may need to set other parameters as well, otherwise visit predicate and return.
+				parameters
+			)); //implemented separately, because we may need to set other parameters as well, otherwise visit predicate and return.
 		}
 	}
 
