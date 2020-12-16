@@ -183,19 +183,15 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		public AndNode visitHeadPredicate(DatalogParser.HeadPredicateContext ctx) {
 			String headPredicateName = ctx.predicateName().getText();
 			List<AndNode> ruleBodyElements = new ArrayList<>();
+			List<TermData<? extends Object>> headPredElements = new ArrayList<>();
 			for (ParseTree t : ctx.children) {
-				if (t instanceof DatalogParser.MonotonicAggregatesContext) {
-					ruleBodyElements.add(null);
-				} else if (t instanceof DatalogParser.NonMonotonicAggregatesContext) {
-					ruleBodyElements.add(null);
-				} else if (t instanceof DatalogParser.TermListContext) {
-					ruleBodyElements.add(null);
-				} else { //todo: check if CONSTANT and VARIABLE
-				}
+				if (t instanceof DatalogParser.TermContext) { //todo: if this works fine then we can remove others
+ 					headPredElements.add(new TermBuilder().visitTerm((DatalogParser.TermContext)t));
+ 				}
 			}
 			return new AndNode(new SimplePredicateData(
-				ctx.predicateName().getText(),
-				new TermListBuilder().visitTermList(ctx.termList(0)),
+				headPredicateName,
+				headPredElements,
 				true));
 		}
 	}
