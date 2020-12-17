@@ -51,6 +51,8 @@ public class TermData<T> { //todo: add type information if needed...
 
 	public enum Adornment {
 		BOUND,
-		FREE
+		FREE,
+		MONOTONIC_AGGREGATE,
+		NON_MONOTONIC_AGGREGATE
 	}
 }

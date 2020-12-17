@@ -114,14 +114,14 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		}
 	}
 
-//	private static class MonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+//	private static class MonotonicAggregateBuilder extends DatalogBaseVisitor<AndNode> {
 //		@Override
 //		public AndNode visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
 //			return null;
 //		}
 //	}
 //
-//	private static class NonMonotonicAggrBuilder extends DatalogBaseVisitor<AndNode> {
+//	private static class NonMonotonicAggregateBuilder extends DatalogBaseVisitor<AndNode> {
 //		@Override
 //		public AndNode visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
 //			return null;
@@ -314,6 +314,14 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 				return new TermData<Integer>(
 					Integer.parseInt(ctx.getText()),
 					TermData.Adornment.BOUND);
+			} else if (ctx.monotonicAggregates() != null)  { //todo: fix the following conditions
+				return new TermData<>(ctx.getText(), TermData.Adornment.MONOTONIC_AGGREGATE);
+			} else if (ctx.nonMonotonicAggregates() != null) {
+				return new TermData<>(ctx.getText(), TermData.Adornment.NON_MONOTONIC_AGGREGATE);
+			} else if (ctx.atom() != null) {
+				return new TermData<>(ctx.getText(), TermData.Adornment.FREE);
+			} else if  (ctx.LANGLE_BRACKET() != null && ctx.termList() != null && ctx.RANGLE_BRACKET()!= null) {
+				return null; //todo: fix it
 			} else {
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
 			}
