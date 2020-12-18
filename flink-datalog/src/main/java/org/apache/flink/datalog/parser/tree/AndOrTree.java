@@ -147,11 +147,13 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 				OrNode bodyNode = null;
 
 				bodyNode = new PredicateBuilder().visitPredicate(ctx.predicate(i));
-				if (bodyNode
-					.getPredicateData()
-					.getPredicateName()
-					.equals(headPredicateNode.getPredicateData().getPredicateName())) {
-					headPredicateNode.setRecursive(true);
+				if (!(bodyNode.getPredicateData() instanceof PrimitivePredicateData)) {
+					if (bodyNode
+						.getPredicateData()
+						.getPredicateName()
+						.equals(headPredicateNode.getPredicateData().getPredicateName())) {
+						headPredicateNode.setRecursive(true);
+					}
 				}
 				List<AndNode> subNodes = new RulesBuilder(
 					bodyNode,
@@ -274,9 +276,20 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 				}
 			}
 
+			String operator = null;
+			// LANGLE_BRACKET | RANGLE_BRACKET | EQUAL | COMPARISON_OPERATOR
+			if (ctx.LANGLE_BRACKET() != null)
+				operator = ctx.LANGLE_BRACKET().getText();
+			else if (ctx.RANGLE_BRACKET() != null)
+				operator = ctx.RANGLE_BRACKET().getText();
+			else if (ctx.EQUAL() != null)
+				operator = ctx.EQUAL().getText();
+			else if (ctx.COMPARISON_OPERATOR() != null)
+				operator = ctx.COMPARISON_OPERATOR().getText();
+
 			return new OrNode(new PrimitivePredicateData(
 				leftTerm,
-				ctx.COMPARISON_OPERATOR().getText(),
+				operator,
 				rightTerm));
 		}
 	}
@@ -284,9 +297,15 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 	private static class PredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPredicate(DatalogParser.PredicateContext ctx) {
-			return new OrNode(new SimplePredicateData(
-				ctx.predicateName().getText(),
-				new TermListBuilder().visitTermList(ctx.termList())));
+			if (ctx.primitivePredicate() != null) {
+				return new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate());
+			} else if (ctx.notPredicate() != null) {
+				return null; //todo: fix it
+			} else {
+				return new OrNode(new SimplePredicateData(
+					ctx.predicateName().getText(),
+					new TermListBuilder().visitTermList(ctx.termList())));
+			}
 		}
 	}
 
@@ -309,8 +328,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			} else if (ctx.CONSTANT()
 				!= null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
-			} else if (ctx.integer()
-				!= null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+			} else if (ctx.integer().size() > 0) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
 				return new TermData<Integer>(
 					Integer.parseInt(ctx.getText()),
 					TermData.Adornment.BOUND);
