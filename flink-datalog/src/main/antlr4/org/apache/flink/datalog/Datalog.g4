@@ -41,7 +41,7 @@ facts
 	: fact+
 	;
 fact
-    :  factName LEFT_PARANTHESES (( VARIABLE | CONSTANT | DECIMAL) (COMMA (VARIABLE | CONSTANT | DECIMAL))*) RIGH_PARANTHESES DOT
+    :  factName LEFT_PARANTHESES ((  term) (COMMA (term))*) RIGH_PARANTHESES DOT
     ;
 factName
     : ( CONSTANT | STRING )

@@ -46,16 +46,31 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 				headPredicatesOrFacts.addAll(new RulesBuilder(
 					rootNode,
 					null).visitRules((DatalogParser.RulesContext) t));
-			} else if (t instanceof DatalogParser.FactContext) {
-				// todo:..
+			} else if (t instanceof DatalogParser.FactsContext) {
+				headPredicatesOrFacts.addAll(new FactsBuilder().visitFacts((DatalogParser.FactsContext)t));
 			}
 		}
 		rootNode.setChildren(headPredicatesOrFacts);
 		return rootNode;
 	}
 
-	//todo:
-	private static class FactsBuilder extends DatalogBaseVisitor<List<OrNode>> {
+
+	private static class FactsBuilder extends DatalogBaseVisitor<List<AndNode>> {
+		@Override
+		public List<AndNode> visitFacts(DatalogParser.FactsContext ctx) {
+
+			List<AndNode> facts = new ArrayList<>();
+			for (ParseTree t : ctx.fact()) {
+				DatalogParser.FactContext fact = (DatalogParser.FactContext) t;
+				List<TermData<?>>  factParameters = fact
+					.term()
+					.stream()
+					.map(x -> new TermBuilder().visitTerm(x))
+					.collect(Collectors.toList());
+				facts.add(new AndNode(new SimplePredicateData(fact.factName().toString(), factParameters)));
+			}
+			return facts;
+		}
 	}
 
 	private static class RulesBuilder extends DatalogBaseVisitor<List<AndNode>> {
@@ -188,8 +203,8 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			List<TermData<? extends Object>> headPredElements = new ArrayList<>();
 			for (ParseTree t : ctx.children) {
 				if (t instanceof DatalogParser.TermContext) { //todo: if this works fine then we can remove others
- 					headPredElements.add(new TermBuilder().visitTerm((DatalogParser.TermContext)t));
- 				}
+					headPredElements.add(new TermBuilder().visitTerm((DatalogParser.TermContext) t));
+				}
 			}
 			return new AndNode(new SimplePredicateData(
 				headPredicateName,
@@ -328,17 +343,19 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			} else if (ctx.CONSTANT()
 				!= null) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
-			} else if (ctx.integer().size() > 0) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
+			} else if (ctx.integer().size()
+				> 0) { //todo: there are lots of other cases that needs to be covered, but so far these two are enough.
 				return new TermData<Integer>(
 					Integer.parseInt(ctx.getText()),
 					TermData.Adornment.BOUND);
-			} else if (ctx.monotonicAggregates() != null)  { //todo: fix the following conditions
+			} else if (ctx.monotonicAggregates() != null) { //todo: fix the following conditions
 				return new TermData<>(ctx.getText(), TermData.Adornment.MONOTONIC_AGGREGATE);
 			} else if (ctx.nonMonotonicAggregates() != null) {
 				return new TermData<>(ctx.getText(), TermData.Adornment.NON_MONOTONIC_AGGREGATE);
 			} else if (ctx.atom() != null) {
 				return new TermData<>(ctx.getText(), TermData.Adornment.FREE);
-			} else if  (ctx.LANGLE_BRACKET() != null && ctx.termList() != null && ctx.RANGLE_BRACKET()!= null) {
+			} else if (ctx.LANGLE_BRACKET() != null && ctx.termList() != null
+				&& ctx.RANGLE_BRACKET() != null) {
 				return null; //todo: fix it
 			} else {
 				return new TermData<String>(ctx.getText(), TermData.Adornment.BOUND);
