@@ -20,6 +20,7 @@ package org.apache.flink.datalog.parser.tree;
 import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
+import org.apache.flink.datalog.parser.tree.predicate.FactPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.QueryPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
@@ -47,7 +48,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 					rootNode,
 					null).visitRules((DatalogParser.RulesContext) t));
 			} else if (t instanceof DatalogParser.FactsContext) {
-				headPredicatesOrFacts.addAll(new FactsBuilder().visitFacts((DatalogParser.FactsContext)t));
+				headPredicatesOrFacts.addAll(new FactsBuilder().visitFacts((DatalogParser.FactsContext) t));
 			}
 		}
 		rootNode.setChildren(headPredicatesOrFacts);
@@ -62,12 +63,14 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			List<AndNode> facts = new ArrayList<>();
 			for (ParseTree t : ctx.fact()) {
 				DatalogParser.FactContext fact = (DatalogParser.FactContext) t;
-				List<TermData<?>>  factParameters = fact
+				List<TermData<?>> factParameters = fact
 					.term()
 					.stream()
 					.map(x -> new TermBuilder().visitTerm(x))
 					.collect(Collectors.toList());
-				facts.add(new AndNode(new SimplePredicateData(fact.factName().toString(), factParameters)));
+				facts.add(new AndNode(new FactPredicateData(
+					fact.factName().toString(),
+					factParameters)));
 			}
 			return facts;
 		}
@@ -128,20 +131,6 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			return headPredicateNode;
 		}
 	}
-
-//	private static class MonotonicAggregateBuilder extends DatalogBaseVisitor<AndNode> {
-//		@Override
-//		public AndNode visitMonotonicAggregates(DatalogParser.MonotonicAggregatesContext ctx) {
-//			return null;
-//		}
-//	}
-//
-//	private static class NonMonotonicAggregateBuilder extends DatalogBaseVisitor<AndNode> {
-//		@Override
-//		public AndNode visitNonMonotonicAggregates(DatalogParser.NonMonotonicAggregatesContext ctx) {
-//			return null;
-//		}
-//	}
 
 	private static class PredicateListBuilder extends DatalogBaseVisitor<List<OrNode>> {
 		DatalogParser.RulesContext rulesContext;
