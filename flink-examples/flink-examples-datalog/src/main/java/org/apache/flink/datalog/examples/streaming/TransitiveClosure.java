@@ -17,6 +17,7 @@
 
 package org.apache.flink.datalog.examples.streaming;
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -43,7 +44,9 @@ public class TransitiveClosure {
         String query = "tc(X,Y)?";
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        EnvironmentSettings settings = EnvironmentSettings
+		env.setRuntimeMode(RuntimeExecutionMode.BATCH);
+
+		EnvironmentSettings settings = EnvironmentSettings
                 .newInstance()
                 .useDatalogPlanner()
                 .inStreamingMode()

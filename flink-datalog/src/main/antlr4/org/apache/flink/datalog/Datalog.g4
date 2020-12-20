@@ -53,7 +53,7 @@ predicateList
     : ( predicate  ) ( COMMA ( predicate ))*
     ;
 notPredicate   // only use in predicateList
-    : NOT predicate
+    : TILDE predicate
     ;
 primitivePredicate // only use in predicateList
     : ( CONSTANT | VARIABLE | DECIMAL ) (LANGLE_BRACKET | RANGLE_BRACKET | EQUAL | COMPARISON_OPERATOR) ( CONSTANT | VARIABLE | DECIMAL ) (OPERATOR (VARIABLE|CONSTANT| DECIMAL))*
@@ -79,11 +79,12 @@ term
     | atom
     ;
 nonMonotonicAggregates
-    : AGGR_FUNC LANGLE_BRACKET ( TILDE | VARIABLE  | term )  RANGLE_BRACKET
+    : AGGR_FUNC LANGLE_BRACKET ( TILDE | term (COMMA (TILDE | term)) *)  RANGLE_BRACKET
     ;
 monotonicAggregates
     : M_AGGR_FUNC LANGLE_BRACKET ( VARIABLE ( COMMA VARIABLE )* )  RANGLE_BRACKET
     ;
+
 atom
     : LANGLE_BRACKET RANGLE_BRACKET
     | LEFT_BRACKET RIGHT_BRACKET
@@ -124,7 +125,7 @@ UNARY_OPERATOR //TODO: add more unary operators
     : '-' | '+'
     ;
 AGGR_FUNC
-	: 'min' | 'max' | 'sum' | 'count' | 'avg'
+	: 'min' | 'max' | 'sum' | 'count' | 'avg' | 'topk'
 	;
 M_AGGR_FUNC
 	: 'mmin' | 'mmax' | 'msum' | 'mcount' | 'mavg'

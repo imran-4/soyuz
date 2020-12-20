@@ -21,6 +21,7 @@ import org.apache.flink.datalog.DatalogBaseVisitor;
 import org.apache.flink.datalog.DatalogLexer;
 import org.apache.flink.datalog.DatalogParser;
 import org.apache.flink.datalog.parser.tree.predicate.FactPredicateData;
+import org.apache.flink.datalog.parser.tree.predicate.NotPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.QueryPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
@@ -225,6 +226,18 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		}
 	}
 
+	private static class NotPredicateBuilder extends DatalogBaseVisitor<OrNode> {
+		@Override
+		public OrNode visitNotPredicate(DatalogParser.NotPredicateContext ctx) {
+
+			OrNode predicateData = new PredicateBuilder().visitPredicate(
+				ctx.predicate());
+			return new OrNode(new NotPredicateData(predicateData
+				.getPredicateData()
+				.getPredicateName(), predicateData.getPredicateData().getPredicateParameters()));
+		}
+	}
+
 	private static class PrimitivePredicateBuilder extends DatalogBaseVisitor<OrNode> {
 		@Override
 		public OrNode visitPrimitivePredicate(DatalogParser.PrimitivePredicateContext ctx) {
@@ -304,7 +317,7 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			if (ctx.primitivePredicate() != null) {
 				return new PrimitivePredicateBuilder().visitPrimitivePredicate(ctx.primitivePredicate());
 			} else if (ctx.notPredicate() != null) {
-				return null; //todo: fix it
+				return new NotPredicateBuilder().visitNotPredicate(ctx.notPredicate()); //todo: fix it
 			} else {
 				return new OrNode(new SimplePredicateData(
 					ctx.predicateName().getText(),
