@@ -24,10 +24,10 @@ public class MainExample {
 //			+ "counttriangles(count<~>):-triangles(X, Y, Z).";
 //		String query = "counttriangles(X)?";
 
-//		String inputProgram = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"
-//			+ "sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
-//
-//		String query = "sg(X,Y)?";
+		String inputProgram = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"
+			+ "sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
+
+		String query = "sg(X,Y)?";
 
 //		String inputProgram = "sssp2(Y, mmin<D>) :- Y=1, D=0.\n"
 //			+ "sssp2(Y, mmin<D>) :- sssp2(X, D1), arc(X, Y, D2), D = D1 + D2.\n"
@@ -54,10 +54,10 @@ public class MainExample {
 //
 //		String query = "pymk(X,Y,Z)?";
 
-		String inputProgram = "cntComing(Y, mcount<X>) :- attend(X), friend(Y, X).\n"
-			+ "attend(X) :- organizer(X).\n"
-			+ "attend(X) :- cntComing(X, N), N >= 3.\n";
-		String query = "attend(X)?";
+//		String inputProgram = "cntComing(Y, mcount<X>) :- attend(X), friend(Y, X).\n"
+//			+ "attend(X) :- organizer(X).\n"
+//			+ "attend(X) :- cntComing(X, N), N >= 3.\n";
+//		String query = "attend(X)?";
 
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		EnvironmentSettings settings = EnvironmentSettings
@@ -71,7 +71,7 @@ public class MainExample {
 			.fieldDelimiter(",")
 			.types(IntValue.class, IntValue.class);
 
-		datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+		datalogEnv.registerDataSet("arc", dataSet, "v1,v2");
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 		DataSet<Tuple2<IntValue, IntValue>> resultDS = datalogEnv.toDataSet(
 			queryResult,

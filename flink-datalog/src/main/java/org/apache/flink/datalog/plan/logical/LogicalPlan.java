@@ -20,6 +20,7 @@ package org.apache.flink.datalog.plan.logical;
 import org.apache.flink.datalog.parser.tree.AndNode;
 import org.apache.flink.datalog.parser.tree.AndOrTreeBaseVisitor;
 import org.apache.flink.datalog.parser.tree.OrNode;
+import org.apache.flink.datalog.parser.tree.predicate.NotPredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
 import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
@@ -122,6 +123,11 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 			List<RexNode> projectionParameters = new ArrayList<>();
 			List<String> newNames = new ArrayList<>();
 			for (TermData<?> termData : predicateData.getPredicateParameters()) {
+				if (termData.getAdornment() == TermData.Adornment.MONOTONIC_AGGREGATE) {
+					//todo: ..
+				} else if (termData.getAdornment() == TermData.Adornment.NON_MONOTONIC_AGGREGATE) {
+					//todo: ..
+				}
 				projectionParameters.add(relBuilder.alias(
 					relBuilder.field(i),
 					termData.getTerm().toString()));
@@ -148,6 +154,8 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 					leftExpression,
 					rightExpression
 				));
+		} else if (predicateData instanceof NotPredicateData) {
+			//todo: NOT PREDICATE
 		}
 	}
 
