@@ -81,6 +81,8 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 		private final OrNode currentNode;
 		private final AndNode parentNode; //in case of root node, this is null
 
+		private static List<Integer> evaluatedRules = new ArrayList<>(); // to prevent stackover when circular dependencies inthe rules
+
 		RulesBuilder(OrNode currentNode, AndNode parentNode) {
 			this.currentNode = currentNode;
 			this.parentNode = parentNode;
@@ -88,9 +90,16 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 
 		@Override
 		public List<AndNode> visitRules(DatalogParser.RulesContext ctx) {
+
 			String queryPredicateName = currentNode.getPredicateData().getPredicateName();
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
+			int i = 0;
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
+				if (evaluatedRules.contains(i)) {
+					++i;
+					continue;
+				}
+
 				String headPredicateName = ruleClauseContext
 					.headPredicate()
 					.predicateName().getText();
@@ -107,9 +116,11 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 							continue;
 						}
 					}
+					evaluatedRules.add(i);
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(
 						ruleClauseContext));
 				}
+				++i;
 			}
 			return ruleHeadsMatchingQuery;
 		}
@@ -160,14 +171,17 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 						headPredicateNode.setRecursive(true);
 					}
 				}
-				List<AndNode> subNodes = new RulesBuilder(
-					bodyNode,
-					this.headPredicateNode).visitRules((DatalogParser.RulesContext) ctx
-					.getParent()
-					.getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
-				if (subNodes.size() > 0) {
-					bodyNode.setChildren(subNodes);
-				}
+
+
+					List<AndNode> subNodes = new RulesBuilder(
+						bodyNode,
+						this.headPredicateNode).visitRules((DatalogParser.RulesContext) ctx
+						.getParent()
+						.getParent()); //for some nodes it would be an additional step (which can be avoided by storing headnodes in a map. but i didnt want to consume memory on that.)
+					if (subNodes.size() > 0) {
+						bodyNode.setChildren(subNodes);
+					}
+
 				ruleBodyNodes.add(bodyNode);
 			}
 
