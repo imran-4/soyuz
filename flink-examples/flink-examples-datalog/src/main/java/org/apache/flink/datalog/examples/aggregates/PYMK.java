@@ -21,7 +21,7 @@ public class PYMK {
 			+ "uarc(Y, X) :- arc(X, Y).\n"
 			+ "cnt(Y, Z, count<X>) :- uarc(X, Y), uarc(X, Z), Y!= Z, ~uarc(Y, Z).\n"
 			+ "pymk(X, W9, topk<10, Z>) :- cnt(X, 15, Z), pages(X, W2,W3, W9).";
-		String query = "pymk(X,Y,Z)";
+		String query = "pymk(X,Y,Z)?";
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		EnvironmentSettings settings = EnvironmentSettings
 			.newInstance()
@@ -34,7 +34,7 @@ public class PYMK {
 			.fieldDelimiter(",")
 			.types(IntValue.class, IntValue.class);
 
-		datalogEnv.registerDataSet("graph", dataSet, "v1,v2");
+		datalogEnv.createTemporaryView("graph", dataSet, "v1,v2");
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 		DataSet<Tuple2<IntValue, IntValue>> resultDS = datalogEnv.toDataSet(
 			queryResult,
