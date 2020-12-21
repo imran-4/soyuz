@@ -17,17 +17,6 @@
 
 package org.apache.flink.datalog.plan.logical;
 
-import org.apache.flink.datalog.parser.tree.AndNode;
-import org.apache.flink.datalog.parser.tree.AndOrTreeBaseVisitor;
-import org.apache.flink.datalog.parser.tree.OrNode;
-import org.apache.flink.datalog.parser.tree.predicate.NotPredicateData;
-import org.apache.flink.datalog.parser.tree.predicate.PredicateData;
-import org.apache.flink.datalog.parser.tree.predicate.PrimitivePredicateData;
-import org.apache.flink.datalog.parser.tree.predicate.SimplePredicateData;
-import org.apache.flink.datalog.parser.tree.predicate.TermData;
-import org.apache.flink.table.calcite.FlinkRelBuilder;
-import org.apache.flink.table.catalog.CatalogManager;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -36,10 +25,14 @@ import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.apache.flink.datalog.parser.tree.AndNode;
+import org.apache.flink.datalog.parser.tree.AndOrTreeBaseVisitor;
+import org.apache.flink.datalog.parser.tree.OrNode;
+import org.apache.flink.datalog.parser.tree.predicate.*;
+import org.apache.flink.table.calcite.FlinkRelBuilder;
+import org.apache.flink.table.catalog.CatalogManager;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -52,11 +45,23 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 	private final String currentCatalogName;
 	private final String currentDatabaseName;
 	private final Map<String, Integer> idbNameIdMapping = new HashMap<String, Integer>();
+	private final boolean isStreaming;
 
-	public LogicalPlan(FlinkRelBuilder relBuilder, CatalogManager catalogManager) {
+	public LogicalPlan(
+		RelBuilder relBuilder,
+		CatalogManager catalogManager,
+		boolean isStreaming) {
 		this.relBuilder = relBuilder;
 		this.currentCatalogName = catalogManager.getCurrentCatalog();
 		this.currentDatabaseName = catalogManager.getCurrentDatabase();
+		this.isStreaming = isStreaming;
+	}
+
+	public LogicalPlan(RelBuilder relBuilder, CatalogManager catalogManager) {
+		this.relBuilder = relBuilder;
+		this.currentCatalogName = catalogManager.getCurrentCatalog();
+		this.currentDatabaseName = catalogManager.getCurrentDatabase();
+		this.isStreaming = false;
 	}
 
 	private static SqlBinaryOperator getBinaryOperator(String operator) {
@@ -115,6 +120,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		if (predicateData instanceof SimplePredicateData) {
 			String tableName = predicateData.getPredicateName();
 			if (((SimplePredicateData) predicateData).isIdb()) {
+
 				return;
 			} else {
 				relBuilder.scan(this.currentCatalogName, this.currentDatabaseName, tableName);
@@ -191,10 +197,8 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 				.collect(Collectors.toList()));
 			idbNameIdMapping.put(predicateData.getPredicateName(), relBuilder.peek().getId());
 			if (hasRecursiveNode) {
-				relBuilder
-					.repeatUnion(
-						predicateData.getPredicateName(),
-						true); //create repeat union between top two expressions on the stack
+				relBuilder.transientScan(predicateData.getPredicateName());
+				relBuilder.repeatUnion(predicateData.getPredicateName(),true);
 			} else if (childNodes.size() > 1) {
 				relBuilder
 					.union(true);
@@ -263,7 +267,10 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		List<RexNode> conditions = new ArrayList<>();
 
 		List<String> currentNodeFields = getFieldNames(currentNode);
-		List<String> joinedNodeFields = relBuilder.peek(1).getRowType().getFieldNames();
+		List<String> joinedNodeFields = relBuilder
+			.peek(1)
+			.getRowType()
+			.getFieldNames(); //todo: it might not work if there is a filter before the second join
 		if (((SimplePredicateData) currentNode.getPredicateData()).isIdb()) {
 			newNames.addAll(currentNodeFields);
 			newNames.addAll(joinedNodeFields);
@@ -273,18 +280,18 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		}
 
 		for (String joinedNodeField : joinedNodeFields) {
-			for (String currentNodeField : currentNodeFields) {
-				if (joinedNodeField.equals(currentNodeField)) {
+			for (int r = 0; r < currentNodeFields.size(); r++) {
+				if (joinedNodeField.equals(currentNodeFields.get(r))) {
 					RexNode leftRexNode = relBuilder.field(
 						2,
 						0,
 						joinedNodeField); //peek=1, fields(peek+1). same.
 					RexNode rightRexNode = null;
 					if (((SimplePredicateData) currentNode.getPredicateData()).isIdb()) { //as idb can be located far in the  siblining list
-						rightRexNode = getFieldForIDB(currentNode, currentNodeField, false);
+						rightRexNode = getFieldForIDB(currentNode, r, false);
 					} else {
 						rightRexNode = relBuilder
-							.field(2, 1, currentNodeField);
+							.field(2, 1, currentNodeFields.get(r));
 					}
 					conditions.add(relBuilder.call(
 						SqlStdOperatorTable.EQUALS,
@@ -300,7 +307,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 
 	private void createJoin(
 		OrNode leftNode,
-		OrNode rightNode) { //should take only rightNode, and get leftNde from relBuilder's stack
+		OrNode rightNode) {
 		List<String> leftNodeFields = getFieldNames(leftNode);
 		List<String> rightNodeFields = getFieldNames(rightNode);
 		List<RexNode> conditions = new ArrayList<>();
@@ -316,16 +323,10 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		for (int i = 0; i < leftNodeFields.size(); i++) {
 			for (int j = 0; j < rightNodeFields.size(); j++) {
 				if (leftNodeFields.get(i).equals(rightNodeFields.get(j))) {
-					conditions.add(getCondition(
-						leftNode,
-						rightNode,
-						leftNodeFields.get(i),
-						rightNodeFields.get(j)));
+					conditions.add(getCondition(leftNode, rightNode, i, j));
 				}
 			}
 		}
-
-
 		relBuilder
 			.join(JoinRelType.INNER, conditions)
 			.rename(newNames);
@@ -334,109 +335,86 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 	private RexNode getCondition(
 		OrNode leftNode,
 		OrNode rightNode,
-		String leftNodeField,
-		String rightNodeField) {
+		int leftNodeFieldOrdinal,
+		int rightNodeFieldOrdinal) {
+		List<String> leftNodeFields = getFieldNames(leftNode);
+		List<String> rightNodeFields = getFieldNames(rightNode);
+
 		RexNode leftRexNode, rightRexNode;
 		if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
-			leftRexNode = getFieldForIDB(leftNode, leftNodeField, true);
+			leftRexNode = getFieldForIDB(leftNode, leftNodeFieldOrdinal, true);
 		} else {
 			if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
 				if (rightNode.getChildren().size() == 0) {
-					leftRexNode = relBuilder.field(1, 0, leftNodeField);
+					leftRexNode = relBuilder.field(1, 0, leftNodeFields.get(leftNodeFieldOrdinal));
 				} else {
-					leftRexNode = relBuilder.field(2, 0, leftNodeField);
+					leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
 				}
 			} else {
-				leftRexNode = relBuilder.field(2, 0, leftNodeField);
+				leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
 			}
 		}
 		if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
-			rightRexNode = getFieldForIDB(rightNode, rightNodeField, false);
+			rightRexNode = getFieldForIDB(rightNode, rightNodeFieldOrdinal, false);
 		} else {
 			if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
 				if (leftNode.getChildren().size() == 0) {
 					rightRexNode = relBuilder.field(
 						2,
 						1,
-						rightNodeField);
+						rightNodeFields.get(rightNodeFieldOrdinal)); //could be buggy
 				} else {
 					rightRexNode = relBuilder.field(
 						2,
 						1,
-						rightNodeField);
+						rightNodeFields.get(rightNodeFieldOrdinal));
 				}
 			} else {
-				rightRexNode = relBuilder.field(2, 1, rightNodeField);
+				rightRexNode = relBuilder.field(2, 1, rightNodeFields.get(rightNodeFieldOrdinal));
 			}
 		}
 		return relBuilder.equals(leftRexNode, rightRexNode);
 	}
-//	private RexNode getCondition(
-//		OrNode leftNode,
-//		OrNode rightNode,
-//		int leftNodeFieldOrdinal,
-//		int rightNodeFieldOrdinal) {
-//		List<String> leftNodeFields = getFieldNames(leftNode);
-//		List<String> rightNodeFields = getFieldNames(rightNode);
-//
-//		RexNode leftRexNode, rightRexNode;
-//		if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
-//			leftRexNode = getFieldForIDB(leftNode, leftNodeFieldOrdinal, true);
-//		} else {
-//			if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
-//				if (rightNode.getChildren().size() == 0) {
-//					leftRexNode = relBuilder.field(1, 0, leftNodeFields.get(leftNodeFieldOrdinal));
-//				} else {
-//					leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
-//				}
-//			} else {
-//				leftRexNode = relBuilder.field(2, 0, leftNodeFields.get(leftNodeFieldOrdinal));
-//			}
-//		}
-//		if (((SimplePredicateData) rightNode.getPredicateData()).isIdb()) {
-//			rightRexNode = getFieldForIDB(rightNode, rightNodeFieldOrdinal, false);
-//		} else {
-//			if (((SimplePredicateData) leftNode.getPredicateData()).isIdb()) {
-//				if (leftNode.getChildren().size() == 0) {
-//					rightRexNode = relBuilder.field(
-//						2,
-//						1,
-//						rightNodeFields.get(rightNodeFieldOrdinal)); //could be buggy
-//				} else {
-//					rightRexNode = relBuilder.field(
-//						2,
-//						1,
-//						rightNodeFields.get(rightNodeFieldOrdinal));
-//				}
-//			} else {
-//				rightRexNode = relBuilder.field(2, 1, rightNodeFields.get(rightNodeFieldOrdinal));
-//			}
-//		}
-//		return relBuilder.equals(leftRexNode, rightRexNode);
-//	}
 
-	private RexNode getFieldForIDB(OrNode idbNode, String field, boolean isLeftNode) {
-		int sumNumber = 0;
-		if (idbNode.getChildren().size() == 0) {
-			sumNumber = 1;
-		} else {
-			sumNumber = 2;
-		}
-		int inputOrdinal;
-		if (isLeftNode) {
-			inputOrdinal = 0;
-		} else {
-			inputOrdinal = 1;
-		}
-		for (int x = 0; ; x++) {
-			if (relBuilder.peek(x).getId() == idbNameIdMapping.get(idbNode
-				.getPredicateData()
-				.getPredicateName())) {
-//                return relBuilder.field(x + sumNumber, inputOrdinal, fieldOrdinal);
-				return relBuilder.field(x, inputOrdinal, field);
+	private RexNode getFieldForIDB(OrNode idbNode, int fieldOrdinal, boolean isLeft) {
+		String idbName = idbNode.getPredicateData().getPredicateName();
+		int i = 0;
+		while (true) {
+
+			List<String> tableNames = RelOptUtil
+				.findTables(relBuilder.peek(i))
+				.stream()
+				.map(x -> {
+					List<String> name = x.getQualifiedName();
+					if (name != null) {
+						if (name.size() > 0)
+							return name.get(name.size() - 1);
+						else return null;
+					} else {
+						return null;
+					}
+				})
+				.filter(x -> Objects.equals(x, idbName))
+				.collect(Collectors.toList());
+			for (String tableName : tableNames) {
+				return relBuilder.field(i + 1, isLeft ? 1 - 1 : i, fieldOrdinal);
 			}
+			i++;
 		}
 	}
+
+
+//	private RelOptTable getRelTableName(RelNode node, String idbName) {
+//		RelOptUtil.findTables(node)
+//		if (node.getTable() != null)
+//			return node.getTable();
+//		else if (node.getInputs() != null) {
+//			for (RelNode n : node.getInputs()) {
+//				getRelTableName(n, idbName);
+//
+//			}
+//		}
+//	}
 
 	private List<String> getFieldNames(OrNode orNode) {
 		return orNode
