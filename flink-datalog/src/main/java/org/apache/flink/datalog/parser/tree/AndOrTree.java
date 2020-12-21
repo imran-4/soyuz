@@ -95,11 +95,6 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 			List<AndNode> ruleHeadsMatchingQuery = new ArrayList<>();
 			int i = 0;
 			for (DatalogParser.RuleClauseContext ruleClauseContext : ctx.ruleClause()) {
-				if (evaluatedRules.contains(i)) {
-					++i;
-					continue;
-				}
-
 				String headPredicateName = ruleClauseContext
 					.headPredicate()
 					.predicateName().getText();
@@ -115,6 +110,11 @@ public class AndOrTree extends DatalogBaseVisitor<Node> {
 							.equals(queryPredicateName)) {
 							continue;
 						}
+					}
+
+					if (evaluatedRules.contains(i)) {
+						++i;
+						continue;
 					}
 					evaluatedRules.add(i);
 					ruleHeadsMatchingQuery.add(new RuleClauseBuilder(ctx).visitRuleClause(
