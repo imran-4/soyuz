@@ -48,7 +48,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 	private final boolean isStreaming;
 
 	public LogicalPlan(
-		RelBuilder relBuilder,
+		FlinkRelBuilder relBuilder,
 		CatalogManager catalogManager,
 		boolean isStreaming) {
 		this.relBuilder = relBuilder;
@@ -57,7 +57,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		this.isStreaming = isStreaming;
 	}
 
-	public LogicalPlan(RelBuilder relBuilder, CatalogManager catalogManager) {
+	public LogicalPlan(FlinkRelBuilder relBuilder, CatalogManager catalogManager) {
 		this.relBuilder = relBuilder;
 		this.currentCatalogName = catalogManager.getCurrentCatalog();
 		this.currentDatabaseName = catalogManager.getCurrentDatabase();
@@ -120,7 +120,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 		if (predicateData instanceof SimplePredicateData) {
 			String tableName = predicateData.getPredicateName();
 			if (((SimplePredicateData) predicateData).isIdb()) {
-
 				return;
 			} else {
 				relBuilder.scan(this.currentCatalogName, this.currentDatabaseName, tableName);
@@ -197,7 +196,7 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 				.collect(Collectors.toList()));
 			idbNameIdMapping.put(predicateData.getPredicateName(), relBuilder.peek().getId());
 			if (hasRecursiveNode) {
-				relBuilder.transientScan(predicateData.getPredicateName());
+//				relBuilder.transientScan(predicateData.getPredicateName());
 				relBuilder.repeatUnion(predicateData.getPredicateName(),true);
 			} else if (childNodes.size() > 1) {
 				relBuilder
@@ -402,19 +401,6 @@ public class LogicalPlan extends AndOrTreeBaseVisitor<RelNode> {
 			i++;
 		}
 	}
-
-
-//	private RelOptTable getRelTableName(RelNode node, String idbName) {
-//		RelOptUtil.findTables(node)
-//		if (node.getTable() != null)
-//			return node.getTable();
-//		else if (node.getInputs() != null) {
-//			for (RelNode n : node.getInputs()) {
-//				getRelTableName(n, idbName);
-//
-//			}
-//		}
-//	}
 
 	private List<String> getFieldNames(OrNode orNode) {
 		return orNode
