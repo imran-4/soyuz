@@ -17,40 +17,35 @@
 
 package org.apache.flink.datalog;
 
+import org.apache.calcite.rel.RelNode;
+
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.datalog.parser.tree.Node;
 import org.apache.flink.datalog.plan.logical.LogicalPlan;
 import org.apache.flink.datalog.planner.DatalogPlanningConfigurationBuilder;
 import org.apache.flink.datalog.planner.calcite.FlinkDatalogPlannerImpl;
-import org.apache.flink.table.api.EnvironmentSettings;
-import org.apache.flink.table.api.ExplainDetail;
-import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TableConfig;
-import org.apache.flink.table.api.TableException;
+import org.apache.flink.table.api.*;
 import org.apache.flink.table.api.bridge.java.internal.BatchTableEnvironmentImpl;
-import org.apache.flink.table.catalog.CatalogManager;
-import org.apache.flink.table.catalog.CatalogManagerCalciteSchema;
-import org.apache.flink.table.catalog.FunctionCatalog;
-import org.apache.flink.table.catalog.GenericInMemoryCatalog;
+import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.catalog.*;
 import org.apache.flink.table.delegation.Executor;
 import org.apache.flink.table.delegation.ExecutorFactory;
-import org.apache.flink.table.expressions.Expression;
-import org.apache.flink.table.expressions.ExpressionBridge;
-import org.apache.flink.table.expressions.PlannerExpression;
-import org.apache.flink.table.expressions.PlannerExpressionConverter;
+import org.apache.flink.table.expressions.*;
 import org.apache.flink.table.factories.ComponentFactoryService;
 import org.apache.flink.table.module.ModuleManager;
+import org.apache.flink.table.operations.DataSetQueryOperation;
 import org.apache.flink.table.operations.ModifyOperation;
-
-import org.apache.calcite.rel.RelNode;
-
 import org.apache.flink.table.operations.Operation;
 import org.apache.flink.table.planner.operations.PlannerQueryOperation;
 import org.apache.flink.table.types.AbstractDataType;
+import org.apache.flink.table.typeutils.FieldInfoUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 
@@ -62,14 +57,13 @@ import static org.apache.calcite.jdbc.CalciteSchemaBuilder.asRootSchema;
 public class BatchDatalogEnvironmentImpl
 	extends BatchTableEnvironmentImpl
 	implements BatchDatalogEnvironment {
-	//    private final OperationTreeBuilder operationTreeBuilder;
 	private final FunctionCatalog functionCatalog;
 	private final List<ModifyOperation> bufferedModifyOperations = new ArrayList<>();
-	private CatalogManager catalogManager;
-	private Executor executor;
-	private TableConfig tableConfig;
-	private ExecutionEnvironment executionEnvironment;
-	private DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
+	private final CatalogManager catalogManager;
+	private final Executor executor;
+	private final TableConfig tableConfig;
+	private final ExecutionEnvironment executionEnvironment;
+	private final DatalogPlanningConfigurationBuilder planningConfigurationBuilder;
 
 	public BatchDatalogEnvironmentImpl(
 		CatalogManager catalogManager,
@@ -83,14 +77,6 @@ public class BatchDatalogEnvironmentImpl
 		this.tableConfig = tableConfig;
 		this.functionCatalog = functionCatalog;
 		this.catalogManager = catalogManager;
-//        this.operationTreeBuilder = OperationTreeBuilder.create(
-//                functionCatalog,
-//                path -> {
-//                    Optional<CatalogQueryOperation> catalogTableOperation = Optional.ofNullable(scanInternal(path).getOrElse(null));
-//                    return catalogTableOperation.map(tableOperation -> new TableReferenceExpression(path, tableOperation));
-//                },
-//                false
-//        );
 
 
 		ExpressionBridge<PlannerExpression> expressionBridge = new ExpressionBridge<PlannerExpression>(
@@ -167,6 +153,56 @@ public class BatchDatalogEnvironmentImpl
 			throw new TableException(
 				"Unsupported Datalog query!");
 		}
+	}
+
+	@Override
+	public <T> void registerDataSet(String name, DataSet<T> dataSet) {
+		registerTable(name, fromDataSet(dataSet));
+	}
+
+
+
+	public <T> Table fromDataset(DataSet<T> dataSet, String fields) {
+		List<Expression> exprs = ExpressionParser
+			.parseExpressionList(fields);
+
+		return createTable(asQueryOperation(dataSet, Optional.of(exprs)));
+	}
+
+	private <T> DataSetQueryOperation<T> asQueryOperation(
+		DataSet<T> dataSet,
+		Optional<List<Expression>> fields) {
+		TypeInformation<T> dataSetType = dataSet.getType();
+
+		FieldInfoUtils.TypeInfoSchema typeInfoSchema = fields
+			.map(f -> FieldInfoUtils.getFieldsInfo(
+				dataSetType,
+				f.toArray(new Expression[0])))
+			.orElseGet(() -> FieldInfoUtils.getFieldsInfo(dataSetType));
+		return new DataSetQueryOperation<T>(
+			dataSet,
+			typeInfoSchema.getIndices(),
+			typeInfoSchema.toTableSchema());
+	}
+
+
+	@Override
+	public <T> void registerDataSet(String name, DataSet<T> dataSet, String fields) {
+		registerTable(name, fromDataset(dataSet, fields));
+	}
+
+	@Override
+	public void registerTable(String name, Table table) {
+		if (((TableImpl) table).getTableEnvironment() != this) {
+			throw new TableException(
+				"Only tables that belong to this TableEnvironment can be registered.");
+		}
+		CatalogBaseTable view = new QueryOperationCatalogView(table.getQueryOperation());
+		catalogManager.createTable(view, catalogManager.qualifyIdentifier(UnresolvedIdentifier.of(
+			catalogManager.getBuiltInCatalogName(),
+			catalogManager.getBuiltInDatabaseName(),
+			name)
+		), false);
 	}
 
 	@Override
