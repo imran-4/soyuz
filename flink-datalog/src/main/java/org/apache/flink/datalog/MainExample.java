@@ -5,7 +5,12 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.internal.TableImpl;
+import org.apache.flink.table.catalog.Catalog;
+import org.apache.flink.table.catalog.GenericInMemoryCatalog;
 import org.apache.flink.types.IntValue;
+
+import static org.apache.flink.table.api.Expressions.$;
 
 public class MainExample {
 	public static void main(String[] args) throws Exception {
@@ -15,19 +20,20 @@ public class MainExample {
 			testFilePath = args[0].trim();
 		} else
 			throw new Exception("Please provide input dataset. ");
-//		String inputProgram =
-//			"tc(X,Y) :- graph(X,Y).\n"
-//				+ "tc(X,Y) :- tc(X,Z),graph(Z,Y).\n";
-//		String query = "tc(X,Y)?";
+		String inputProgram =
+			"tc(X,Y) :- arc(X,Y).\n"
+				+ "tc(X,Y) :- tc(X,Z),arc(Z,Y).\n";
+		String query = "tc(X,Y)?";
+
 
 //		String inputProgram = "triangles(X, Y, Z) :- arc(X, Y), X < Y, arc(Y, Z), Y < Z, arc(Z, X)."
 //			+ "counttriangles(count<~>):-triangles(X, Y, Z).";
 //		String query = "counttriangles(X)?";
-
-		String inputProgram = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"
-			+ "sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
-
-		String query = "sg(X,Y)?";
+//
+//		String inputProgram = "sg(X,Y):-arc(P,X),arc(P,Y),X!=Y.\n"
+//			+ "sg(X,Y):-arc(A,X),sg(A,B),arc(B,Y).\n";
+//
+//		String query = "sg(X,Y)?";
 
 //		String inputProgram = "sssp2(Y, mmin<D>) :- Y=1, D=0.\n"
 //			+ "sssp2(Y, mmin<D>) :- sssp2(X, D1), arc(X, Y, D2), D = D1 + D2.\n"
@@ -71,7 +77,8 @@ public class MainExample {
 			.fieldDelimiter(",")
 			.types(IntValue.class, IntValue.class);
 
-		datalogEnv.registerDataSet("arc", dataSet, "v1,v2");
+		datalogEnv.createTemporaryView("arc", dataSet, $("v1"),$("v2"));
+
 		Table queryResult = datalogEnv.datalogQuery(inputProgram, query);
 		DataSet<Tuple2<IntValue, IntValue>> resultDS = datalogEnv.toDataSet(
 			queryResult,
